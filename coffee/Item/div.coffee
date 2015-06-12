@@ -1,5 +1,5 @@
 define [
-	'utils', 'item', 'jquery', 'oembed', 'paper'
+	'utils', 'Item/item', 'jquery', 'oembed', 'paper'
 ], (utils) ->
 
 	g = utils.g()

@@ -9,11 +9,11 @@ define [
 	'options'
 	'socket'
 	'command'
-	'item'
-	'div'
-	'lock'
-	'path'
-	'tools'
+	'Item/item'
+	'Item/div'
+	'Item/lock'
+	'Item/path'
+	'Tool/tools'
 	'mod'
 	'rasterizer'
 	'editor'
@@ -774,7 +774,7 @@ define [
 		# load path source code
 
 		xmlhttp = new RXMLHttpRequest()
-		url = g.romanescoURL + "static/coffee/path.coffee"
+		url = g.romanescoURL + "static/romanesco-client-code/coffee/Item/path.coffee"
 
 		xmlhttp.onreadystatechange = ()->
 			if xmlhttp.readyState == 4 and xmlhttp.status == 200

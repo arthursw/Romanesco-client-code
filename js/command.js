@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['utils', 'item', 'jquery', 'paper'], function(utils) {
+  define(['utils', 'Item/item', 'jquery', 'paper'], function(utils) {
     var AddPointCommand, Command, CommandManager, CreateItemCommand, DeleteItemCommand, DeletePointCommand, DeselectCommand, DuplicateItemCommand, ModifyControlPathCommand, ModifyPointCommand, ModifyPointTypeCommand, ModifySpeedCommand, ModifyTextCommand, MoveCommand, MoveViewCommand, ResizeCommand, RotationCommand, SelectCommand, SetParameterCommand, g;
     g = utils.g();
     Command = (function() {

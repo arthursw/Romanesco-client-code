@@ -1,5 +1,5 @@
 define [
-	'utils', 'zeroClipboard', 'item', 'lock', 'div', 'path', 'jquery', 'paper', 'bootstrap'
+	'utils', 'zeroClipboard', 'Item/item', 'Item/lock', 'Item/div', 'Item/path', 'jquery', 'paper', 'bootstrap'
 ], (utils, ZeroClipboard) ->
 
 	g = utils.g()

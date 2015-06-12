@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['utils', 'item', 'jquery', 'paper'], function(utils) {
+  define(['utils', 'Item/item', 'jquery', 'paper'], function(utils) {
     var Checkpoint, DynamicBrush, EllipseShape, GeometricLines, GridPath, Meander, Medusa, PaintBrush, PaintGun, PrecisePath, RPath, RShape, RectangleShape, ShapePath, SpeedPath, SpiralShape, StarShape, StripeAnimation, ThicknessPath, g;
     g = utils.g();
     RPath = (function(_super) {
