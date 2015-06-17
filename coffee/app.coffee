@@ -6,6 +6,7 @@ requirejs.config
 	baseUrl: '../static/romanesco-client-code/js'
 	# enforceDefine: true 	# to make fallback work?? but throws Uncaught Error: No define call for app
 	paths:
+
 		'ace': ['//cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/ace', '../../libs/ace']
 		'aceTools': ['//cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/ext-language_tools', '../../libs/ace/ext-language_tools']
 		'underscore': ['//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min', '../../libs/underscore-min']
@@ -60,7 +61,8 @@ requirejs.config
 		'socketio': '../../libs/socket.io'
 		'oembed': '../../libs/jquery.oembed'
 		'jqtree': '../../libs/jqtree/tree.jquery'
-		'mod': 'module'
+		'js-cookie': '../../libs/js.cookie'
+		'octokat': '../../libs/octokat'
 
 	shim:
 		'oembed': ['jquery']
@@ -69,6 +71,7 @@ requirejs.config
 		'jqueryUi': ['jquery']
 		'bootstrap': ['jquery']
 		'typeahead': ['jquery']
+		'js-cookie': ['jquery']
 		# 'modal': ['bootstrap', 'modalManager']
 		'colorpickersliders': ['jquery', 'tinycolor']
 		# 'ace': ['aceTools']

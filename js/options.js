@@ -4,12 +4,10 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['utils', 'tinycolor', 'gui', 'colorpickersliders', 'jquery', 'paper'], function(utils, tinycolor, GUI) {
+  define(['utils', 'tinycolor', 'gui', 'colorpickersliders', 'jquery'], function(utils, tinycolor, GUI) {
     var ColorController, Controller, ControllerManager, Folder, g;
     g = utils.g();
     window.tinycolor = tinycolor;
-    paper.install(window);
-    g.templatesJ = $("#templates");
     g.initializeGlobalParameters = function() {
       var colorName, colorRGBstring, hueRange, i, minHue, step, _i;
       g.defaultColors = [];

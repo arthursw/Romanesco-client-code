@@ -1,0 +1,167 @@
+define [
+	'utils', 'RPath'
+], (utils, RPath) ->
+
+	# An RShape is defined by a rectangle in which the drawing should be included
+	# during the creation, the user draw the rectangle with the mouse
+	class RShape extends RPath
+		@Shape = paper.Path.Rectangle
+		@rname = 'Shape'
+		@rdescription = "Base shape class"
+		@squareByDefault = true 				# whether the shape will be square by default (user must press the shift key to make it rectangle) or not
+		@centerByDefault = false 				# whether the shape will be centered on the first point by default
+												# (user must press the special key - command on a mac, control otherwise -
+												# to use the first point as the first corner of the shape) or not
+
+		# todo: check that control path always fit to rectangle: this is necessary for the getBounds method
+
+		# overload {RPath#prepareHitTest} + fill control path
+		prepareHitTest: (fullySelected=true, strokeWidth)->
+			@controlPath.fillColor = 'red'
+			return super(fullySelected, strokeWidth)
+
+		# overload {RPath#finishHitTest} + remove control path fill
+		finishHitTest: (fullySelected=true)->
+			@controlPath.fillColor = null
+			return super(fullySelected)
+
+		# redefine {RPath#loadPath}
+		# - load the shape rectangle from @data.rectangle
+		# - initialize the control path
+		# - draw
+		# - check that the points in the database correspond to the new control path
+		loadPath: (points)->
+			if not @data.rectangle? then console.log 'Error loading shape ' + @pk + ': invalid rectangle.'
+			@rectangle = if @data.rectangle? then new Rectangle(@data.rectangle) else new Rectangle()
+			@initializeControlPath()
+			@controlPath.rotation = @rotation
+			@initialize()
+
+			g.rasterizer.loadItem(@)
+
+			# Check shape validity
+			distanceMax = @constructor.secureDistance*@constructor.secureDistance
+			for point, i in points
+				@controlPath.segments[i].point == point
+				if @controlPath.segments[i].point.getDistance(point, true)>distanceMax
+					# @remove()
+					@controlPath.strokeColor = 'red'
+					view.center = @controlPath.bounds.center
+					console.log "Error: invalid shape!"
+					return
+
+		# draw the shape
+		# the drawing logic goes here
+		# this is the main method that developer will redefine
+		createShape: ()->
+			@shape = @addPath(new @constructor.Shape(@rectangle))
+			return
+
+		# redefine {RPath#draw}
+		# initialize the drawing and draw the shape
+		draw: (simplified=false)->
+			@drawn = false
+			if not g.rasterizer.requestDraw(@, simplified) then return
+			# if g.rasterizer.disableDrawing then return
+			process = ()=>
+				@initializeDrawing()
+				@createShape()
+				@drawing.rotation = @rotation
+				return
+			if not g.catchErrors
+				process()
+			else
+				try 							# catch errors to log them in console (if the user has code editor open)
+					process()
+				catch error
+					console.error error.stack
+					console.error error
+					throw error
+
+			@drawn = true
+			return
+
+		# initialize the control path
+		# create the rectangle from the two points and create the control path
+		# @param pointA [Paper point] the top left or bottom right corner of the rectangle
+		# @param pointB [Paper point] the top left or bottom right corner of the rectangle (opposite of point A)
+		# @param shift [Boolean] whether shift is pressed
+		# @param specialKey [Boolean] whether the special key is pressed (command on a mac, control otherwise)
+		initializeControlPath: (pointA, pointB, shift, specialKey)->
+
+			# create the rectangle from the two points
+			if pointA and pointB
+				square = if @constructor.squareByDefault then (not shift) else shift
+				createFromCenter = if @constructor.centerByDefault then (not specialKey) else specialKey
+
+				if createFromCenter
+					delta = pointB.subtract(pointA)
+					@rectangle = new Rectangle(pointA.subtract(delta), pointB)
+					# @rectangle = new Rectangle(pointA.subtract(delta), new Size(delta.multiply(2)))
+					if square
+						center = @rectangle.center
+						if @rectangle.width>@rectangle.height
+							@rectangle.width = @rectangle.height
+						else
+							@rectangle.height = @rectangle.width
+						@rectangle.center = center
+				else
+					if not square
+						@rectangle = new Rectangle(pointA, pointB)
+					else
+						width = pointA.x-pointB.x
+						height = pointA.y-pointB.y
+						min = Math.min(Math.abs(width), Math.abs(height))
+						@rectangle = new Rectangle(pointA, pointA.subtract(g.sign(width)*min, g.sign(height)*min))
+
+			# create the control path
+			@controlPath?.remove()
+			@rotation ?= 0
+			@addControlPath(new Path.Rectangle(@rectangle))
+			@controlPath.fillColor = g.selectionBlue
+			@controlPath.fillColor.alpha = 0.25
+			return
+
+		# overload {RPath#beginCreate} + initialize the control path and draw
+		beginCreate: (point, event) ->
+			super()
+			@downPoint = point
+			@initializeControlPath(@downPoint, point, event?.modifiers?.shift, g.specialKey(event))
+			# @draw() can not draw with an empty rectangle
+			return
+
+		# redefine {RPath#updateCreate}:
+		# initialize the control path and draw
+		updateCreate: (point, event) ->
+			# console.log " event.modifiers.command"
+			# console.log event.modifiers.command
+			# console.log g.specialKey(event)
+			# console.log event?.modifiers?.shift
+			@initializeControlPath(@downPoint, point, event?.modifiers?.shift, g.specialKey(event))
+			@draw()
+			return
+
+		# overload {RPath#endCreate} + initialize the control path and draw
+		endCreate: (point, event) ->
+			@initializeControlPath(@downPoint, point, event?.modifiers?.shift, g.specialKey(event))
+			@draw()
+			super()
+			return
+
+		setRectangle: (event, update)->
+			g.updatePathRectangle(@controlPath, @rectangle)
+			super(event, update)
+			return
+
+		# setRotation: (rotation, update)->
+		# 	super(rotation, update)
+		# 	@drawing.rotation = rotation
+		# 	return
+
+		# overload {RPath#getData} and add rectangle to @data
+		getData: ()->
+			data = jQuery.extend({}, @data)
+			data.rectangle = { x: @rectangle.x, y: @rectangle.y, width: @rectangle.width, height: @rectangle.height }
+			return data
+
+	return RShape

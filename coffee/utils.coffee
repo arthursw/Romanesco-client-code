@@ -1,9 +1,15 @@
 define [
 	'jquery'
+	'paper'
+	# 'js-cookie'
 ], ($) ->
 
 	g = {}
 	window.g = g
+	g.DajaxiceXMLHttpRequest = window.XMLHttpRequest
+	window.XMLHttpRequest = window.RXMLHttpRequest
+	paper.install(window)
+	g.templatesJ = $("#templates")
 
 	#\
 	#|*|
@@ -35,6 +41,12 @@ define [
 			__nativeSI__ (if vCallback instanceof Function then ->
 				vCallback.apply null, aArgs
 			else vCallback), nDelay
+
+	# $.ajaxSetup(
+	# 	beforeSend: (xhr, settings)->
+	# 		if (!/^(GET|HEAD|OPTIONS|TRACE)$/.test(settings.type) && !this.crossDomain)
+	# 			xhr.setRequestHeader("X-CSRFToken", Cookies.get('csrftoken'))
+	# )
 
 	window.setInterval.isPolyfill = true
 

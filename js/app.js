@@ -25,7 +25,8 @@
       'socketio': '../../libs/socket.io',
       'oembed': '../../libs/jquery.oembed',
       'jqtree': '../../libs/jqtree/tree.jquery',
-      'mod': 'module'
+      'js-cookie': '../../libs/js.cookie',
+      'octokat': '../../libs/octokat'
     },
     shim: {
       'oembed': ['jquery'],
@@ -34,6 +35,7 @@
       'jqueryUi': ['jquery'],
       'bootstrap': ['jquery'],
       'typeahead': ['jquery'],
+      'js-cookie': ['jquery'],
       'colorpickersliders': ['jquery', 'tinycolor'],
       'underscore': {
         exports: '_'

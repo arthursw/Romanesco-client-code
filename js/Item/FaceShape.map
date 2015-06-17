@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "FaceShape.js",
+  "sourceRoot": "../..",
+  "sources": [
+    "coffee/Item/FaceShape.coffee"
+  ],
+  "names": [],
+  "mappings": ";AAuEiB;AAAA;AAAA"
+}

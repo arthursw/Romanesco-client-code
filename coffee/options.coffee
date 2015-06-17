@@ -1,12 +1,10 @@
 define [
-	'utils', 'tinycolor', 'gui', 'colorpickersliders', 'jquery', 'paper'
+	'utils', 'tinycolor', 'gui', 'colorpickersliders', 'jquery'
 ], (utils, tinycolor, GUI) ->
 
 	g = utils.g()
 	window.tinycolor = tinycolor
 
-	paper.install(window)
-	g.templatesJ = $("#templates")
 
 	# --- Options --- #
 

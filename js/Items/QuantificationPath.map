@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "QuantificationPath.js",
+  "sourceRoot": "../..",
+  "sources": [
+    "coffee/Items/QuantificationPath.coffee"
+  ],
+  "names": [],
+  "mappings": ";AAs5BmB;AAAA;AAAA"
+}

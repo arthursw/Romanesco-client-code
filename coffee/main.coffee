@@ -14,9 +14,9 @@ define [
 	'Item/lock'
 	'Item/path'
 	'Tool/tools'
-	'mod'
+	'city'
+	'code'
 	'rasterizer'
-	'editor'
 	'sound'
 	'modal'
 	'jquery'
@@ -26,8 +26,8 @@ define [
 	'tween'
 	'typeahead'
 	'modal'
-	'ace'
 	'jqtree'
+	'ace'
 ], (utils, paper, CoffeeScript) ->
 
 	g = utils.g()
@@ -63,153 +63,6 @@ define [
 
 	###
 
-	g.modifyCity = (event)->
-
-		event.stopPropagation()
-		buttonJ = $(this)
-		parentJ = buttonJ.parents('tr:first')
-		name = parentJ.attr('data-name')
-		isPublic = parseInt(parentJ.attr('data-public'))
-		pk = parentJ.attr('data-pk')
-
-		updateCity = (data)->
-
-			callback = (result)->
-				modal = g.RModal.getModalByTitle('Modify city')
-				modal.hide()
-				if not g.checkError(result) then return
-				city = JSON.parse(result.city)
-				g.romanesco_alert "City successfully renamed to: " + city.name, "info"
-				modalBodyJ = g.RModal.getModalByTitle('Open city').modalBodyJ
-				rowJ = modalBodyJ.find('[data-pk="' + city._id.$oid + '"]')
-				rowJ.attr('data-name', city.name)
-				rowJ.attr('data-public', Number(city.public or 0))
-				rowJ.find('.name').text(city.name)
-				rowJ.find('.public').text(if city.public then 'Public' else 'Private')
-				return
-
-			Dajaxice.draw.updateCity(callback, pk: data.data.pk, name: data.name, public: data.public )
-			return
-
-		modal = g.RModal.createModal(title: 'Modify city', submit: updateCity, data: { pk: pk }, postSubmit: 'load' )
-		modal.addTextInput( name: 'name', label: 'Name', defaultValue: name, required: true, submitShortcut: true )
-		modal.addCheckbox( name: 'public', label: 'Public', helpMessage: "Public cities will be accessible by anyone.", defaultValue: isPublic )
-		modal.show()
-
-		# event.stopPropagation()
-		# buttonJ = $(this)
-		# parentJ = buttonJ.parents('tr:first')
-		# parentJ.find('input.name').show()
-		# parentJ.find('input.public').attr('disabled', false)
-		# buttonJ.text('Ok')
-		# buttonJ.off('click').click (event)->
-		# 	event.stopPropagation()
-		# 	buttonJ = $(this)
-		# 	parentJ = buttonJ.parents('tr:first')
-		# 	inputJ = parentJ.find('input.name')
-		# 	publicJ = parentJ.find('input.public')
-		# 	pk = parentJ.attr('data-pk')
-		# 	newName = inputJ.val()
-		# 	isPublic = publicJ.is(':checked')
-
-		# 	callback = (result)->
-		# 		if not g.checkError(result) then return
-		# 		city = JSON.parse(result.city)
-		# 		g.romanesco_alert "City successfully renamed to: " + city.name, "info"
-		# 		return
-
-		# 	Dajaxice.draw.updateCity(callback, pk: pk, name: newName, 'public': isPublic )
-		# 	inputJ.hide()
-		# 	publicJ.attr('disabled', true)
-		# 	buttonJ.off('click').click(g.modifyCity)
-		# 	return
-
-		return
-
-	g.loadCities = (result)->
-		if not g.checkError(result) then return
-		userCities = JSON.parse(result.userCities)
-		publicCities = JSON.parse(result.publicCities)
-
-		modal = g.RModal.getModalByTitle('Open city')
-		modal.removeProgressBar()
-		modalBodyJ = modal.modalBodyJ
-
-		for citiesList, i in [userCities, publicCities]
-
-			if i==0 and userCities.length>0
-				titleJ = $('<h3>').text('Your cities')
-				modalBodyJ.append(titleJ)
-				# tdJ.append(titleJ)
-			else
-				titleJ = $('<h3>').text('Public cities')
-				modalBodyJ.append(titleJ)
-				# tdJ.append(titleJ)
-
-			tableJ = $('<table>').addClass("table table-hover").css( width: "100%" )
-			tbodyJ = $('<tbody>')
-
-			for city in citiesList
-				rowJ = $("<tr>").attr('data-name', city.name).attr('data-owner', city.owner).attr('data-pk', city._id.$oid).attr('data-public', Number(city.public or 0))
-				td1J = $('<td>')
-				td2J = $('<td>')
-				td3J = $('<td>')
-				# rowJ.css( display: 'inline-block' )
-				nameJ = $("<span class='name'>").text(city.name)
-
-				# date = new Date(city.date)
-				# dateJ = $("<div>").text(date.toLocaleString())
-				td1J.append(nameJ)
-				# rowJ.append(dateJ)
-				if i==0
-					publicJ = $("<span class='public'>").text(if city.public then 'Public' else 'Private')
-					td2J.append(publicJ)
-
-					modifyButtonJ = $('<button class="btn btn-default">').text('Modify')
-					modifyButtonJ.click(g.modifyCity)
-
-					deleteButtonJ = $('<button class="btn  btn-default">').text('Delete')
-					deleteButtonJ.click (event)->
-						event.stopPropagation()
-						name = $(this).parents('tr:first').attr('data-name')
-						Dajaxice.draw.deleteCity(g.checkError, name: name)
-						return
-					td3J.append(modifyButtonJ)
-					td3J.append(deleteButtonJ)
-
-				loadButtonJ = $('<button class="btn  btn-primary">').text('Load')
-				loadButtonJ.click ()->
-					name = $(this).parents('tr:first').attr('data-name')
-					owner = $(this).parents('tr:first').attr('data-owner')
-					g.loadCity(name, owner)
-					return
-
-				td3J.append(loadButtonJ)
-				rowJ.append(td1J, td2J, td3J)
-				tbodyJ.append(rowJ)
-
-				tableJ.append(tbodyJ)
-				modalBodyJ.append(tableJ)
-
-		return
-
-	g.loadCityFromServer = (result)->
-		g.RModal.getModalByTitle('Create city')?.hide()
-		if not g.checkError(result) then return
-		city = JSON.parse(result.city)
-		g.loadCity(city.name, city.owner)
-		return
-
-	g.loadCity = (name, owner)->
-		g.RModal.getModalByTitle('Open city')?.hide()
-		g.unload()
-		g.city =
-			owner: owner
-			name: name
-			site: null
-		g.load()
-		g.updateHash()
-		return
 
 	## Init tools
 	# - init jQuery elements related to the tools
@@ -274,13 +127,13 @@ define [
 		new g.ScreenshotTool()
 		new g.GradientTool()
 
-		g.modules = {}
+		# g.modules = {}
 		# path tools
 		for pathClass in g.pathClasses
 			pathTool = new g.PathTool(pathClass)
-			g.modules[pathTool.name] = { name: pathTool.name, iconURL: pathTool.RPath.iconURL, source: pathTool.RPath.source, description: pathTool.RPath.description, owner: 'Romanesco', thumbnailURL: pathTool.RPath.thumbnailURL, accepted: true, coreModule: true, category: pathTool.RPath.category }
+			# g.modules[pathTool.name] = { name: pathTool.name, iconURL: pathTool.RPath.iconURL, source: pathTool.RPath.source, description: pathTool.RPath.description, owner: 'Romanesco', thumbnailURL: pathTool.RPath.thumbnailURL, accepted: true, coreModule: true, category: pathTool.RPath.category }
 
-		g.initializeModules()
+		# g.initializeModules()
 
 		# # init tool typeahead
 		# initToolTypeahead = ()->
@@ -590,9 +443,6 @@ define [
 												# used to get mouse position on a key event
 		g.hiddenDivs = []
 
-		g.DajaxiceXMLHttpRequest = window.XMLHttpRequest
-
-		window.XMLHttpRequest = window.RXMLHttpRequest
 		# initialize sort
 
 		g.itemListsJ = $("#RItems .layers")
@@ -773,39 +623,39 @@ define [
 
 		# load path source code
 
-		xmlhttp = new RXMLHttpRequest()
-		url = g.romanescoURL + "static/romanesco-client-code/coffee/Item/path.coffee"
+		# xmlhttp = new RXMLHttpRequest()
+		# url = g.romanescoURL + "static/romanesco-client-code/coffee/Item/path.coffee"
 
-		xmlhttp.onreadystatechange = ()->
-			if xmlhttp.readyState == 4 and xmlhttp.status == 200
-				sources = xmlhttp.responseText
+		# xmlhttp.onreadystatechange = ()->
+		# 	if xmlhttp.readyState == 4 and xmlhttp.status == 200
+		# 		sources = xmlhttp.responseText
 
-				lines = sources.split(/\n/)
-				expressions = CoffeeScript.nodes(sources).expressions
+		# 		lines = sources.split(/\n/)
+		# 		expressions = CoffeeScript.nodes(sources).expressions
 
-				classMap = {}
-				for pathClass in g.pathClasses
-					classMap[pathClass.name] = pathClass
+		# 		classMap = {}
+		# 		for pathClass in g.pathClasses
+		# 			classMap[pathClass.name] = pathClass
 
-				classExpressions = expressions[0].args[1].body.expressions
-				for expression in classExpressions
-					className = expression.variable?.base?.value
-					if className? and classMap[className]? and expression.locationData?
-						start = expression.locationData.first_line
-						end = expression.locationData.last_line-1
-						# remove tab:
-						for i in [start .. end]
-							lines[i] = lines[i].substring(1)
-						source = lines[start .. end].join("\n")
-						# automatically create new PathTool
-						source += "\ntool = new g.PathTool(#{className}, true)"
-						pathClass = classMap[className]
-						pathClass.source = source
-						g.modules[pathClass.rname]?.source = source
-			return
+		# 		classExpressions = expressions[0].args[1].body.expressions
+		# 		for expression in classExpressions
+		# 			className = expression.variable?.base?.value
+		# 			if className? and classMap[className]? and expression.locationData?
+		# 				start = expression.locationData.first_line
+		# 				end = expression.locationData.last_line-1
+		# 				# remove tab:
+		# 				for i in [start .. end]
+		# 					lines[i] = lines[i].substring(1)
+		# 				source = lines[start .. end].join("\n")
+		# 				# automatically create new PathTool
+		# 				source += "\ntool = new g.PathTool(#{className}, true)"
+		# 				pathClass = classMap[className]
+		# 				pathClass.source = source
+		# 				g.modules[pathClass.rname]?.source = source
+		# 	return
 
-		xmlhttp.open("GET", url, true)
-		xmlhttp.send()
+		# xmlhttp.open("GET", url, true)
+		# xmlhttp.send()
 
 		# not working, because of dajaxice
 		# $.ajax( url: g.romanescoURL + "static/coffee/path.coffee", cache: false )
@@ -841,7 +691,6 @@ define [
 
 		if not g.rasterizerMode
 			g.initParameters()
-			g.initCodeEditor()
 			g.initSocket()
 			initTools()
 			$(".mCustomScrollbar").mCustomScrollbar( keyboard: false )
@@ -1032,7 +881,7 @@ define [
 			# 		item.updateSelect?(event)
 
 			# update code editor width
-			g.codeEditor.mousemove(event)
+			g.codeEditor?.onMouseMove(event)
 
 			if g.currentDiv?
 				paperEvent = g.jEventToPaperEvent(event, g.previousMousePosition, g.initialMousePosition, 'mousemove')
@@ -1047,7 +896,7 @@ define [
 			if g.stageJ.hasClass("has-tool-box") and not $(event.target).parents('.tool-box').length>0
 				g.hideToolBox()
 
-			g.codeEditor.mouseup(event)
+			g.codeEditor?.onMouseUp(event)
 
 			if g.selectedTool.name == 'Move'
 				# g.selectedTool.end(g.previousMousePosition.equals(g.initialMousePosition))
@@ -1086,7 +935,20 @@ define [
 			g.RMoveBy(new Point(-event.deltaX, event.deltaY))
 			return
 
+		g.fileManager = new g.FileManager()
 
+		return
+
+	g.showCodeEditor = (source)->
+		if not g.codeEditor?
+			require ['editor'], (CodeEditor)->
+				g.codeEditor = new CodeEditor()
+				if source then g.codeEditor.setSource(source)
+				g.codeEditor.open()
+				return
+		else
+			if source then g.codeEditor.setSource(source)
+			g.codeEditor.open()
 		return
 
 	return
