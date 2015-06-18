@@ -2,129 +2,127 @@
 (function() {
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
-  define(['utils', 'socketio', 'jquery', 'paper', 'scrollbar'], function(utils, ioo) {
-    var g;
-    g = utils.g();
-    g.updateRoom = function() {
+  define(['utils', 'socketio'], function(utils, ioo) {
+    R.updateRoom = function() {
       var room;
-      room = g.getChatRoom();
-      if (g.room !== room) {
-        g.chatRoomJ.empty().append("<span>Room: </span>" + room);
-        g.chatSocket.emit("join", room);
-        return g.room = room;
+      room = R.getChatRoom();
+      if (R.room !== room) {
+        R.chatRoomJ.empty().append("<span>Room: </span>" + room);
+        R.chatSocket.emit("join", room);
+        return R.room = room;
       }
     };
-    g.startChatting = function(username, realUsername, focusOnChat) {
+    R.startChatting = function(username, realUsername, focusOnChat) {
       if (realUsername == null) {
         realUsername = true;
       }
       if (focusOnChat == null) {
         focusOnChat = true;
       }
-      return g.chatSocket.emit("nickname", username, function(set) {
+      return R.chatSocket.emit("nickname", username, function(set) {
         if (set) {
-          window.clearTimeout(g.chatConnectionTimeout);
-          g.chatMainJ.removeClass("hidden");
-          g.chatMainJ.find("#chatConnectingMessage").addClass("hidden");
+          window.clearTimeout(R.chatConnectionTimeout);
+          R.chatMainJ.removeClass("hidden");
+          R.chatMainJ.find("#chatConnectingMessage").addClass("hidden");
           if (realUsername) {
-            g.chatJ.find("#chatLogin").addClass("hidden");
+            R.chatJ.find("#chatLogin").addClass("hidden");
           } else {
-            g.chatJ.find("#chatLogin p.default-username-message").html("You are logged as <strong>" + username + "</strong>");
+            R.chatJ.find("#chatLogin p.default-username-message").html("You are logged as <strong>" + username + "</strong>");
           }
-          g.chatJ.find("#chatUserNameError").addClass("hidden");
+          R.chatJ.find("#chatUserNameError").addClass("hidden");
           if (focusOnChat) {
-            return g.chatMessageJ.focus();
+            return R.chatMessageJ.focus();
           }
         } else {
-          return g.chatJ.find("#chatUserNameError").removeClass("hidden");
+          return R.chatJ.find("#chatUserNameError").removeClass("hidden");
         }
       });
     };
-    g.initSocket = function() {
+    R.initSocket = function() {
       var addMessage, adjectives, connectionError, sendMessage, submitChatUserName, things, username, usernameJ;
-      g.chatJ = g.sidebarJ.find("#chatContent");
-      g.chatMainJ = g.chatJ.find("#chatMain");
-      g.chatRoomJ = g.chatMainJ.find("#chatRoom");
-      g.chatUsernamesJ = g.chatMainJ.find("#chatUserNames");
-      g.chatMessagesJ = g.chatMainJ.find("#chatMessages");
-      g.chatMessageJ = g.chatMainJ.find("#chatSendMessageInput");
-      g.chatMessageJ.blur();
+      R.chatJ = R.sidebarJ.find("#chatContent");
+      R.chatMainJ = R.chatJ.find("#chatMain");
+      R.chatRoomJ = R.chatMainJ.find("#chatRoom");
+      R.chatUsernamesJ = R.chatMainJ.find("#chatUserNames");
+      R.chatMessagesJ = R.chatMainJ.find("#chatMessages");
+      R.chatMessageJ = R.chatMainJ.find("#chatSendMessageInput");
+      R.chatMessageJ.blur();
       addMessage = function(message, from) {
         var author;
         if (from == null) {
           from = null;
         }
         if (from != null) {
-          author = from === g.me ? "me" : from;
-          g.chatMessagesJ.append($("<p>").append($("<b>").text(author + ": "), message));
+          author = from === R.me ? "me" : from;
+          R.chatMessagesJ.append($("<p>").append($("<b>").text(author + ": "), message));
         } else {
-          g.chatMessagesJ.append($("<p>").append(message));
+          R.chatMessagesJ.append($("<p>").append(message));
         }
-        g.chatMessageJ.val('');
-        if (from === g.me) {
+        R.chatMessageJ.val('');
+        if (from === R.me) {
           $("#chatMessagesScroll").mCustomScrollbar("scrollTo", "bottom");
           $(".sidebar-scrollbar.chatMessagesScroll").mCustomScrollbar("scrollTo", "bottom");
         } else if ($(document.activeElement).parents("#Chat").length > 0) {
           $("#chatMessagesScroll").mCustomScrollbar("scrollTo", "bottom");
         }
       };
-      g.chatSocket = io.connect("/chat");
-      g.chatSocket.on("connect", function() {
-        g.updateRoom();
+      R.chatSocket = io.connect("/chat");
+      R.chatSocket.on("connect", function() {
+        R.updateRoom();
       });
-      g.chatSocket.on("announcement", function(msg) {
+      R.chatSocket.on("announcement", function(msg) {
         addMessage(msg);
       });
-      g.chatSocket.on("nicknames", function(nicknames) {
+      R.chatSocket.on("nicknames", function(nicknames) {
         var i;
-        g.chatUsernamesJ.empty().append($("<span>Online: </span>"));
+        R.chatUsernamesJ.empty().append($("<span>Online: </span>"));
         for (i in nicknames) {
-          g.chatUsernamesJ.append($("<b>").text(i > 0 ? ', ' + nicknames[i] : nicknames[i]));
+          R.chatUsernamesJ.append($("<b>").text(i > 0 ? ', ' + nicknames[i] : nicknames[i]));
         }
       });
-      g.chatSocket.on("msg_to_room", function(from, msg) {
+      R.chatSocket.on("msg_to_room", function(from, msg) {
         addMessage(msg, from);
       });
-      g.chatSocket.on("reconnect", function() {
-        g.chatMessagesJ.remove();
+      R.chatSocket.on("reconnect", function() {
+        R.chatMessagesJ.remove();
         addMessage("Reconnected to the server", "System");
       });
-      g.chatSocket.on("reconnecting", function() {
+      R.chatSocket.on("reconnecting", function() {
         addMessage("Attempting to re-connect to the server", "System");
       });
-      g.chatSocket.on("error", function(e) {
+      R.chatSocket.on("error", function(e) {
         addMessage((e ? e : "A unknown error occurred"), "System");
       });
       sendMessage = function() {
-        g.chatSocket.emit("user message", g.chatMessageJ.val());
-        addMessage(g.chatMessageJ.val(), g.me);
+        R.chatSocket.emit("user message", R.chatMessageJ.val());
+        addMessage(R.chatMessageJ.val(), R.me);
       };
-      g.chatMainJ.find("#chatSendMessageSubmit").submit(function() {
+      R.chatMainJ.find("#chatSendMessageSubmit").submit(function() {
         return sendMessage();
       });
-      g.chatMessageJ.keypress(function(event) {
+      R.chatMessageJ.keypress(function(event) {
         if (event.which === 13) {
           event.preventDefault();
           return sendMessage();
         }
       });
       connectionError = function() {
-        return g.chatMainJ.find("#chatConnectingMessage").text("Impossible to connect to chat.");
+        return R.chatMainJ.find("#chatConnectingMessage").text("Impossible to connect to chat.");
       };
-      g.chatConnectionTimeout = setTimeout(connectionError, 2000);
-      if (g.chatJ.find("#chatUserNameInput").length > 0) {
-        g.chatJ.find("a.sign-in").click(function(event) {
+      R.chatConnectionTimeout = setTimeout(connectionError, 2000);
+      if (R.chatJ.find("#chatUserNameInput").length > 0) {
+        R.chatJ.find("a.sign-in").click(function(event) {
           $("#user-login-group > button").click();
           event.preventDefault();
           return false;
         });
-        g.chatJ.find("a.change-username").click(function(event) {
+        R.chatJ.find("a.change-username").click(function(event) {
           $("#chatUserName").show();
           $("#chatUserNameInput").focus();
           event.preventDefault();
           return false;
         });
-        usernameJ = g.chatJ.find("#chatUserName");
+        usernameJ = R.chatJ.find("#chatUserName");
         submitChatUserName = function(username, focusOnChat) {
           if (focusOnChat == null) {
             focusOnChat = true;
@@ -133,7 +131,7 @@
           if (username == null) {
             username = usernameJ.find('#chatUserNameInput').val();
           }
-          g.startChatting(username, false, focusOnChat);
+          R.startChatting(username, false, focusOnChat);
         };
         usernameJ.find('#chatUserNameInput').keypress(function(event) {
           if (event.which === 13) {
@@ -146,30 +144,30 @@
         });
         adjectives = ["Cool", "Masked", "Bloody", "Super", "Mega", "Giga", "Ultra", "Big", "Blue", "Black", "White", "Red", "Purple", "Golden", "Silver", "Dangerous", "Crazy", "Fast", "Quick", "Little", "Funny", "Extreme", "Awsome", "Outstanding", "Crunchy", "Vicious", "Zombie", "Funky", "Sweet"];
         things = ["Hamster", "Moose", "Lama", "Duck", "Bear", "Eagle", "Tiger", "Rocket", "Bullet", "Knee", "Foot", "Hand", "Fox", "Lion", "King", "Queen", "Wizard", "Elephant", "Thunder", "Storm", "Lumberjack", "Pistol", "Banana", "Orange", "Pinapple", "Sugar", "Leek", "Blade"];
-        username = adjectives.random() + " " + things.random();
+        username = Utils.Array.random(adjectives) + " " + Utils.Array.random(things);
         submitChatUserName(username, false);
       }
-      g.chatSocket.on("car move", function(user, position, rotation, speed) {
+      R.chatSocket.on("car move", function(user, position, rotation, speed) {
         var _base;
-        if (g.ignoreSockets) {
+        if (R.ignoreSockets) {
           return;
         }
-        if ((_base = g.cars)[user] == null) {
+        if ((_base = R.cars)[user] == null) {
           _base[user] = new Raster("/static/images/car.png");
         }
-        g.cars[user].position = new Point(position);
-        g.cars[user].rotation = rotation;
-        g.cars[user].speed = speed;
-        g.cars[user].rLastUpdate = Date.now();
+        R.cars[user].position = new P.Point(position);
+        R.cars[user].rotation = rotation;
+        R.cars[user].speed = speed;
+        R.cars[user].rLastUpdate = Date.now();
       });
-      return g.chatSocket.on("bounce", function(data) {
+      return R.chatSocket.on("bounce", function(data) {
         var allowedFunctions, id, item, itemClass, itemMustBeRasterized, rFunction, rasterizeItem, tool, _ref, _ref1, _ref2, _ref3;
-        if (g.ignoreSockets) {
+        if (R.ignoreSockets) {
           return;
         }
         if ((data["function"] != null) && (data["arguments"] != null)) {
           if (data.tool != null) {
-            tool = g.tools[data.tool];
+            tool = R.tools[data.tool];
             if ((_ref = data["function"]) !== 'begin' && _ref !== 'update' && _ref !== 'end' && _ref !== 'createPath') {
               console.log('Error: not authorized to call' + data["function"]);
               return;
@@ -180,7 +178,7 @@
               rFunction.apply(tool, data["arguments"]);
             }
           } else if (data.itemPk != null) {
-            item = g.items[data.itemPk];
+            item = R.items[data.itemPk];
             if ((item != null) && (item.currentCommand == null)) {
               allowedFunctions = ['setRectangle', 'setRotation', 'moveTo', 'setParameter', 'modifyPoint', 'modifyPointType', 'modifySpeed', 'setPK', 'delete', 'create', 'addPoint', 'deletePoint', 'modifyControlPath', 'setText'];
               if (_ref1 = data["function"], __indexOf.call(allowedFunctions, _ref1) < 0) {
@@ -194,9 +192,9 @@
               }
               id = 'rasterizeItem-' + item.pk;
               itemMustBeRasterized = ((_ref2 = data["function"]) !== 'setPK' && _ref2 !== 'create') && !item.drawing.visible;
-              if ((g.updateTimeout[id] == null) && itemMustBeRasterized) {
-                g.rasterizer.drawItems();
-                g.rasterizer.rasterize(item, true);
+              if ((R.updateTimeout[id] == null) && itemMustBeRasterized) {
+                R.rasterizer.drawItems();
+                R.rasterizer.rasterize(item, true);
               }
               item.drawing.visible = true;
               item.socketAction = true;
@@ -205,10 +203,10 @@
               if (itemMustBeRasterized && ((_ref3 = data["function"]) !== 'delete')) {
                 rasterizeItem = function() {
                   if (!item.currentCommand) {
-                    g.rasterizer.rasterize(item);
+                    R.rasterizer.rasterize(item);
                   }
                 };
-                g.deferredExecution(rasterizeItem, id, 1000);
+                Utils.deferredExecution(rasterizeItem, id, 1000);
               }
             }
           } else if (data.itemClass && data["function"] === 'create') {
@@ -218,7 +216,7 @@
               itemClass.create.apply(itemClass, data["arguments"]);
             }
           }
-          view.update();
+          P.view.update();
         }
       });
     };
@@ -226,4 +224,4 @@
 
 }).call(this);
 
-//# sourceMappingURL=socket.map
+//# sourceMappingURL=Socket.map

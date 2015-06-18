@@ -4,38 +4,37 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['utils', 'Item/item', 'jquery', 'paper'], function(utils) {
-    var RLink, RLock, RVideoGame, RWebsite, g;
-    g = utils.g();
-    RLock = (function(_super) {
-      __extends(RLock, _super);
+  define(['Item'], function(Item) {
+    var Lock;
+    Lock = (function(_super) {
+      __extends(Lock, _super);
 
-      RLock.rname = 'Lock';
+      Lock.label = 'Lock';
 
-      RLock.object_type = 'lock';
+      Lock.object_type = 'lock';
 
-      RLock.initialize = function(rectangle) {
+      Lock.initialize = function(rectangle) {
         var radioButtons, radioGroupJ, siteURLJ, siteUrlExtractor, submit;
         submit = function(data) {
           var lock;
           switch (data.object_type) {
             case 'lock':
-              lock = new g.RLock(rectangle, data);
+              lock = new Lock(rectangle, data);
               break;
             case 'website':
-              lock = new g.RWebsite(rectangle, data);
+              lock = new Lock.Website(rectangle, data);
               break;
             case 'video-game':
-              lock = new g.RVideoGame(rectangle, data);
+              lock = new Lock.VideoGame(rectangle, data);
               break;
             case 'link':
-              lock = new g.RLink(rectangle, data);
+              lock = new Lock.Link(rectangle, data);
           }
           lock.save(true);
           lock.update('rectangle');
           lock.select();
         };
-        g.RModal.initialize('Create a locked area', submit);
+        R.RModal.initialize('Create a locked area', submit);
         radioButtons = [
           {
             value: 'lock',
@@ -55,25 +54,25 @@
             linked: ['restrictArea', 'disableToolbar', 'siteName']
           }
         ];
-        radioGroupJ = g.RModal.addRadioGroup('object_type', radioButtons);
-        g.RModal.addCheckbox('restrictArea', 'Restrict area', "Users visiting your website will not be able to go out of the site boundaries.");
-        g.RModal.addCheckbox('disableToolbar', 'Disable toolbar', "Users will not have access to the toolbar on your site.");
-        g.RModal.addTextInput('linkName', 'Site name', 'text', '', 'Site name');
-        g.RModal.addTextInput('url', 'http://', 'url', 'url', 'URL');
+        radioGroupJ = R.RModal.addRadioGroup('object_type', radioButtons);
+        R.RModal.addCheckbox('restrictArea', 'Restrict area', "Users visiting your website will not be able to go out of the site boundaries.");
+        R.RModal.addCheckbox('disableToolbar', 'Disable toolbar', "Users will not have access to the toolbar on your site.");
+        R.RModal.addTextInput('linkName', 'Site name', 'text', '', 'Site name');
+        R.RModal.addTextInput('url', 'http://', 'url', 'url', 'URL');
         siteURLJ = $("<div class=\"form-group siteName\">\n	<label for=\"modalSiteName\">Site name</label>\n	<div class=\"input-group\">\n		<span class=\"input-group-addon\">romanesco.city/#</span>\n		<input id=\"modalSiteName\" type=\"text\" class=\"name form-control\" placeholder=\"Site name\">\n	</div>\n</div>");
         siteUrlExtractor = function(data, siteURLJ) {
           data.siteURL = siteURLJ.find("#modalSiteName").val();
           return true;
         };
-        g.RModal.addCustomContent('siteName', siteURLJ, siteUrlExtractor);
-        g.RModal.addTextInput('message', 'Enter the message you want others to see when they look at this link.', 'text', '', 'Message', true);
+        R.RModal.addCustomContent('siteName', siteURLJ, siteUrlExtractor);
+        R.RModal.addTextInput('message', 'Enter the message you want others to see when they look at this link.', 'text', '', 'Message', true);
         radioGroupJ.click(function(event) {
           var extractor, lockType, name, radioButton, _i, _len, _ref;
           lockType = radioGroupJ.find('input[type=radio][name=object_type]:checked')[0].value;
           for (_i = 0, _len = radioButtons.length; _i < _len; _i++) {
             radioButton = radioButtons[_i];
             if (radioButton.value === lockType) {
-              _ref = g.RModal.extractors;
+              _ref = R.RModal.extractors;
               for (name in _ref) {
                 extractor = _ref[name];
                 if (radioButton.linked.indexOf(name) >= 0) {
@@ -86,13 +85,126 @@
           }
         });
         radioGroupJ.click();
-        g.RModal.show();
+        R.RModal.show();
         radioGroupJ.find('input:first').focus();
       };
 
-      RLock.getLockWhichContains = function(rectangle) {
+      Lock.highlightStage = function(color) {
+        R.backgroundRectangle = new P.Path.Rectangle(P.view.bounds);
+        R.backgroundRectangle.fillColor = color;
+        R.backgroundRectangle.sendToBack();
+      };
+
+      Lock.unhighlightStage = function() {
+        var _ref;
+        if ((_ref = R.backgroundRectangle) != null) {
+          _ref.remove();
+        }
+        R.backgroundRectangle = null;
+      };
+
+      Lock.highlightValidity = function(item) {
+        this.validatePosition(item, null, true);
+      };
+
+      Lock.validatePosition = function(item, bounds, highlight) {
+        var lock, locks, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3, _ref4;
+        if (bounds == null) {
+          bounds = null;
+        }
+        if (highlight == null) {
+          highlight = false;
+        }
+        if (R.RSelectionRectangle.prototype.isPrototypeOf(item)) {
+          return true;
+        }
+        if ((typeof item.getDrawingBounds === "function" ? item.getDrawingBounds() : void 0) > R.rasterizer.maxArea()) {
+          if (highlight) {
+            R.alertManager.alert('The path is too big.', 'Warning');
+          } else {
+            return false;
+          }
+        }
+        if (bounds == null) {
+          bounds = item.getBounds();
+        }
+        if ((_ref = R.limitPathV) != null) {
+          _ref.strokeColor = 'green';
+        }
+        if ((_ref1 = R.limitPathH) != null) {
+          _ref1.strokeColor = 'green';
+        }
+        _ref2 = R.locks;
+        for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+          lock = _ref2[_i];
+          lock.unhighlight();
+        }
+        this.unhighlightStage();
+        if (Grid.rectangleOverlapsTwoPlanets(bounds)) {
+          if (highlight) {
+            if ((_ref3 = R.limitPathV) != null) {
+              _ref3.strokeColor = 'red';
+            }
+            if ((_ref4 = R.limitPathH) != null) {
+              _ref4.strokeColor = 'red';
+            }
+          } else {
+            return false;
+          }
+        }
+        locks = Lock.getLocksWhichIntersect(bounds);
+        for (_j = 0, _len1 = locks.length; _j < _len1; _j++) {
+          lock = locks[_j];
+          if (Lock.prototype.isPrototypeOf(item)) {
+            if (item !== lock) {
+              if (highlight) {
+                lock.highlight('red');
+              } else {
+                return false;
+              }
+            }
+          } else {
+            if (lock.getBounds().contains(bounds) && R.me === lock.owner) {
+              if (item.lock !== lock) {
+                if (highlight) {
+                  lock.highlight('green');
+                } else {
+                  lock.addItem(item);
+                }
+              }
+            } else {
+              if (highlight) {
+                lock.highlight('red');
+              } else {
+                return false;
+              }
+            }
+          }
+        }
+        if (locks.length === 0) {
+          if (item.lock != null) {
+            if (highlight) {
+              this.highlightStage('green');
+            } else {
+              Item.addItemToStage(item);
+            }
+          }
+        }
+        if (Lock.prototype.isPrototypeOf(item)) {
+          if (!item.containsChildren()) {
+            if (highlight) {
+              item.highlight('red');
+            } else {
+              return false;
+            }
+          }
+        }
+        return true;
+      };
+
+      Lock.getLockWhichContains = function(rectangle) {
         var lock, _i, _len, _ref;
-        _ref = g.locks;
+        _ref = R.locks;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           lock = _ref[_i];
           if (lock.getBounds().contains(rectangle)) {
@@ -102,10 +214,10 @@
         return null;
       };
 
-      RLock.getLocksWhichIntersect = function(rectangle) {
+      Lock.getLocksWhichIntersect = function(rectangle) {
         var lock, locks, _i, _len, _ref;
         locks = [];
-        _ref = g.locks;
+        _ref = R.locks;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           lock = _ref[_i];
           if (lock.getBounds().intersects(rectangle)) {
@@ -115,14 +227,14 @@
         return locks;
       };
 
-      RLock.initializeParameters = function() {
+      Lock.initializeParameters = function() {
         var fillColor, parameters, strokeColor, strokeWidth;
-        parameters = RLock.__super__.constructor.initializeParameters.call(this);
-        strokeWidth = $.extend(true, {}, g.parameters.strokeWidth);
+        parameters = Lock.__super__.constructor.initializeParameters.call(this);
+        strokeWidth = $.extend(true, {}, R.parameters.strokeWidth);
         strokeWidth["default"] = 1;
-        strokeColor = $.extend(true, {}, g.parameters.strokeColor);
+        strokeColor = $.extend(true, {}, R.parameters.strokeColor);
         strokeColor["default"] = 'black';
-        fillColor = $.extend(true, {}, g.parameters.fillColor);
+        fillColor = $.extend(true, {}, R.parameters.fillColor);
         fillColor["default"] = 'white';
         fillColor.defaultCheck = true;
         fillColor.defaultFunction = null;
@@ -135,10 +247,10 @@
             label: 'Link module',
             "default": function() {
               var item, _i, _len, _ref;
-              _ref = g.selectedItems;
+              _ref = R.selectedItems;
               for (_i = 0, _len = _ref.length; _i < _len; _i++) {
                 item = _ref[_i];
-                if (g.RLock.prototype.isPrototypeOf(item)) {
+                if (Lock.prototype.isPrototypeOf(item)) {
                   item.askForModule();
                 }
               }
@@ -146,7 +258,7 @@
             initializeController: function(controller) {
               var firstItem, spanJ, _ref;
               spanJ = $(controller.domElement).find('.property-name');
-              firstItem = g.selectedItems.first();
+              firstItem = R.selectedItems[0];
               if ((firstItem != null ? (_ref = firstItem.data) != null ? _ref.moduleName : void 0 : void 0) != null) {
                 spanJ.text('Change module (' + firstItem.data.moduleName + ')');
               }
@@ -156,9 +268,11 @@
         return parameters;
       };
 
-      RLock.parameters = RLock.initializeParameters();
+      Lock.parameters = Lock.initializeParameters();
 
-      function RLock(rectangle, data, pk, owner, date, modulePk) {
+      Lock.createTool(Lock);
+
+      function Lock(rectangle, data, pk, owner, date, modulePk) {
         var item, pkString, title, titleJ, _i, _len, _ref, _ref1;
         this.rectangle = rectangle;
         this.data = data != null ? data : null;
@@ -169,14 +283,14 @@
         this.select = __bind(this.select, this);
         this.update = __bind(this.update, this);
         this.saveCallback = __bind(this.saveCallback, this);
-        RLock.__super__.constructor.call(this, this.data, this.pk);
-        g.locks.push(this);
+        Lock.__super__.constructor.call(this, this.data, this.pk);
+        R.locks.push(this);
         this.group.name = 'lock group';
         this.draw();
-        g.lockLayer.addChild(this.group);
+        R.lockLayer.addChild(this.group);
         this.sortedPaths = [];
         this.sortedDivs = [];
-        this.itemListsJ = g.templatesJ.find(".layer").clone();
+        this.itemListsJ = R.templatesJ.find(".layer").clone();
         pkString = '' + (this.pk || this.id);
         pkString = pkString.substring(pkString.length - 3);
         title = "Lock ..." + pkString;
@@ -189,17 +303,17 @@
           return function(event) {
             _this.itemListsJ.toggleClass('closed');
             if (!event.shiftKey) {
-              g.deselectAll();
+              Tool.Select.deselectAll();
             }
             _this.select();
           };
         })(this));
         this.itemListsJ.find('.rDiv-list').sortable({
-          stop: g.zIndexSortStop,
+          stop: Item.zIndexSortStop,
           delay: 250
         });
         this.itemListsJ.find('.rPath-list').sortable({
-          stop: g.zIndexSortStop,
+          stop: Item.zIndexSortStop,
           delay: 250
         });
         this.itemListsJ.mouseover((function(_this) {
@@ -212,12 +326,12 @@
             _this.unhighlight();
           };
         })(this));
-        g.itemListsJ.prepend(this.itemListsJ);
-        this.itemListsJ = g.itemListsJ.find(".layer:first");
-        _ref = g.items;
+        R.itemListsJ.prepend(this.itemListsJ);
+        this.itemListsJ = R.itemListsJ.find(".layer:first");
+        _ref = R.items;
         for (item = _i = 0, _len = _ref.length; _i < _len; item = ++_i) {
           pk = _ref[item];
-          if (g.RLock.prototype.isPrototypeOf(item)) {
+          if (Lock.prototype.isPrototypeOf(item)) {
             continue;
           }
           if (item.getBounds().intersects(this.rectangle)) {
@@ -225,10 +339,10 @@
           }
         }
         if ((_ref1 = this.data) != null ? _ref1.loadEntireArea : void 0) {
-          g.entireAreas.push(this);
+          R.entireAreas.push(this);
         }
         if (this.modulePk != null) {
-          Dajaxice.draw.getModuleSource(g.initializeModule, {
+          Dajaxice.draw.getModuleSource(R.initializeModule, {
             pk: this.modulePk,
             accepted: true
           });
@@ -236,17 +350,17 @@
         return;
       }
 
-      RLock.prototype.initializeModule = function() {
+      Lock.prototype.initializeModule = function() {
         var module;
-        if (!g.checkError(result)) {
+        if (!R.loader.checkError(result)) {
           return;
         }
         module = JSON.parse(result.module);
-        g.parentLock = this;
-        g.runModule(module);
+        R.parentLock = this;
+        R.runModule(module);
       };
 
-      RLock.prototype.draw = function() {
+      Lock.prototype.draw = function() {
         if (this.drawing != null) {
           this.drawing.remove();
         }
@@ -254,7 +368,7 @@
           this.raster.remove();
         }
         this.raster = null;
-        this.drawing = new Path.Rectangle(this.rectangle);
+        this.drawing = new P.Path.Rectangle(this.rectangle);
         this.drawing.name = 'rlock background';
         this.drawing.strokeWidth = this.data.strokeWidth > 0 ? this.data.strokeWidth : 1;
         this.drawing.strokeColor = this.data.strokeColor != null ? this.data.strokeColor : 'black';
@@ -263,8 +377,8 @@
         this.group.addChild(this.drawing);
       };
 
-      RLock.prototype.setParameter = function(controller, value, updateGUI, update) {
-        RLock.__super__.setParameter.call(this, controller, value, updateGUI, update);
+      Lock.prototype.setParameter = function(controller, value, updateGUI, update) {
+        Lock.__super__.setParameter.call(this, controller, value, updateGUI, update);
         switch (controller.name) {
           case 'strokeWidth':
           case 'strokeColor':
@@ -277,17 +391,17 @@
         }
       };
 
-      RLock.prototype.save = function(addCreateCommand) {
+      Lock.prototype.save = function(addCreateCommand) {
         var args, data, siteData;
         if (addCreateCommand == null) {
           addCreateCommand = true;
         }
-        if (g.rectangleOverlapsTwoPlanets(this.rectangle)) {
+        if (Grid.rectangleOverlapsTwoPlanets(this.rectangle)) {
           return;
         }
         if (this.rectangle.area === 0) {
           this.remove();
-          g.romanesco_alert("Error: your box is not valid.", "error");
+          R.alertManager.alert("Error: your box is not valid.", "error");
           return;
         }
         data = this.getData();
@@ -298,20 +412,20 @@
         };
         args = {
           city: {
-            city: g.city
+            city: R.city
           },
-          box: g.boxFromRectangle(this.rectangle),
+          box: R.boxFromRectangle(this.rectangle),
           object_type: this.constructor.object_type,
           data: JSON.stringify(data),
           siteData: JSON.stringify(siteData),
           name: data.name
         };
         Dajaxice.draw.saveBox(this.saveCallback, args);
-        RLock.__super__.save.apply(this, arguments);
+        Lock.__super__.save.apply(this, arguments);
       };
 
-      RLock.prototype.saveCallback = function(result) {
-        g.checkError(result);
+      Lock.prototype.saveCallback = function(result) {
+        R.loader.checkError(result);
         if (result.pk == null) {
           this.remove();
           return;
@@ -321,21 +435,21 @@
         if (this.updateAfterSave != null) {
           this.update(this.updateAfterSave);
         }
-        RLock.__super__.saveCallback.apply(this, arguments);
+        Lock.__super__.saveCallback.apply(this, arguments);
       };
 
-      RLock.prototype.update = function(type) {
+      Lock.prototype.update = function(type) {
         var args, item, itemsToUpdate, pk, updateBoxArgs, _i, _len, _ref;
         if (this.pk == null) {
           this.updateAfterSave = type;
           return;
         }
         delete this.updateAfterSave;
-        if (g.rectangleOverlapsTwoPlanets(this.rectangle)) {
+        if (Grid.rectangleOverlapsTwoPlanets(this.rectangle)) {
           return;
         }
         updateBoxArgs = {
-          box: g.boxFromRectangle(this.rectangle),
+          box: R.boxFromRectangle(this.rectangle),
           pk: this.pk,
           object_type: this.object_type,
           name: this.data.name,
@@ -350,10 +464,10 @@
         });
         if (type === 'position' || type === 'rectangle') {
           itemsToUpdate = type === 'position' ? this.children() : [];
-          _ref = g.items;
+          _ref = R.items;
           for (pk in _ref) {
             item = _ref[pk];
-            if (!g.RLock.prototype.isPrototypeOf(item)) {
+            if (!Lock.prototype.isPrototypeOf(item)) {
               if (item.lock !== this && this.rectangle.contains(item.getBounds())) {
                 this.addItem(item);
                 itemsToUpdate.push(item);
@@ -373,33 +487,33 @@
         });
       };
 
-      RLock.prototype.updateCallback = function(results) {
+      Lock.prototype.updateCallback = function(results) {
         var result, _i, _len;
         for (_i = 0, _len = results.length; _i < _len; _i++) {
           result = results[_i];
-          g.checkError(result);
+          R.loader.checkError(result);
         }
       };
 
-      RLock.prototype["delete"] = function() {
+      Lock.prototype["delete"] = function() {
         this.remove();
         if (this.pk == null) {
           return;
         }
         if (!this.socketAction) {
-          Dajaxice.draw.deleteBox(g.checkError, {
+          Dajaxice.draw.deleteBox(R.loader.checkError, {
             'pk': this.pk
           });
         }
-        RLock.__super__["delete"].apply(this, arguments);
+        Lock.__super__["delete"].apply(this, arguments);
       };
 
-      RLock.prototype.setRectangle = function(rectangle, update) {
-        RLock.__super__.setRectangle.call(this, rectangle, update);
-        g.updatePathRectangle(this.drawing, rectangle);
+      Lock.prototype.setRectangle = function(rectangle, update) {
+        Lock.__super__.setRectangle.call(this, rectangle, update);
+        Utils.P.Rectangle.updatePathRectangle(this.drawing, rectangle);
       };
 
-      RLock.prototype.moveTo = function(position, update) {
+      Lock.prototype.moveTo = function(position, update) {
         var delta, item, _i, _len, _ref;
         delta = position.subtract(this.rectangle.center);
         _ref = this.children();
@@ -407,14 +521,14 @@
           item = _ref[_i];
           item.rectangle.center.x += delta.x;
           item.rectangle.center.y += delta.y;
-          if (g.RDiv.prototype.isPrototypeOf(item)) {
+          if (R.RDiv.prototype.isPrototypeOf(item)) {
             item.updateTransform();
           }
         }
-        RLock.__super__.moveTo.call(this, position, update);
+        Lock.__super__.moveTo.call(this, position, update);
       };
 
-      RLock.prototype.containsChildren = function() {
+      Lock.prototype.containsChildren = function() {
         var item, _i, _len, _ref;
         _ref = this.children();
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -426,7 +540,7 @@
         return true;
       };
 
-      RLock.prototype.showChildren = function() {
+      Lock.prototype.showChildren = function() {
         var item, _i, _len, _ref, _ref1;
         _ref = this.children();
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -437,12 +551,12 @@
         }
       };
 
-      RLock.prototype.select = function(updateOptions) {
+      Lock.prototype.select = function(updateOptions) {
         var item, _i, _len, _ref;
         if (updateOptions == null) {
           updateOptions = true;
         }
-        if (!RLock.__super__.select.call(this, updateOptions) || this.owner !== g.me) {
+        if (!Lock.__super__.select.call(this, updateOptions) || this.owner !== R.me) {
           return false;
         }
         _ref = this.children();
@@ -453,7 +567,7 @@
         return true;
       };
 
-      RLock.prototype.remove = function() {
+      Lock.prototype.remove = function() {
         var path, _i, _len, _ref;
         _ref = this.children();
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -462,27 +576,27 @@
         }
         this.itemListsJ.remove();
         this.itemListsJ = null;
-        g.locks.remove(this);
+        Utils.Array.remove(R.locks, this);
         this.drawing = null;
-        RLock.__super__.remove.apply(this, arguments);
+        Lock.__super__.remove.apply(this, arguments);
       };
 
-      RLock.prototype.children = function() {
+      Lock.prototype.children = function() {
         return this.sortedDivs.concat(this.sortedPaths);
       };
 
-      RLock.prototype.addItem = function(item) {
-        g.addItemTo(item, this);
+      Lock.prototype.addItem = function(item) {
+        Item.addItemTo(item, this);
         item.lock = this;
       };
 
-      RLock.prototype.removeItem = function(item) {
-        g.addItemToStage(item);
+      Lock.prototype.removeItem = function(item) {
+        Item.addItemToStage(item);
         item.lock = null;
       };
 
-      RLock.prototype.highlight = function(color) {
-        RLock.__super__.highlight.call(this);
+      Lock.prototype.highlight = function(color) {
+        Lock.__super__.highlight.call(this);
         if (color) {
           this.highlightRectangle.fillColor = color;
           this.highlightRectangle.strokeColor = color;
@@ -490,38 +604,37 @@
         }
       };
 
-      RLock.prototype.askForModule = function() {
+      Lock.prototype.askForModule = function() {
         Dajaxice.draw.getModuleList(this.createSelectModuleModal);
       };
 
-      RLock.prototype.createSelectModuleModal = function(result) {
-        g.codeEditor.createModuleEditorModal(result, this.addModule);
-        g.RModal.modalJ.find("tr.module[data-pk='" + this.modulePk + "']").css({
+      Lock.prototype.createSelectModuleModal = function(result) {
+        R.codeEditor.createModuleEditorModal(result, this.addModule);
+        R.RModal.modalJ.find("tr.module[data-pk='" + this.modulePk + "']").css({
           'background-color': 'rgba(213, 18, 18, 0.54)'
         });
       };
 
-      RLock.prototype.addModule = function() {
+      Lock.prototype.addModule = function() {
         this.modulePk = $(this).attr("data-pk");
         this.data.moduleName = $(this).attr("data-name");
-        Dajaxice.draw.updateBox(g.checkError, {
+        Dajaxice.draw.updateBox(R.loader.checkError, {
           pk: this.pk,
           modulePk: this.modulePk
         });
       };
 
-      return RLock;
+      return Lock;
 
-    })(g.RItem);
-    g.RLock = RLock;
-    RWebsite = (function(_super) {
-      __extends(RWebsite, _super);
+    })(Item);
+    Lock.Website = (function(_super) {
+      __extends(Website, _super);
 
-      RWebsite.rname = 'Website';
+      Website.label = 'Website';
 
-      RWebsite.object_type = 'website';
+      Website.object_type = 'website';
 
-      function RWebsite(rectangle, data, pk, owner, date) {
+      function Website(rectangle, data, pk, owner, date) {
         this.rectangle = rectangle;
         this.data = data != null ? data : null;
         this.pk = pk != null ? pk : null;
@@ -529,24 +642,23 @@
         if (date == null) {
           date = null;
         }
-        RWebsite.__super__.constructor.call(this, this.rectangle, this.data, this.pk, this.owner, date);
+        Website.__super__.constructor.call(this, this.rectangle, this.data, this.pk, this.owner, date);
         return;
       }
 
-      RWebsite.prototype.enableInteraction = function() {};
+      Website.prototype.enableInteraction = function() {};
 
-      return RWebsite;
+      return Website;
 
-    })(RLock);
-    g.RWebsite = RWebsite;
-    RVideoGame = (function(_super) {
-      __extends(RVideoGame, _super);
+    })(Lock);
+    Lock.VideoGame = (function(_super) {
+      __extends(VideoGame, _super);
 
-      RVideoGame.rname = 'Video game';
+      VideoGame.label = 'Video game';
 
-      RVideoGame.object_type = 'video-game';
+      VideoGame.object_type = 'video-game';
 
-      function RVideoGame(rectangle, data, pk, owner, date) {
+      function VideoGame(rectangle, data, pk, owner, date) {
         this.rectangle = rectangle;
         this.data = data != null ? data : null;
         this.pk = pk != null ? pk : null;
@@ -554,26 +666,26 @@
         if (date == null) {
           date = null;
         }
-        RVideoGame.__super__.constructor.call(this, this.rectangle, this.data, this.pk, this.owner, date);
+        VideoGame.__super__.constructor.call(this, this.rectangle, this.data, this.pk, this.owner, date);
         this.currentCheckpoint = -1;
         this.checkpoints = [];
         return;
       }
 
-      RVideoGame.prototype.getData = function() {
+      VideoGame.prototype.getData = function() {
         var data;
-        data = RVideoGame.__super__.getData.call(this);
+        data = VideoGame.__super__.getData.call(this);
         data.loadEntireArea = true;
         return data;
       };
 
-      RVideoGame.prototype.enableInteraction = function() {};
+      VideoGame.prototype.enableInteraction = function() {};
 
-      RVideoGame.prototype.initGUI = function() {
+      VideoGame.prototype.initGUI = function() {
         console.log("Gui init");
       };
 
-      RVideoGame.prototype.updateGame = function(tool) {
+      VideoGame.prototype.updateGame = function(tool) {
         var checkpoint, _i, _len, _ref;
         _ref = this.checkpoints;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -583,9 +695,9 @@
               this.currentCheckpoint = checkpoint.data.checkpointNumber;
               if (this.currentCheckpoint === 0) {
                 this.startTime = Date.now();
-                g.romanesco_alert("Game started, go go go!", "success");
+                R.alertManager.alert("Game started, go go go!", "success");
               } else {
-                g.romanesco_alert("Checkpoint " + this.currentCheckpoint + " passed!", "success");
+                R.alertManager.alert("Checkpoint " + this.currentCheckpoint + " passed!", "success");
               }
             }
             if (this.currentCheckpoint === this.checkpoints.length - 1) {
@@ -595,38 +707,37 @@
         }
       };
 
-      RVideoGame.prototype.finishGame = function() {
+      VideoGame.prototype.finishGame = function() {
         var time;
         time = (Date.now() - this.startTime) / 1000;
-        g.romanesco_alert("You won ! Your time is: " + time.toFixed(2) + " seconds.", "success");
+        R.alertManager.alert("You won ! Your time is: " + time.toFixed(2) + " seconds.", "success");
         this.currentCheckpoint = -1;
       };
 
-      return RVideoGame;
+      return VideoGame;
 
-    })(RLock);
-    g.RVideoGame = RVideoGame;
-    RLink = (function(_super) {
-      __extends(RLink, _super);
+    })(Lock);
+    Lock.Link = (function(_super) {
+      __extends(Link, _super);
 
-      RLink.rname = 'Link';
+      Link.label = 'Link';
 
-      RLink.modalTitle = "Insert a hyperlink";
+      Link.modalTitle = "Insert a hyperlink";
 
-      RLink.modalTitleUpdate = "Modify your link";
+      Link.modalTitleUpdate = "Modify your link";
 
-      RLink.object_type = 'link';
+      Link.object_type = 'link';
 
-      RLink.initializeParameters = function() {
+      Link.initializeParameters = function() {
         var parameters;
-        parameters = RLink.__super__.constructor.initializeParameters.call(this);
+        parameters = Link.__super__.constructor.initializeParameters.call(this);
         delete parameters['Lock'];
         return parameters;
       };
 
-      RLink.parameters = RLink.initializeParameters();
+      Link.parameters = Link.initializeParameters();
 
-      function RLink(rectangle, data, pk, owner, date) {
+      function Link(rectangle, data, pk, owner, date) {
         var _ref;
         this.rectangle = rectangle;
         this.data = data != null ? data : null;
@@ -635,7 +746,7 @@
         if (date == null) {
           date = null;
         }
-        RLink.__super__.constructor.call(this, this.rectangle, this.data, this.pk, this.owner, date);
+        Link.__super__.constructor.call(this, this.rectangle, this.data, this.pk, this.owner, date);
         if ((_ref = this.linkJ) != null) {
           _ref.click((function(_this) {
             return function(event) {
@@ -643,10 +754,10 @@
               if (_this.linkJ.attr("href").indexOf("http://romanesc.co/#") === 0) {
                 location = _this.linkJ.attr("href").replace("http://romanesc.co/#", "");
                 pos = location.split(',');
-                p = new Point();
+                p = new P.Point();
                 p.x = parseFloat(pos[0]);
                 p.y = parseFloat(pos[1]);
-                g.RMoveTo(p, 1000);
+                View.moveTo(p, 1000);
                 event.preventDefault();
                 return false;
               }
@@ -656,10 +767,10 @@
         return;
       }
 
-      return RLink;
+      return Link;
 
-    })(RLock);
-    g.RLink = RLink;
+    })(Lock);
+    return Lock;
   });
 
 }).call(this);

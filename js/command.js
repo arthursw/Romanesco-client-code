@@ -4,9 +4,8 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['utils', 'Item/item', 'jquery', 'paper'], function(utils) {
-    var AddPointCommand, Command, CommandManager, CreateItemCommand, DeleteItemCommand, DeletePointCommand, DeselectCommand, DuplicateItemCommand, ModifyControlPathCommand, ModifyPointCommand, ModifyPointTypeCommand, ModifySpeedCommand, ModifyTextCommand, MoveCommand, MoveViewCommand, ResizeCommand, RotationCommand, SelectCommand, SetParameterCommand, g;
-    g = utils.g();
+  define(['utils'], function() {
+    var AddPointCommand, Command, CommandManager, CreateItemCommand, DeleteItemCommand, DeletePointCommand, DeselectCommand, DuplicateItemCommand, ModifyControlPathCommand, ModifyPointCommand, ModifyPointTypeCommand, ModifySpeedCommand, ModifyTextCommand, MoveCommand, MoveViewCommand, ResizeCommand, RotationCommand, SelectCommand, SetParameterCommand;
     Command = (function() {
       Command.needValidPosition = false;
 
@@ -37,7 +36,7 @@
       };
 
       Command.prototype.click = function() {
-        g.commandManager.commandClicked(this);
+        R.commandManager.commandClicked(this);
       };
 
       Command.prototype.toggle = function() {
@@ -61,7 +60,7 @@
       return Command;
 
     })();
-    g.Command = Command;
+    R.Command = Command;
     ResizeCommand = (function(_super) {
       __extends(ResizeCommand, _super);
 
@@ -105,7 +104,7 @@
       return ResizeCommand;
 
     })(Command);
-    g.ResizeCommand = ResizeCommand;
+    R.ResizeCommand = ResizeCommand;
     RotationCommand = (function(_super) {
       __extends(RotationCommand, _super);
 
@@ -149,7 +148,7 @@
       return RotationCommand;
 
     })(Command);
-    g.RotationCommand = RotationCommand;
+    R.RotationCommand = RotationCommand;
     MoveCommand = (function(_super) {
       __extends(MoveCommand, _super);
 
@@ -160,7 +159,7 @@
         this.newPosition = newPosition;
         MoveCommand.__super__.constructor.call(this, "Move item");
         this.previousPosition = this.item.rectangle.center;
-        this.items = g.selectedItems.slice();
+        this.items = R.selectedItems.slice();
         return;
       }
 
@@ -210,7 +209,7 @@
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             item = _ref[_i];
             item.endMove(false);
-            if (g.RLock.prototype.isPrototypeOf(item)) {
+            if (Lock.prototype.isPrototypeOf(item)) {
               item.update('position');
             } else {
               args.push({
@@ -231,14 +230,14 @@
         var result, _i, _len;
         for (_i = 0, _len = results.length; _i < _len; _i++) {
           result = results[_i];
-          g.checkError(result);
+          R.loader.checkError(result);
         }
       };
 
       return MoveCommand;
 
     })(Command);
-    g.MoveCommand = MoveCommand;
+    R.MoveCommand = MoveCommand;
     ModifyPointCommand = (function(_super) {
       __extends(ModifyPointCommand, _super);
 
@@ -247,9 +246,9 @@
       function ModifyPointCommand(item) {
         this.item = item;
         this.segment = this.item.selectionState.segment;
-        this.previousPosition = new Point(this.segment.point);
-        this.previousHandleIn = new Point(this.segment.handleIn);
-        this.previousHandleOut = new Point(this.segment.handleOut);
+        this.previousPosition = new P.Point(this.segment.point);
+        this.previousHandleIn = new P.Point(this.segment.handleIn);
+        this.previousHandleOut = new P.Point(this.segment.handleOut);
         ModifyPointCommand.__super__.constructor.call(this, 'Modify point');
         return;
       }
@@ -290,7 +289,7 @@
       return ModifyPointCommand;
 
     })(Command);
-    g.ModifyPointCommand = ModifyPointCommand;
+    R.ModifyPointCommand = ModifyPointCommand;
     ModifySpeedCommand = (function(_super) {
       __extends(ModifySpeedCommand, _super);
 
@@ -328,7 +327,7 @@
       return ModifySpeedCommand;
 
     })(Command);
-    g.ModifySpeedCommand = ModifySpeedCommand;
+    R.ModifySpeedCommand = ModifySpeedCommand;
     SetParameterCommand = (function(_super) {
       __extends(SetParameterCommand, _super);
 
@@ -370,7 +369,7 @@
       return SetParameterCommand;
 
     })(Command);
-    g.SetParameterCommand = SetParameterCommand;
+    R.SetParameterCommand = SetParameterCommand;
     AddPointCommand = (function(_super) {
       __extends(AddPointCommand, _super);
 
@@ -410,7 +409,7 @@
       return AddPointCommand;
 
     })(Command);
-    g.AddPointCommand = AddPointCommand;
+    R.AddPointCommand = AddPointCommand;
     DeletePointCommand = (function(_super) {
       __extends(DeletePointCommand, _super);
 
@@ -423,9 +422,9 @@
       }
 
       DeletePointCommand.prototype["do"] = function() {
-        this.previousPosition = new Point(this.segment.point);
-        this.previousHandleIn = new Point(this.segment.handleIn);
-        this.previousHandleOut = new Point(this.segment.handleOut);
+        this.previousPosition = new P.Point(this.segment.point);
+        this.previousHandleIn = new P.Point(this.segment.handleIn);
+        this.previousHandleOut = new P.Point(this.segment.handleOut);
         this.deletePoint();
         this.superDo();
       };
@@ -439,7 +438,7 @@
       return DeletePointCommand;
 
     })(AddPointCommand);
-    g.DeletePointCommand = DeletePointCommand;
+    R.DeletePointCommand = DeletePointCommand;
     ModifyPointTypeCommand = (function(_super) {
       __extends(ModifyPointTypeCommand, _super);
 
@@ -450,9 +449,9 @@
         this.segment = segment;
         this.rtype = rtype;
         this.previousRType = this.segment.rtype;
-        this.previousPosition = new Point(this.segment.point);
-        this.previousHandleIn = new Point(this.segment.handleIn);
-        this.previousHandleOut = new Point(this.segment.handleOut);
+        this.previousPosition = new P.Point(this.segment.point);
+        this.previousHandleIn = new P.Point(this.segment.handleIn);
+        this.previousHandleOut = new P.Point(this.segment.handleOut);
         ModifyPointTypeCommand.__super__.constructor.call(this, 'Change point type on item');
         return;
       }
@@ -471,7 +470,7 @@
       return ModifyPointTypeCommand;
 
     })(Command);
-    g.ModifyPointTypeCommand = ModifyPointTypeCommand;
+    R.ModifyPointTypeCommand = ModifyPointTypeCommand;
 
     /* --- Custom command for all kinds of command which modifiy the path --- */
     ModifyControlPathCommand = (function(_super) {
@@ -501,7 +500,7 @@
       return ModifyControlPathCommand;
 
     })(Command);
-    g.ModifyControlPathCommand = ModifyControlPathCommand;
+    R.ModifyControlPathCommand = ModifyControlPathCommand;
     MoveViewCommand = (function(_super) {
       __extends(MoveViewCommand, _super);
 
@@ -518,20 +517,20 @@
         var command, i, item, _i, _j, _len, _len1, _ref, _ref1;
         console.log("updateCommandItems");
         document.removeEventListener('command executed', this.updateCommandItems);
-        _ref = g.commandManager.history;
+        _ref = R.commandManager.history;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           command = _ref[_i];
           if (command.item != null) {
-            if ((command.item.group == null) && g.items[command.item.pk || command.item.id]) {
-              command.item = g.items[command.item.pk || command.item.id];
+            if ((command.item.group == null) && R.items[command.item.pk || command.item.id]) {
+              command.item = R.items[command.item.pk || command.item.id];
             }
           }
           if (command.items != null) {
             _ref1 = command.items;
             for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
               item = _ref1[i];
-              if ((item.group == null) && g.items[item.pk || item.id]) {
-                command.items[i] = g.items[item.pk || item.id];
+              if ((item.group == null) && R.items[item.pk || item.id]) {
+                command.items[i] = R.items[item.pk || item.id];
               }
             }
           }
@@ -540,7 +539,7 @@
 
       MoveViewCommand.prototype["do"] = function() {
         var somethingToLoad;
-        somethingToLoad = g.RMoveBy(this.newPosition.subtract(this.previousPosition), false);
+        somethingToLoad = View.moveBy(this.newPosition.subtract(this.previousPosition), false);
         if (somethingToLoad) {
           document.addEventListener('command executed', this.updateCommandItems);
         }
@@ -550,7 +549,7 @@
 
       MoveViewCommand.prototype.undo = function() {
         var somethingToLoad;
-        somethingToLoad = g.RMoveBy(this.previousPosition.subtract(this.newPosition), false);
+        somethingToLoad = View.moveBy(this.previousPosition.subtract(this.newPosition), false);
         if (somethingToLoad) {
           document.addEventListener('command executed', this.updateCommandItems);
         }
@@ -561,7 +560,7 @@
       return MoveViewCommand;
 
     })(Command);
-    g.MoveViewCommand = MoveViewCommand;
+    R.MoveViewCommand = MoveViewCommand;
     SelectCommand = (function(_super) {
       __extends(SelectCommand, _super);
 
@@ -578,7 +577,7 @@
           item = _ref[_i];
           item.select();
         }
-        g.controllerManager.updateParametersForSelectedItems();
+        R.controllerManager.updateParametersForSelectedItems();
       };
 
       SelectCommand.prototype.deselectItems = function() {
@@ -588,7 +587,7 @@
           item = _ref[_i];
           item.deselect();
         }
-        g.controllerManager.updateParametersForSelectedItems();
+        R.controllerManager.updateParametersForSelectedItems();
       };
 
       SelectCommand.prototype["do"] = function() {
@@ -604,12 +603,12 @@
       return SelectCommand;
 
     })(Command);
-    g.SelectCommand = SelectCommand;
+    R.SelectCommand = SelectCommand;
     DeselectCommand = (function(_super) {
       __extends(DeselectCommand, _super);
 
       function DeselectCommand(items) {
-        DeselectCommand.__super__.constructor.call(this, items || g.selectedItems.slice(), 'Deselect items');
+        DeselectCommand.__super__.constructor.call(this, items || R.selectedItems.slice(), 'Deselect items');
         return;
       }
 
@@ -626,7 +625,7 @@
       return DeselectCommand;
 
     })(SelectCommand);
-    g.DeselectCommand = DeselectCommand;
+    R.DeselectCommand = DeselectCommand;
     CreateItemCommand = (function(_super) {
       __extends(CreateItemCommand, _super);
 
@@ -648,7 +647,7 @@
 
       CreateItemCommand.prototype.setDuplicatedItemToCommands = function() {
         var command, i, item, _i, _j, _len, _len1, _ref, _ref1;
-        _ref = g.commandManager.history;
+        _ref = R.commandManager.history;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           command = _ref[_i];
           if (command === this) {
@@ -671,7 +670,7 @@
 
       CreateItemCommand.prototype.removeDeleteItemFromCommands = function() {
         var command, i, item, _i, _j, _len, _len1, _ref, _ref1;
-        _ref = g.commandManager.history;
+        _ref = R.commandManager.history;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           command = _ref[_i];
           if (command === this) {
@@ -719,7 +718,7 @@
       return CreateItemCommand;
 
     })(Command);
-    g.CreateItemCommand = CreateItemCommand;
+    R.CreateItemCommand = CreateItemCommand;
     DeleteItemCommand = (function(_super) {
       __extends(DeleteItemCommand, _super);
 
@@ -740,7 +739,7 @@
       return DeleteItemCommand;
 
     })(CreateItemCommand);
-    g.DeleteItemCommand = DeleteItemCommand;
+    R.DeleteItemCommand = DeleteItemCommand;
     DuplicateItemCommand = (function(_super) {
       __extends(DuplicateItemCommand, _super);
 
@@ -752,7 +751,7 @@
       return DuplicateItemCommand;
 
     })(CreateItemCommand);
-    g.DuplicateItemCommand = DuplicateItemCommand;
+    R.DuplicateItemCommand = DuplicateItemCommand;
     ModifyTextCommand = (function(_super) {
       __extends(ModifyTextCommand, _super);
 
@@ -796,7 +795,7 @@
       return ModifyTextCommand;
 
     })(Command);
-    g.ModifyTextCommand = ModifyTextCommand;
+    R.ModifyTextCommand = ModifyTextCommand;
     CommandManager = (function() {
       CommandManager.maxCommandNumber = 20;
 
@@ -888,15 +887,15 @@
         this.historyJ.empty();
         this.history = [];
         this.currentCommand = -1;
-        this.add(new g.Command("Load Romanesco"), true);
+        this.add(new R.Command("Load Romanesco"), true);
       };
 
       return CommandManager;
 
     })();
-    g.CommandManager = CommandManager;
+    return CommandManager;
   });
 
 }).call(this);
 
-//# sourceMappingURL=command.map
+//# sourceMappingURL=Command.map

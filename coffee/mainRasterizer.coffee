@@ -1,202 +1,200 @@
 define ['utils'], (utils) ->
 
-	g = utils.g()
-
 	if not window.rasterizerMode then return
 
-	g.initializeRasterizerMode = ()->
+	R.initializeRasterizerMode = ()->
 
-		g.initToolsRasterizer = ()->
-			g.tools = {}
-			g.modules = {}
-			for pathClass in g.pathClasses
-				g.tools[pathClass.rname] = RPath: pathClass
-				g.modules[pathClass.rname] = { name: pathClass.rname, iconURL: pathClass.iconURL, source: pathClass.source, description: pathClass.description, owner: 'Romanesco', thumbnailURL: pathClass.thumbnailURL, accepted: true, coreModule: true, category: pathClass.category }
-			g.initializeModules()
+		R.initToolsRasterizer = ()->
+			R.tools = {}
+			R.modules = {}
+			for pathClass in R.pathClasses
+				R.tools[pathClass.label] = RPath: pathClass
+				R.modules[pathClass.label] = { name: pathClass.label, iconURL: pathClass.iconURL, source: pathClass.source, description: pathClass.description, owner: 'Romanesco', thumbnailURL: pathClass.thumbnailURL, accepted: true, coreModule: true, category: pathClass.category }
+			R.initializeModules()
 			return
 
-		g.fakeFunction = ()->
+		R.fakeFunction = ()->
 			return
 
-		g.updateRoom = g.fakeFunction
-		g.deferredExecution = g.fakeFunction
-		g.romanesco_alert = g.fakeFunction
-		g.rasterizer =
-			load: g.fakeFunction
-			unload: g.fakeFunction
-			move: g.fakeFunction
-			rasterizeAreasToUpdate: g.fakeFunction
-			addAreaToUpdate: g.fakeFunction
-			setQZoomToUpdate: g.fakeFunction
-			clearRasters: g.fakeFunction
-		jQuery.fn.mCustomScrollbar = g.fakeFunction
+		R.updateRoom = R.fakeFunction
+		Utils.deferredExecution = R.fakeFunction
+		R.alertManager.alert = R.fakeFunction
+		R.rasterizer =
+			load: R.fakeFunction
+			unload: R.fakeFunction
+			move: R.fakeFunction
+			rasterizeAreasToUpdate: R.fakeFunction
+			addAreaToUpdate: R.fakeFunction
+			setQZoomToUpdate: R.fakeFunction
+			clearRasters: R.fakeFunction
+		jQuery.fn.mCustomScrollbar = R.fakeFunction
 
-		g.selectedToolNeedsDrawings = ()->
+		R.selectedToolNeedsDrawings = ()->
 			return true
 
-		g.CommandManager = g.fakeFunction
-		g.Rasterizer = g.fakeFunction
-		g.initializeGlobalParameters = g.fakeFunction
-		g.initParameters = g.fakeFunction
-		g.initCodeEditor = g.fakeFunction
-		g.initSocket = g.fakeFunction
-		g.initPosition = g.fakeFunction
-		g.updateGrid = g.fakeFunction
-		g.RSound = g.fakeFunction
-		g.chatSocket = emit: g.fakeFunction
-		g.defaultColors = []
-		g.gui = __folders: {}
-		g.animatedItems = []
-		g.areaToRasterize = null				# the area to rasterize
+		R.CommandManager = R.fakeFunction
+		R.Rasterizer = R.fakeFunction
+		R.initializeGlobalParameters = R.fakeFunction
+		R.initParameters = R.fakeFunction
+		R.initCodeEditor = R.fakeFunction
+		R.initSocket = R.fakeFunction
+		R.initPosition = R.fakeFunction
+		Grid.updateGrid = R.fakeFunction
+		R.RSound = R.fakeFunction
+		R.chatSocket = emit: R.fakeFunction
+		R.defaultColors = []
+		R.gui = __folders: {}
+		R.animatedItems = []
+		R.areaToRasterize = null				# the area to rasterize
 
 		# rasterizer
 
-		g.createItemsDates = (bounds)->
+		R.createItemsDates = (bounds)->
 			itemsDates = {}
-			for pk, item of g.items
+			for pk, item of R.items
 				# if bounds.contains(item.getBounds())
 				type = ''
-				if g.RLock.prototype.isPrototypeOf(item)
+				if Lock.prototype.isPrototypeOf(item)
 					type = 'Box'
-				else if g.RDiv.prototype.isPrototypeOf(item)
+				else if R.RDiv.prototype.isPrototypeOf(item)
 					type = 'Div'
-				else if g.RPath.prototype.isPrototypeOf(item)
-					type = 'Path'
+				else if R.RPath.prototype.isPrototypeOf(item)
+					type = 'P.Path'
 				itemsDates[pk] = item.lastUpdateDate
 				# itemsDates.push( pk: pk, lastUpdate: item.lastUpdateDate, type: type )
 			return itemsDates
 
-		# g.removeItemsToUpdate = (itemsToUpdate)->
+		# R.removeItemsToUpdate = (itemsToUpdate)->
 		# 	for pk in itemsToUpdate
-		# 		g.items[pk].remove()
+		# 		R.items[pk].remove()
 		# 	return
 
 
 		window.loopRasterize = ()->
 
-			rectangle = g.areaToRasterize
+			rectangle = R.areaToRasterize
 
-			width = Math.min(1000, rectangle.right - view.bounds.left)
-			height = Math.min(1000, rectangle.bottom - view.bounds.top)
+			width = Math.min(1000, rectangle.right - P.view.bounds.left)
+			height = Math.min(1000, rectangle.bottom - P.view.bounds.top)
 
-			newSize = new Size(width, height)
+			newSize = new P.Size(width, height)
 
-			if not view.viewSize.equals(newSize)
-				topLeft = view.bounds.topLeft
-				view.viewSize = newSize
-				view.center = topLeft.add(newSize.multiply(0.5))
+			if not P.view.viewSize.equals(newSize)
+				topLeft = P.view.bounds.topLeft
+				P.view.viewSize = newSize
+				P.view.center = topLeft.add(newSize.multiply(0.5))
 
-			imagePosition = view.bounds.topLeft.clone()
+			imagePosition = P.view.bounds.topLeft.clone()
 
-			# text = new PointText(view.bounds.center)
+			# text = new PointText(P.view.bounds.center)
 			# text.justification = 'center'
 			# text.fillColor = 'black'
-			# text.content = 'Pos: ' + view.bounds.center.toString()
+			# text.content = 'Pos: ' + P.view.bounds.center.toString()
 
-			# view.update()
-			dataURL = g.canvas.toDataURL()
+			# P.view.update()
+			dataURL = R.canvas.toDataURL()
 
-			finished = view.bounds.bottom >= rectangle.bottom and view.bounds.right >= rectangle.right
+			finished = P.view.bounds.bottom >= rectangle.bottom and P.view.bounds.right >= rectangle.right
 
 			if not finished
-				if view.bounds.right < rectangle.right
-					view.center = view.center.add(1000, 0)
+				if P.view.bounds.right < rectangle.right
+					P.view.center = P.view.center.add(1000, 0)
 				else
-					view.center = new Point(rectangle.left+view.viewSize.width*0.5, view.bounds.bottom+view.viewSize.height*0.5)
+					P.view.center = new P.Point(rectangle.left+P.view.viewSize.width*0.5, P.view.bounds.bottom+P.view.viewSize.height*0.5)
 			else
-				g.areaToRasterize = null
-			window.saveOnServer(dataURL, imagePosition.x, imagePosition.y, finished, g.city)
+				R.areaToRasterize = null
+			window.saveOnServer(dataURL, imagePosition.x, imagePosition.y, finished, R.city)
 			return
 
-		g.loopRasterize = window.loopRasterize
+		R.loopRasterize = window.loopRasterize
 
-		g.rasterizeAndSaveOnServer = ()->
+		R.rasterizeAndSaveOnServer = ()->
 			console.log "area rasterized"
 
-			view.viewSize = Size.min(new Size(1000,1000), g.areaToRasterize.size)
-			view.center = g.areaToRasterize.topLeft.add(view.size.multiply(0.5))
-			g.loopRasterize()
+			P.view.viewSize = P.Size.min(new P.Size(1000,1000), R.areaToRasterize.size)
+			P.view.center = R.areaToRasterize.topLeft.add(P.view.size.multiply(0.5))
+			R.loopRasterize()
 
 			return
 
 		window.loadArea = (args)->
 			console.log "load_area"
 
-			if g.areaToRasterize?
+			if R.areaToRasterize?
 				console.log "error: load_area while loading !!"
 				return
 
 			areaObject = JSON.parse(args)
 
-			if areaObject.city != g.city
-				g.unload()
-				g.city = areaObject.city
+			if areaObject.city != R.city
+				R.unload()
+				R.city = areaObject.city
 
-			area = g.expandRectangleToInteger(g.rectangleFromBox(areaObject))
-			g.areaToRasterize = area
-			# view.viewSize = Size.min(area.size, new Size(1000, 1000))
+			area = Utils.P.Rectangle.expandRectangleToInteger(R.rectangleFromBox(areaObject))
+			R.areaToRasterize = area
+			# P.view.viewSize = P.Size.min(area.size, new P.Size(1000, 1000))
 
 			# move the view
-			delta = area.center.subtract(view.center)
-			project.view.scrollBy(delta)
-			for div in g.divs
+			delta = area.center.subtract(P.view.center)
+			P.project.P.view.scrollBy(delta)
+			for div in R.divs
 				div.updateTransform()
 
 			console.log "call load"
 
-			g.load(area)
+			R.load(area)
 
 			return
 
-		g.loadArea = window.loadArea
+		R.loadArea = window.loadArea
 
 		# rasterizer tests
 
-		g.getAreasToUpdate = ()->
-			if g.areasToRasterize.length==0 and g.imageSaved
-				Dajaxice.draw.getAreasToUpdate(g.getAreasToUpdateCallback)
+		R.getAreasToUpdate = ()->
+			if R.areasToRasterize.length==0 and R.imageSaved
+				Dajaxice.draw.getAreasToUpdate(R.getAreasToUpdateCallback)
 			return
 
-		g.loadNextArea = ()->
-			if g.areasToRasterize.length>0
-				area = g.areasToRasterize.shift()
-				g.areaToRasterizePk = area._id.$oid
-				g.imageSaved = false
-				g.loadArea(JSON.stringify(area))
+		R.loadNextArea = ()->
+			if R.areasToRasterize.length>0
+				area = R.areasToRasterize.shift()
+				R.areaToRasterizePk = area._id.$oid
+				R.imageSaved = false
+				R.loadArea(JSON.stringify(area))
 			return
 
-		g.getAreasToUpdateCallback = (areas)->
-			g.areasToRasterize = areas
-			g.loadNextArea()
+		R.getAreasToUpdateCallback = (areas)->
+			R.areasToRasterize = areas
+			R.loadNextArea()
 			return
 
-		g.testSaveOnServer = (imageDataURL, x, y, finished)->
+		R.testSaveOnServer = (imageDataURL, x, y, finished)->
 			if not imageDataURL
 				console.log "no image data url"
-			g.rasterizedAreasJ.append($('<img src="' + imageDataURL + '" data-position="' + x + ', ' + y + '" finished="' + finished + '">')
+			R.rasterizedAreasJ.append($('<img src="' + imageDataURL + '" data-position="' + x + ', ' + y + '" finished="' + finished + '">')
 			.css( border: '1px solid black'))
 			console.log 'position: ' + x + ', ' + y
 			console.log 'finished: ' + finished
 			if finished
-				Dajaxice.draw.deleteAreaToUpdate(g.deleteAreaToUpdateCallback, { pk: g.areaToRasterizePk } )
+				Dajaxice.draw.deleteAreaToUpdate(R.deleteAreaToUpdateCallback, { pk: R.areaToRasterizePk } )
 			else
-				g.loopRasterize()
+				R.loopRasterize()
 			return
 
-		g.deleteAreaToUpdateCallback = (result)->
-			g.checkError(result)
-			g.imageSaved = true
-			g.loadNextArea()
+		R.deleteAreaToUpdateCallback = (result)->
+			R.loader.checkError(result)
+			R.imageSaved = true
+			R.loadNextArea()
 			return
 
-		g.testRasterizer = ()->
-			g.rasterizedAreasJ = $('<div class="rasterized-areas">')
-			g.rasterizedAreasJ.css( position: 'absolute', top: 1000, left: 0 )
-			$('body').css( overflow: 'auto' ).prepend(g.rasterizedAreasJ)
-			window.saveOnServer = g.testSaveOnServer
-			g.areasToRasterize = []
-			g.imageSaved = true
-			setInterval(g.getAreasToUpdate, 1000)
+		R.testRasterizer = ()->
+			R.rasterizedAreasJ = $('<div class="rasterized-areas">')
+			R.rasterizedAreasJ.css( position: 'absolute', top: 1000, left: 0 )
+			$('body').css( overflow: 'auto' ).prepend(R.rasterizedAreasJ)
+			window.saveOnServer = R.testSaveOnServer
+			R.areasToRasterize = []
+			R.imageSaved = true
+			setInterval(R.getAreasToUpdate, 1000)
 			return
 
 	return

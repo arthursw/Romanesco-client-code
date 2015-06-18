@@ -1,11 +1,9 @@
-define [
-	'utils', 'ItemTool'
-], (utils, ItemTool) ->
+define [ 'Tool' ], (Tool) ->
 
 	# RText creation tool
-	class TextTool extends ItemTool
+	class Tool.Text extends Tool.Item
 
-		@rname = 'Text'
+		@label = 'Text'
 		@description = ''
 		@iconURL = 'text.png'
 		@cursor =
@@ -14,7 +12,7 @@ define [
 			name: 'crosshair'
 
 		constructor: () ->
-			super(g.RText)
+			super(Text)
 			return
 
 		# End RText action:
@@ -22,14 +20,15 @@ define [
 		# the RText will be created on server response
 		# @param [Paper event or REvent] (usually) mouse up event
 		# @param [String] author (username) of the event
-		end: (event, from=g.me) ->
+		end: (event, from=R.me) ->
 			if super(event, from)
-				text = new g.RText(g.currentPaths[from].bounds)
+				text = new R.RText(R.currentPaths[from].bounds)
 				text.finish()
 				if not text.group then return
 				text.select()
 				text.save(true)
-				delete g.currentPaths[from]
+				delete R.currentPaths[from]
 			return
 
-	return TextTool
+	new Tool.Text()
+	return Tool.Text

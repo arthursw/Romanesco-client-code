@@ -1,42 +1,25 @@
 define [
-	'utils'
-	'paper'
-	'coffee'
-	'mainRasterizer'
-	'coordinateSystems'
-	'global'
-	'ajax'
-	'options'
-	'socket'
-	'command'
-	'Item/item'
-	'Item/div'
-	'Item/lock'
-	'Item/path'
-	'Tool/tools'
-	'city'
-	'code'
-	'rasterizer'
-	'sound'
-	'modal'
-	'jquery'
-	'jqueryUi'
-	'mousewheel'
-	'scrollbar'
-	'tween'
-	'typeahead'
-	'modal'
-	'jqtree'
-	'ace'
-], (utils, paper, CoffeeScript) ->
+	'Tool' # and all tools
+	'Path' # and all paths
+	'Ajax'
+	'Options'
+	'Socket'
+	'Command'
+	'City'
+	'Code'
+	'Rasterizer'
+	'Grid'
+	'Sound'
+	'Modal'
+], () ->
 
 	g = utils.g()
-	g.rasterizerMode = window.rasterizerMode
+	R.rasterizerMode = window.rasterizerMode
 
-	if g.rasterizerMode
-		g.initializeRasterizerMode()
+	if R.rasterizerMode
+		R.initializeRasterizerMode()
 
-	# TODO: manage items and path in the same way (g.paths and g.items)? make an interface on top of path and div, and use events to update them
+	# TODO: manage items and path in the same way (R.paths and R.items)? make an interface on top of path and div, and use events to update them
 	# todo: add else case in switches
 	# todo: bug when creating a small div (happened with text)
 	# todo: snap div
@@ -69,7 +52,7 @@ define [
 	# - create all tools
 	# - init tool typeahead (the algorithm to find the tools from a few letters in the search tool input)
 	# - get custom tools from the database, and initialize them
-	# - make the tools draggable between the 'favorite tools' and 'other tools' panels, and update g.typeaheadModuleEngine and g.favoriteTools accordingly
+	# - make the tools draggable between the 'favorite tools' and 'other tools' panels, and update R.typeaheadModuleEngine and R.favoriteTools accordingly
 	initTools = () ->
 		# $.getJSON 'https://api.github.com/users/RomanescoModules/repos', (json)->
 		# 	for repo in json.repos
@@ -77,87 +60,87 @@ define [
 		# 	return
 
 		# init jQuery elements related to the tools
-		g.toolsJ = $(".tool-list")
+		R.toolsJ = $(".tool-list")
 
-		g.toolsJ.find("[data-name='Create']").click ()->
+		R.toolsJ.find("[data-name='Create']").click ()->
 			submit = (data)->
-				Dajaxice.draw.createCity(g.loadCityFromServer, name: data.name, public: data.public)
+				Dajaxice.draw.createCity(R.loadCityFromServer, name: data.name, public: data.public)
 				return
-			modal = g.RModal.createModal( title: 'Create city', submit: submit, postSubmit: 'load' )
+			modal = R.RModal.createModal( title: 'Create city', submit: submit, postSubmit: 'load' )
 			modal.addTextInput( label: "City name", name: 'name', required: true, submitShortcut: true, placeholder: 'Paris' )
 			modal.addCheckbox( label: "Public", name: 'public', helpMessage: "Public cities will be accessible by anyone.", defaultValue: true )
 			modal.show()
 			return
 
-		g.toolsJ.find("[data-name='Open']").click ()->
-			modal = g.RModal.createModal( title: 'Open city', name: 'open-city' )
+		R.toolsJ.find("[data-name='Open']").click ()->
+			modal = R.RModal.createModal( title: 'Open city', name: 'open-city' )
 			modal.modalBodyJ.find('.modal-footer').hide()
 			modal.addProgressBar()
 			modal.show()
-			Dajaxice.draw.loadCities(g.loadCities)
+			Dajaxice.draw.loadCities(R.loadCities)
 			return
 
-		g.favoriteToolsJ = $("#FavoriteTools .tool-list")
-		g.allToolsContainerJ = $("#AllTools")
-		g.allToolsJ = g.allToolsContainerJ.find(".all-tool-list")
+		R.favoriteToolsJ = $("#FavoriteTools .tool-list")
+		R.allToolsContainerJ = $("#AllTools")
+		R.allToolsJ = R.allToolsContainerJ.find(".all-tool-list")
 
-		# init g.favoriteTools to see where to put the tools (in the 'favorite tools' panel or in 'other tools')
-		g.favoriteTools = []
+		# init R.favoriteTools to see where to put the tools (in the 'favorite tools' panel or in 'other tools')
+		R.favoriteTools = []
 		if localStorage?
 			try
-				g.favoriteTools = JSON.parse(localStorage.favorites)
+				R.favoriteTools = JSON.parse(localStorage.favorites)
 			catch error
 				console.log error
 
-		defaultFavoriteTools = [g.PrecisePath, g.ThicknessPath, g.Meander, g.GeometricLines, g.RectangleShape, g.EllipseShape, g.StarShape, g.SpiralShape]
+		defaultFavoriteTools = [R.PrecisePath, R.ThicknessPath, R.Meander, R.GeometricLines, R.RectangleShape, R.EllipseShape, R.StarShape, R.SpiralShape]
 
-		while g.favoriteTools.length < 8
-			g.pushIfAbsent(g.favoriteTools, defaultFavoriteTools.pop().rname)
+		while R.favoriteTools.length < 8
+			Utils.Array.pushIfAbsent(R.favoriteTools, defaultFavoriteTools.pop().label)
 
 		# create all tools
-		g.tools = {}
-		new g.MoveTool()
-		new g.CarTool()
-		new g.SelectTool()
-		new g.CodeTool()
-		# new LinkTool(RLink)
-		new g.LockTool(g.RLock)
-		new g.TextTool(g.RText)
-		new g.MediaTool(g.RMedia)
-		new g.ScreenshotTool()
-		new g.GradientTool()
+		# R.tools = {}
+		# new R.MoveTool()
+		# new R.CarTool()
+		# new R.SelectTool()
+		# new R.CodeTool()
+		# # new LinkTool(RLink)
+		# new R.LockTool(Lock)
+		# new R.TextTool(R.RText)
+		# new R.MediaTool(R.RMedia)
+		# new R.ScreenshotTool()
+		# new R.GradientTool()
 
-		# g.modules = {}
+		# R.modules = {}
 		# path tools
-		for pathClass in g.pathClasses
-			pathTool = new g.PathTool(pathClass)
-			# g.modules[pathTool.name] = { name: pathTool.name, iconURL: pathTool.RPath.iconURL, source: pathTool.RPath.source, description: pathTool.RPath.description, owner: 'Romanesco', thumbnailURL: pathTool.RPath.thumbnailURL, accepted: true, coreModule: true, category: pathTool.RPath.category }
+		# for pathClass in R.pathClasses
+		# 	pathTool = new R.PathTool(pathClass)
+			# R.modules[pathTool.name] = { name: pathTool.name, iconURL: pathTool.RPath.iconURL, source: pathTool.RPath.source, description: pathTool.RPath.description, owner: 'Romanesco', thumbnailURL: pathTool.RPath.thumbnailURL, accepted: true, coreModule: true, category: pathTool.RPath.category }
 
-		# g.initializeModules()
+		# R.initializeModules()
 
 		# # init tool typeahead
 		# initToolTypeahead = ()->
 		# 	toolValues = []
-		# 	toolValues.push( value: $(tool).attr("data-name") ) for tool in g.allToolsJ.children()
-		# 	g.typeaheadModuleEngine = new Bloodhound({
+		# 	toolValues.push( value: $(tool).attr("data-name") ) for tool in R.allToolsJ.children()
+		# 	R.typeaheadModuleEngine = new Bloodhound({
 		# 		name: 'Tools',
 		# 		local: toolValues,
 		# 		datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
 		# 		queryTokenizer: Bloodhound.tokenizers.whitespace
 		# 	})
-		# 	promise = g.typeaheadModuleEngine.initialize()
+		# 	promise = R.typeaheadModuleEngine.initialize()
 
-		# 	g.searchToolInputJ = g.allToolsContainerJ.find("input.search-tool")
-		# 	g.searchToolInputJ.keyup (event)->
-		# 		query = g.searchToolInputJ.val()
+		# 	R.searchToolInputJ = R.allToolsContainerJ.find("input.search-tool")
+		# 	R.searchToolInputJ.keyup (event)->
+		# 		query = R.searchToolInputJ.val()
 		# 		if query == ""
-		# 			g.allToolsJ.children().show()
+		# 			R.allToolsJ.children().show()
 		# 			return
-		# 		g.allToolsJ.children().hide()
-		# 		g.typeaheadModuleEngine.get( query, (suggestions)->
+		# 		R.allToolsJ.children().hide()
+		# 		R.typeaheadModuleEngine.get( query, (suggestions)->
 		# 			for suggestion in suggestions
 		# 				console.log(suggestion)
-		# 				g.allToolsJ.children("[data-name='" + suggestion.value + "']").show()
+		# 				R.allToolsJ.children("[data-name='" + suggestion.value + "']").show()
 		# 		)
 		# 		return
 		# 	return
@@ -168,12 +151,12 @@ define [
 		# 	scripts = JSON.parse(result.tools)
 
 		# 	for script in scripts
-		# 		g.runScript(script)
+		# 		R.runScript(script)
 
 		# 	initToolTypeahead()
 		# 	return
 
-		# make the tools draggable between the 'favorite tools' and 'other tools' panels, and update g.typeaheadModuleEngine and g.favoriteTools accordingly
+		# make the tools draggable between the 'favorite tools' and 'other tools' panels, and update R.typeaheadModuleEngine and R.favoriteTools accordingly
 
 
 		# sortStart = (event, ui)->
@@ -184,20 +167,20 @@ define [
 		# 	$( "#sortable1, #sortable2" ).removeClass("drag-over")
 		# 	if not localStorage? then return
 		# 	names = []
-		# 	for li in g.favoriteToolsJ.children()
+		# 	for li in R.favoriteToolsJ.children()
 		# 		names.push($(li).attr("data-name"))
 		# 	localStorage.favorites = JSON.stringify(names)
 
 		# 	toolValues = []
-		# 	toolValues.push( value: $(tool).attr("data-name") ) for tool in g.allToolsJ.children()
-		# 	g.typeaheadModuleEngine.clear()
-		# 	g.typeaheadModuleEngine.add(toolValues)
+		# 	toolValues.push( value: $(tool).attr("data-name") ) for tool in R.allToolsJ.children()
+		# 	R.typeaheadModuleEngine.clear()
+		# 	R.typeaheadModuleEngine.add(toolValues)
 
 		# 	return
 
 		# sortableArgs =
 		# 	connectWith: ".connectedSortable"
-		# 	appendTo: g.sidebarJ
+		# 	appendTo: R.sidebarJ
 		# 	helper: "clone"
 		# 	cancel: '.category'
 		# 	start: sortStart
@@ -205,15 +188,15 @@ define [
 		# 	delay: 250
 		# $( "#sortable1, #sortable2" ).sortable( sortableArgs ).disableSelection()
 
-		g.tools['Move'].select() 		# select the move tool
+		R.tools['Move'].select() 		# select the move tool
 
 		# ---  init Wacom tablet API --- #
 
-		g.wacomPlugin = document.getElementById('wacomPlugin')
-		if g.wacomPlugin?
-			g.wacomPenAPI = wacomPlugin.penAPI
-			g.wacomTouchAPI = wacomPlugin.touchAPI
-			g.wacomPointerType = { 0: 'Mouse', 1: 'Pen', 2: 'Puck', 3: 'Eraser' }
+		R.wacomPlugin = document.getElementById('wacomPlugin')
+		if R.wacomPlugin?
+			R.wacomPenAPI = wacomPlugin.penAPI
+			R.wacomTouchAPI = wacomPlugin.touchAPI
+			R.wacomPointerType = { 0: 'Mouse', 1: 'Pen', 2: 'Puck', 3: 'Eraser' }
 		# # Wacom API documentation:
 
 		# # penAPI properties:
@@ -290,18 +273,18 @@ define [
 
 	## Init position
 	# initialize the view position according to the 'data-box' of the canvas (when loading a website or video game)
-	# update g.entireArea and g.restrictedArea according to site settings
+	# update R.entireArea and R.restrictedArea according to site settings
 	# update sidebar according to site settings
 	initPosition = ()->
-		if g.rasterizerMode then return
+		if R.rasterizerMode then return
 
-		g.city =
-			owner: g.canvasJ.attr("data-owner")
-			city: g.canvasJ.attr("data-city")
-			site: g.canvasJ.attr("data-site")
+		R.city =
+			owner: R.canvasJ.attr("data-owner")
+			city: R.canvasJ.attr("data-city")
+			site: R.canvasJ.attr("data-site")
 
 		# check if canvas has an attribute 'data-box'
-		boxString = g.canvasJ.attr("data-box")
+		boxString = R.canvasJ.attr("data-box")
 
 		if not boxString or boxString.length==0
 			window.onhashchange()
@@ -310,54 +293,54 @@ define [
 		# initialize the area rectangle *boxRectangle* from 'data-box' attr and move to the center of the box
 		box = JSON.parse( boxString )
 
-		planet = new Point(box.planetX, box.planetY)
+		planet = new P.Point(box.planetX, box.planetY)
 
-		tl = g.posOnPlanetToProject(box.box.coordinates[0][0], planet)
-		br = g.posOnPlanetToProject(box.box.coordinates[0][2], planet)
+		tl = R.posOnPlanetToProject(box.box.coordinates[0][0], planet)
+		br = R.posOnPlanetToProject(box.box.coordinates[0][2], planet)
 
-		boxRectangle = new Rectangle(tl, br)
+		boxRectangle = new P.Rectangle(tl, br)
 		pos = boxRectangle.center
 
-		g.RMoveTo(pos)
+		View.moveTo(pos)
 
-		# load the entire area if 'data-load-entire-area' is set to true, and set g.entireArea
-		loadEntireArea = g.canvasJ.attr("data-load-entire-area")
+		# load the entire area if 'data-load-entire-area' is set to true, and set R.entireArea
+		loadEntireArea = R.canvasJ.attr("data-load-entire-area")
 
 		if loadEntireArea
-			g.entireArea = boxRectangle
-			g.load(boxRectangle)
+			R.entireArea = boxRectangle
+			R.load(boxRectangle)
 
 		# boxData = if box.data? and box.data.length>0 then JSON.parse(box.data) else null
 		# console.log boxData
 
-		# init g.restrictedArea
-		siteString = g.canvasJ.attr("data-site")
+		# init R.restrictedArea
+		siteString = R.canvasJ.attr("data-site")
 		site = JSON.parse( siteString )
 		if site.restrictedArea
-			g.restrictedArea = boxRectangle
+			R.restrictedArea = boxRectangle
 
-		g.tools['Select'].select() 		# select 'Select' tool by default when loading a website
+		R.tools['Select'].select() 		# select 'Select' tool by default when loading a website
 										# since a click on an RLock will activate the drag (temporarily select the 'Move' tool)
 										# and the user must be able to select text
 
 		# update sidebar according to site settings
 		if site.disableToolbar
 			# just hide the sidebar
-			g.sidebarJ.hide()
+			R.sidebarJ.hide()
 		else
 			# remove all panels except the chat
-			g.sidebarJ.find("div.panel.panel-default:not(:last)").hide()
+			R.sidebarJ.find("div.panel.panel-default:not(:last)").hide()
 
 			# remove all controllers and folder except zoom in General.
-			for folderName, folder of g.gui.__folders
+			for folderName, folder of R.gui.__folders
 				for controller in folder.__controllers
 					if controller.name != 'Zoom'
 						folder.remove(controller)
 						folder.__controllers.remove(controller)
 				if folder.__controllers.length==0
-					g.gui.removeFolder(folderName)
+					R.gui.removeFolder(folderName)
 
-			g.sidebarHandleJ.click()
+			R.sidebarHandleJ.click()
 
 		return
 
@@ -367,152 +350,153 @@ define [
 	# all global variables and functions are stored in *g* which is a synonym of *window*
 	# all jQuery elements names end with a capital J: elementNameJ
 	init = ()->
-		# g.romanescoURL = 'http://romanesc.co/'
+		# R.romanescoURL = 'http://romanesc.co/'
 
-		g.romanescoURL = 'http://localhost:8000/'
-		g.stageJ = $("#stage")
-		g.sidebarJ = $("#sidebar")
-		g.canvasJ = g.stageJ.find("#canvas")
-		g.canvas = g.canvasJ[0]
-		g.canvas.width = window.innerWidth
-		g.canvas.height = window.innerHeight
-		g.context = g.canvas.getContext('2d')
+		R.romanescoURL = 'http://localhost:8000/'
+		R.stageJ = $("#stage")
+		R.sidebarJ = $("#sidebar")
+		R.canvasJ = R.stageJ.find("#canvas")
+		R.canvas = R.canvasJ[0]
+		R.canvas.width = window.innerWidth
+		R.canvas.height = window.innerHeight
+		R.context = R.canvas.getContext('2d')
 
-		# g.selectionCanvasJ = g.stageJ.find("#selection-canvas")
-		# g.selectionCanvas = g.selectionCanvasJ[0]
-		# g.selectionCanvas.width = window.innerWidth
-		# g.selectionCanvas.height = window.innerHeight
+		# R.selectionCanvasJ = R.stageJ.find("#selection-canvas")
+		# R.selectionCanvas = R.selectionCanvasJ[0]
+		# R.selectionCanvas.width = window.innerWidth
+		# R.selectionCanvas.height = window.innerHeight
 
-		# g.backgroundCanvasJ = g.stageJ.find("#background-canvas")
-		# g.backgroundCanvas = g.backgroundCanvasJ[0]
-		# g.backgroundCanvas.width = window.innerWidth
-		# g.backgroundCanvas.height = window.innerHeight
-		# g.backgroundCanvasJ.width(window.innerWidth)
-		# g.backgroundCanvasJ.height(window.innerHeight)
-		# g.backgroundContext = g.backgroundCanvas.getContext('2d')
+		# R.backgroundCanvasJ = R.stageJ.find("#background-canvas")
+		# R.backgroundCanvas = R.backgroundCanvasJ[0]
+		# R.backgroundCanvas.width = window.innerWidth
+		# R.backgroundCanvas.height = window.innerHeight
+		# R.backgroundCanvasJ.width(window.innerWidth)
+		# R.backgroundCanvasJ.height(window.innerHeight)
+		# R.backgroundContext = R.backgroundCanvas.getContext('2d')
 
-		g.me = null 							# g.me is the username of the user (sent by the server in each ajax "load")
-		g.selectionLayer = null					# paper layer containing all selected paper items
-		g.updateTimeout = {} 					# map of id -> timeout id to clear the timeouts
-		g.requestedCallbacks = {} 				# map of id -> request id to clear the requestAnimationFrame
-		g.restrictedArea = null 				# area in which the user position will be constrained (in a website with restrictedArea == true)
-		g.OSName = "Unknown OS" 				# user's operating system
-		g.currentPaths = {} 					# map of username -> path id corresponding to the paths currently being created
-		g.loadingBarTimeout = null 				# timeout id of the loading bar
-		g.entireArea = null 					# entire area to be kept loaded, it is a paper Rectangle
-		g.entireAreas = [] 						# array of RDivs which have data.loadEntireArea==true
-		g.loadedAreas = [] 						# array of areas { pos: pos, planet: planet } which are loaded
+		R.me = null 							# R.me is the username of the user (sent by the server in each ajax "load")
+		R.selectionLayer = null					# paper layer containing all selected paper items
+		R.updateTimeout = {} 					# map of id -> timeout id to clear the timeouts
+		R.requestedCallbacks = {} 				# map of id -> request id to clear the requestAnimationFrame
+		R.restrictedArea = null 				# area in which the user position will be constrained (in a website with restrictedArea == true)
+		R.OSName = "Unknown OS" 				# user's operating system
+		R.currentPaths = {} 					# map of username -> path id corresponding to the paths currently being created
+		R.loadingBarTimeout = null 				# timeout id of the loading bar
+		R.entireArea = null 					# entire area to be kept loaded, it is a paper P.Rectangle
+		R.entireAreas = [] 						# array of RDivs which have data.loadEntireArea==true
+		R.loadedAreas = [] 						# array of areas { pos: pos, planet: planet } which are loaded
 												# (to test if areas have to be loaded or unloaded)
-		g.paths = new Object() 					# a map of RPath.pk (or RPath.id) -> RPath. RPath are first added with their id, and then with their pk
+		R.paths = new Object() 					# a map of RPath.pk (or RPath.id) -> RPath. RPath are first added with their id, and then with their pk
 												# (as soon as server saved it and responds)
-		g.items = new Object() 					# map RItem.id or RItem.pk -> RItem, all loaded RItems. The key is RItem.id before RItem is saved
+		R.items = new Object() 					# map RItem.id or RItem.pk -> RItem, all loaded RItems. The key is RItem.id before RItem is saved
 												# in the database, and RItem.pk after
-		g.locks = [] 							# array of loaded RLocks
-		g.divs = [] 							# array of loaded RDivs
-		g.sortedPaths = []						# an array where paths are sorted by index (z-index)
-		g.sortedDivs = []						# an array where divs are sorted by index (z-index)
-		g.animatedItems = [] 					# an array of animated items to be updated each frame
-		g.cars = {} 							# a map of username -> cars which will be updated each frame
-		# g.fastMode = false 						# fastMode will hide all items except the one being edited (when user edits an item)
-		# g.fastModeOn = false					# fastModeOn is true when the user is edditing an item
-		g.alerts = null 						# An array of alerts ({ type: type, message: message }) containing all alerts info.
+		R.locks = [] 							# array of loaded RLocks
+		R.divs = [] 							# array of loaded RDivs
+		R.sortedPaths = []						# an array where paths are sorted by index (z-index)
+		R.sortedDivs = []						# an array where divs are sorted by index (z-index)
+		R.animatedItems = [] 					# an array of animated items to be updated each frame
+		R.cars = {} 							# a map of username -> cars which will be updated each frame
+		# R.fastMode = false 						# fastMode will hide all items except the one being edited (when user edits an item)
+		# R.fastModeOn = false					# fastModeOn is true when the user is edditing an item
+		R.alerts = null 						# An array of alerts ({ type: type, message: message }) containing all alerts info.
 												# It is append to the alert box in showAlert().
-		g.scale = 1000.0 						# the scale to go from project coordinates to planet coordinates
-		g.previousPoint = null 					# the previous mouse event point
-		g.draggingEditor = false 				# boolean, true when user is dragging the code editor
-		# g.rasters = {}							# map to store rasters (tiles, rasterized version of the view)
-		g.areasToUpdate = {} 					# map of areas to update { pk->rectangle }
+		R.scale = 1000.0 						# the scale to go from project coordinates to planet coordinates
+		R.previousPoint = null 					# the previous mouse event point
+		R.draggingEditor = false 				# boolean, true when user is dragging the code editor
+		# R.rasters = {}							# map to store rasters (tiles, rasterized version of the view)
+		R.areasToUpdate = {} 					# map of areas to update { pk->rectangle }
 												# (areas which are not rasterize on the server, that we must send if we can rasterize them)
-		g.rastersToUpload = [] 					# an array of { data: dataURL, position: position } containing the rasters to upload on the server
-		g.areasToRasterize = [] 				# an array of Rectangle to rasterize
-		g.isUpdatingRasters = false 			# true if we are updating rasters (in loopUpdateRasters)
-		g.viewUpdated = false 					# true if the view was updated ( rasters removed and items drawn in g.updateView() )
+		R.rastersToUpload = [] 					# an array of { data: dataURL, position: position } containing the rasters to upload on the server
+		R.areasToRasterize = [] 				# an array of P.Rectangle to rasterize
+		R.isUpdatingRasters = false 			# true if we are updating rasters (in loopUpdateRasters)
+		R.viewUpdated = false 					# true if the view was updated ( rasters removed and items drawn in R.updateView() )
 												# and we don't need to update anymore (until new Rasters are added in load_callback)
-		g.currentDiv = null 					# the div currently being edited (dragged, moved or resized) used to also send jQuery mouse event to divs
-		g.areasToUpdateRectangles = {} 			# debug map: area to update pk -> rectangle path
-		g.catchErrors = false 					# the error will not be caught when drawing an RPath (let chrome catch them at the right time)
-		g.previousMousePosition = null 			# the previous position of the mouse in the mousedown/move/up
-		g.initialMousePosition = null 			# the initial position of the mouse in the mousedown/move/up
-		g.previousViewPosition = null			# the previous view position
-		g.backgroundRectangle = null 			# the rectangle to highlight the stage when dragging an RContent over it
-		g.limitPathV = null 					# the vertical limit path (line between two planets)
-		g.limitPathH = null 					# the horizontal limit path (line between two planets)
-		g.selectedItems = [] 					# the selectedItems
-		g.ignoreSockets = false 				# whether sockets messages are ignored
-		g.mousePosition = new Point() 			# the mouse position in window coordinates (updated everytime the mouse moves)
+		R.currentDiv = null 					# the div currently being edited (dragged, moved or resized) used to also send jQuery mouse event to divs
+		R.areasToUpdateRectangles = {} 			# debug map: area to update pk -> rectangle path
+		R.catchErrors = false 					# the error will not be caught when drawing an RPath (let chrome catch them at the right time)
+		R.previousMousePosition = null 			# the previous position of the mouse in the mousedown/move/up
+		R.initialMousePosition = null 			# the initial position of the mouse in the mousedown/move/up
+		R.previousViewPosition = null			# the previous view position
+		R.backgroundRectangle = null 			# the rectangle to highlight the stage when dragging an RContent over it
+		R.limitPathV = null 					# the vertical limit path (line between two planets)
+		R.limitPathH = null 					# the horizontal limit path (line between two planets)
+		R.selectedItems = [] 					# the selectedItems
+		R.ignoreSockets = false 				# whether sockets messages are ignored
+		R.mousePosition = new P.Point() 			# the mouse position in window coordinates (updated everytime the mouse moves)
 												# used to get mouse position on a key event
-		g.hiddenDivs = []
+		R.hiddenDivs = []
 
 		# initialize sort
 
-		g.itemListsJ = $("#RItems .layers")
-		g.pathList = g.itemListsJ.find(".rPath-list")
-		g.pathList.sortable( stop: g.zIndexSortStop, delay: 250 )
-		g.pathList.disableSelection()
-		g.divList = g.itemListsJ.find(".rDiv-list")
-		g.divList.sortable( stop: g.zIndexSortStop, delay: 250 )
-		g.divList.disableSelection()
-		g.itemListsJ.find('.title').click (event)->
+		R.itemListsJ = $("#RItems .layers")
+		R.pathList = R.itemListsJ.find(".rPath-list")
+		R.pathList.sortable( stop: Item.zIndexSortStop, delay: 250 )
+		R.pathList.disableSelection()
+		R.divList = R.itemListsJ.find(".rDiv-list")
+		R.divList.sortable( stop: Item.zIndexSortStop, delay: 250 )
+		R.divList.disableSelection()
+		R.itemListsJ.find('.title').click (event)->
 			$(this).parent().toggleClass('closed')
 			return
 
-		g.commandManager = new g.CommandManager()
-		# g.globalMaskJ = $("#globalMask")
-		# g.globalMaskJ.hide()
+		R.commandManager = new R.CommandManager()
+		R.loader = new Loader()
+		# R.globalMaskJ = $("#globalMask")
+		# R.globalMaskJ.hide()
 
-		# Display a g.romanesco_alert message when a dajaxice error happens (problem on the server)
+		# Display a R.alertManager.alert message when a dajaxice error happens (problem on the server)
 		Dajaxice.setup( 'default_exception_callback': (error)->
 			console.log 'Dajaxice error!'
-			g.romanesco_alert "Connection error", "error"
+			R.alertManager.alert "Connection error", "error"
 			return
 		)
 
-		# init g.OSName (user's operating system)
-		if navigator.appVersion.indexOf("Win")!=-1 then g.OSName = "Windows"
-		if navigator.appVersion.indexOf("Mac")!=-1 then g.OSName = "MacOS"
-		if navigator.appVersion.indexOf("X11")!=-1 then g.OSName = "UNIX"
-		if navigator.appVersion.indexOf("Linux")!=-1 then g.OSName = "Linux"
+		# init R.OSName (user's operating system)
+		if navigator.appVersion.indexOf("Win")!=-1 then R.OSName = "Windows"
+		if navigator.appVersion.indexOf("Mac")!=-1 then R.OSName = "MacOS"
+		if navigator.appVersion.indexOf("X11")!=-1 then R.OSName = "UNIX"
+		if navigator.appVersion.indexOf("Linux")!=-1 then R.OSName = "Linux"
 
 		# init paper.js
-		# paper.setup(g.selectionCanvas)
-		# g.selectionProject = project
+		# paper.setup(R.selectionCanvas)
+		# R.selectionProject = project
 
-		paper.setup(g.canvas)
-		g.project = project
+		paper.setup(R.canvas)
+		R.project = project
 
-		g.mainLayer = project.activeLayer
-		g.mainLayer.name = 'main layer'
-		g.debugLayer = new Layer()				# Paper layer to append debug items
-		g.debugLayer.name = 'debug layer'
-		g.carLayer = new Layer() 				# Paper layer to append all cars
-		g.carLayer.name = 'car layer'
-		g.lockLayer = new Layer()	 			# Paper layer to keep all locked items
-		g.lockLayer.name = 'lock layer'
-		g.selectionLayer = new Layer() 			# Paper layer to keep all selected items
-		# g.selectionLayer = g.selectionProject.activeLayer
-		g.selectionLayer.name = 'selection layer'
-		g.areasToUpdateLayer = new Layer() 		# Paper layer to show areas to update
-		g.areasToUpdateLayer.name = 'areasToUpdateLayer'
-		g.areasToUpdateLayer.visible = false
-		g.mainLayer.activate()
+		R.mainLayer = P.project.activeLayer
+		R.mainLayer.name = 'main layer'
+		R.debugLayer = new P.Layer()				# Paper layer to append debug items
+		R.debugLayer.name = 'debug layer'
+		R.carLayer = new P.Layer() 				# Paper layer to append all cars
+		R.carLayer.name = 'car layer'
+		R.lockLayer = new P.Layer()	 			# Paper layer to keep all locked items
+		R.lockLayer.name = 'lock layer'
+		R.selectionLayer = new P.Layer() 			# Paper layer to keep all selected items
+		# R.selectionLayer = R.selectionProject.activeLayer
+		R.selectionLayer.name = 'selection layer'
+		R.areasToUpdateLayer = new P.Layer() 		# Paper layer to show areas to update
+		R.areasToUpdateLayer.name = 'areasToUpdateLayer'
+		R.areasToUpdateLayer.visible = false
+		R.mainLayer.activate()
 		paper.settings.hitTolerance = 5
-		g.grid = new Group() 					# Paper Group to append all grid items
-		g.grid.name = 'grid group'
-		view.zoom = 1 # 0.01
-		g.previousViewPosition = view.center
+		R.grid = new P.Group() 					# Paper P.Group to append all grid items
+		R.grid.name = 'grid group'
+		P.view.zoom = 1 # 0.01
+		R.previousViewPosition = P.view.center
 
-		# add custom methods to export Paper Point and Rectangle to JSON
-		Point.prototype.toJSON = ()->
+		# add custom methods to export Paper P.Point and P.Rectangle to JSON
+		P.Point.prototype.toJSON = ()->
 			return { x: this.x, y: this.y }
-		Point.prototype.exportJSON = ()->
+		P.Point.prototype.exportJSON = ()->
 			return JSON.stringify(this.toJSON())
-		Rectangle.prototype.toJSON = ()->
+		P.Rectangle.prototype.toJSON = ()->
 			return { x: this.x, y: this.y, width: this.width, height: this.height }
-		Rectangle.prototype.exportJSON = ()->
+		P.Rectangle.prototype.exportJSON = ()->
 			return JSON.stringify(this.toJSON())
-		Rectangle.prototype.translate = (point)->
-			return new Rectangle(this.x + point.x, this.y + point.y, this.width, this.height)
-		Rectangle.prototype.moveSide = (sideName, destination)->
+		P.Rectangle.prototype.translate = (point)->
+			return new P.Rectangle(this.x + point.x, this.y + point.y, this.width, this.height)
+		P.Rectangle.prototype.moveSide = (sideName, destination)->
 			switch sideName
 				when 'left'
 					this.x = destination
@@ -523,7 +507,7 @@ define [
 				when 'bottom'
 					this.y = destination - this.height
 			return
-		Rectangle.prototype.moveCorner = (cornerName, destination)->
+		P.Rectangle.prototype.moveCorner = (cornerName, destination)->
 			switch cornerName
 				when 'topLeft'
 					this.x = destination.x
@@ -538,7 +522,7 @@ define [
 					this.x = destination.x
 					this.y = destination.y - this.height
 			return
-		Rectangle.prototype.moveCenter = (destination)->
+		P.Rectangle.prototype.moveCenter = (destination)->
 			this.x = destination.x - this.width * 0.5
 			this.y = destination.y - this.height * 0.5
 			return
@@ -555,34 +539,27 @@ define [
 				count: this.count
 			return event
 		Event.prototype.fromJSON = (event)->
-			if event.point? then event.point = new Point(event.point)
-			if event.downPoint? then event.downPoint = new Point(event.downPoint)
-			if event.delta? then event.delta = new Point(event.delta)
-			if event.middlePoint? then event.middlePoint = new Point(event.middlePoint)
+			if event.point? then event.point = new P.Point(event.point)
+			if event.downPoint? then event.downPoint = new P.Point(event.downPoint)
+			if event.delta? then event.delta = new P.Point(event.delta)
+			if event.middlePoint? then event.middlePoint = new P.Point(event.middlePoint)
 			return event
 
-		# initialize alerts
-		g.alertsContainer = $("#Romanesco_alerts")
-		g.alerts = []
-		g.currentAlert = -1
-		g.alertTimeOut = -1
-		g.alertsContainer.find(".btn-up").click( -> g.showAlert(g.currentAlert-1) )
-		g.alertsContainer.find(".btn-down").click( -> g.showAlert(g.currentAlert+1) )
 
 		# initialize sidebar handle
-		g.sidebarHandleJ = g.sidebarJ.find(".sidebar-handle")
-		g.sidebarHandleJ.click ()->
-			g.toggleSidebar()
+		R.sidebarHandleJ = R.sidebarJ.find(".sidebar-handle")
+		R.sidebarHandleJ.click ()->
+			R.toggleSidebar()
 			return
 
-		# g.sound = new g.RSound(['/static/sounds/space_ship_engine.mp3', '/static/sounds/space_ship_engine.ogg'])
-		g.sound = new g.RSound(['/static/sounds/viper.ogg']) 			# load car sound
+		# R.sound = new R.RSound(['/static/sounds/space_ship_engine.mp3', '/static/sounds/space_ship_engine.ogg'])
+		R.sound = new R.RSound(['/static/sounds/viper.ogg']) 			# load car sound
 
-		# g.sound = new Howl(
+		# R.sound = new Howl(
 		# 	urls: ['/static/sounds/viper.ogg']
 		# 	onload: ()->
 		# 		console.log("sound loaded")
-		# 		XMLHttpRequest = g.DajaxiceXMLHttpRequest
+		# 		XMLHttpRequest = R.DajaxiceXMLHttpRequest
 		# 		return
 		# 	volume: 0.25
 		# 	buffer: true
@@ -590,41 +567,41 @@ define [
 		# 		loop: [2000, 3000, true]
 		# )
 
-		# g.sound.plays = (spriteName)->
-		# 	return g.sound.spriteName == spriteName # and g.sound.pos()>0
+		# R.sound.plays = (spriteName)->
+		# 	return R.sound.spriteName == spriteName # and R.sound.pos()>0
 
-		# g.sound.playAt = (spriteName, time)->
+		# R.sound.playAt = (spriteName, time)->
 		# 	if time < 0 or time > 1.0 then return
-		# 	sprite = g.sound.sprite()[spriteName]
+		# 	sprite = R.sound.sprite()[spriteName]
 		# 	begin = sprite[0]
 		# 	duration = sprite[1]
 		# 	looped = sprite[2]
-		# 	g.sound.stop()
-		# 	g.sound.spriteName = spriteName
-		# 	g.sound.play(spriteName)
-		# 	g.sound.pos(time*duration/1000)
+		# 	R.sound.stop()
+		# 	R.sound.spriteName = spriteName
+		# 	R.sound.play(spriteName)
+		# 	R.sound.pos(time*duration/1000)
 		# 	callback = ()->
-		# 		g.sound.stop()
-		# 		if looped then g.sound.play(spriteName)
+		# 		R.sound.stop()
+		# 		if looped then R.sound.play(spriteName)
 		# 		return
-		# 	clearTimeout(g.sound.rTimeout)
-		# 	g.sound.rTimeout = setTimeout(callback, duration-time*duration)
+		# 	clearTimeout(R.sound.rTimeout)
+		# 	R.sound.rTimeout = setTimeout(callback, duration-time*duration)
 		# 	return false
 
-		# g.sidebarJ.find("#buyRomanescoins").click ()->
-		# 	g.templatesJ.find('#romanescoinModal').modal('show')
-		# 	paypalFormJ = g.templatesJ.find("#paypalForm")
+		# R.sidebarJ.find("#buyRomanescoins").click ()->
+		# 	R.templatesJ.find('#romanescoinModal').modal('show')
+		# 	paypalFormJ = R.templatesJ.find("#paypalForm")
 		# 	paypalFormJ.find("input[name='submit']").click( ()->
 		# 		data =
-		# 			user: g.me
-		# 			location: { x: view.center.x, y: view.center.y }
+		# 			user: R.me
+		# 			location: { x: P.view.center.x, y: P.view.center.y }
 		# 		paypalFormJ.find("input[name='custom']").attr("value", JSON.stringify(data) )
 		# 	)
 
 		# load path source code
 
 		# xmlhttp = new RXMLHttpRequest()
-		# url = g.romanescoURL + "static/romanesco-client-code/coffee/Item/path.coffee"
+		# url = R.romanescoURL + "static/romanesco-client-code/coffee/Item/path.coffee"
 
 		# xmlhttp.onreadystatechange = ()->
 		# 	if xmlhttp.readyState == 4 and xmlhttp.status == 200
@@ -634,7 +611,7 @@ define [
 		# 		expressions = CoffeeScript.nodes(sources).expressions
 
 		# 		classMap = {}
-		# 		for pathClass in g.pathClasses
+		# 		for pathClass in R.pathClasses
 		# 			classMap[pathClass.name] = pathClass
 
 		# 		classExpressions = expressions[0].args[1].body.expressions
@@ -648,24 +625,24 @@ define [
 		# 					lines[i] = lines[i].substring(1)
 		# 				source = lines[start .. end].join("\n")
 		# 				# automatically create new PathTool
-		# 				source += "\ntool = new g.PathTool(#{className}, true)"
+		# 				source += "\ntool = new R.PathTool(#{className}, true)"
 		# 				pathClass = classMap[className]
 		# 				pathClass.source = source
-		# 				g.modules[pathClass.rname]?.source = source
+		# 				R.modules[pathClass.label]?.source = source
 		# 	return
 
 		# xmlhttp.open("GET", url, true)
 		# xmlhttp.send()
 
 		# not working, because of dajaxice
-		# $.ajax( url: g.romanescoURL + "static/coffee/path.coffee", cache: false )
+		# $.ajax( url: R.romanescoURL + "static/coffee/path.coffee", cache: false )
 		# .done (data)->
 		# 	console.log "done"
 		# 	lines = data.split(/\n/)
 		# 	expressions = CoffeeScript.nodes(data).expressions
 
 		# 	classMap = {}
-		# 	for pathClass in g.pathClasses
+		# 	for pathClass in R.pathClasses
 		# 		classMap[pathClass.name] = pathClass
 
 		# 	for expression in expressions
@@ -686,21 +663,21 @@ define [
 		# 	console.log "always"
 		# 	return
 
-		g.initializeRasterizers()
-		# g.initializeGlobalParameters()
+		R.initializeRasterizers()
+		# R.initializeGlobalParameters()
 
-		if not g.rasterizerMode
-			g.initParameters()
-			g.initSocket()
+		if not R.rasterizerMode
+			R.initParameters()
+			R.initSocket()
 			initTools()
 			$(".mCustomScrollbar").mCustomScrollbar( keyboard: false )
 		else
-			g.initToolsRasterizer()
+			R.initToolsRasterizer()
 
 		initPosition()
 
 		# initLoadingBar()
-		g.updateGrid()
+		Grid.updateGrid()
 
 		window.setPageFullyLoaded?(true)
 		return
@@ -708,17 +685,19 @@ define [
 	# Initialize Romanesco and handlers
 	$(document).ready () ->
 
+		R.alertManager = new AlertManager()
+
 		init()
 
-		if g.rasterizerMode then return
+		if R.rasterizerMode then return
 
 		## mouse and key listeners
 
-		g.canvasJ.dblclick( (event) -> g.selectedTool.doubleClick?(event) )
+		R.canvasJ.dblclick( (event) -> R.selectedTool.doubleClick?(event) )
 		# cancel default delete key behaviour (not really working)
-		g.canvasJ.keydown( (event) -> if event.key == 46 then event.preventDefault(); return false )
+		R.canvasJ.keydown( (event) -> if event.key == 46 then event.preventDefault(); return false )
 
-		g.tool = new Tool()
+		R.tool = new P.Tool()
 
 		focusIsOnCanvas = ()->
 			return $(document.activeElement).is("body")
@@ -728,36 +707,36 @@ define [
 			# return not activeElementIsOnSidebar and not activeElementIsTextarea and not activeElementIsOnParameterBar
 
 		# Paper listeners
-		g.tool.onMouseDown = (event) ->
+		R.tool.onMouseDown = (event) ->
 
-			if g.wacomPenAPI?.isEraser
-				g.tool.onKeyUp( key: 'delete' )
+			if R.wacomPenAPI?.isEraser
+				R.tool.onKeyUp( key: 'delete' )
 				return
 			$(document.activeElement).blur() # prevent to keep focus on the chat when we interact with the canvas
-			# event = g.snap(event) 		# snapping mouseDown event causes some problems
-			g.selectedTool.begin(event)
+			# event = Utils.Event.snap(event) 		# snapping mouseDown event causes some problems
+			R.selectedTool.begin(event)
 			return
 
-		g.tool.onMouseDrag = (event) ->
-			if g.wacomPenAPI?.isEraser then return
-			if g.currentDiv? then return
-			# event = g.snap(event)
-			g.selectedTool.update(event)
+		R.tool.onMouseDrag = (event) ->
+			if R.wacomPenAPI?.isEraser then return
+			if R.currentDiv? then return
+			# event = Utils.Event.snap(event)
+			R.selectedTool.update(event)
 			return
 
-		# g.tool.onMouseMove = (event) ->
-		# 	if g.selectedTool.name == 'Select'
+		# R.tool.onMouseMove = (event) ->
+		# 	if R.selectedTool.name == 'Select'
 		# 		event.item?.controller?.highlight()
 		# 	return
 
-		g.tool.onMouseUp = (event) ->
-			if g.wacomPenAPI?.isEraser then return
-			if g.currentDiv? then return
-			# event = g.snap(event)
-			g.selectedTool.end(event)
+		R.tool.onMouseUp = (event) ->
+			if R.wacomPenAPI?.isEraser then return
+			if R.currentDiv? then return
+			# event = Utils.Event.snap(event)
+			R.selectedTool.end(event)
 			return
 
-		g.tool.onKeyDown = (event) ->
+		R.tool.onKeyDown = (event) ->
 
 			# if the focus is on anything in the sidebar or is a textarea or in parameters bar: ignore the event
 			if not focusIsOnCanvas() then return
@@ -767,28 +746,28 @@ define [
 				return false
 
 			# select 'Move' tool when user press space key (and reselect previous tool after)
-			if event.key == 'space' and g.selectedTool.name != 'Move'
-				g.tools['Move'].select()
+			if event.key == 'space' and R.selectedTool.name != 'Move'
+				R.tools['Move'].select()
 
 			return
 
-		g.tool.onKeyUp = (event) ->
+		R.tool.onKeyUp = (event) ->
 			# if the focus is on anything in the sidebar or is a textarea or in parameters bar: ignore the event
 			if not focusIsOnCanvas() then return
 
-			g.selectedTool.keyUp(event)
+			R.selectedTool.keyUp(event)
 
 			switch event.key
 				when 'space'
-					g.previousTool?.select()
+					R.previousTool?.select()
 				when 'v'
-					g.tools['Select'].select()
+					R.tools['Select'].select()
 				when 't'
-					g.showToolBox()
+					R.showToolBox()
 				when 'r'
-					# if g.specialKey(event) # Ctrl + R is already used to reload the page
+					# if R.specialKey(event) # Ctrl + R is already used to reload the page
 					if event.modifiers.shift
-						g.rasterizer.rasterizeImmediately()
+						R.rasterizer.rasterizeImmediately()
 
 			event.preventDefault()
 			return
@@ -796,43 +775,43 @@ define [
 		# on frame event:
 		# - update animatedItems
 		# - update cars positions
-		view.onFrame = (event)->
+		P.P.view.onFrame = (event)->
 			TWEEN.update(event.time)
 
-			g.rasterizer.updateLoadingBar?(event.time)
+			R.rasterizer.updateLoadingBar?(event.time)
 
-			g.selectedTool.onFrame?(event)
+			R.selectedTool.onFrame?(event)
 
-			for item in g.animatedItems
+			for item in R.animatedItems
 				item.onFrame(event)
 
-			for username, car of g.cars
-				direction = new Point(1,0)
+			for username, car of R.cars
+				direction = new P.Point(1,0)
 				direction.angle = car.rotation-90
 				car.position = car.position.add(direction.multiply(car.speed))
 				if Date.now() - car.rLastUpdate > 1000
-					g.cars[username].remove()
-					delete g.cars[username]
+					R.cars[username].remove()
+					delete R.cars[username]
 
 			return
 
 		# update grid and mCustomScrollbar when window is resized
 		$(window).resize (event) ->
-			# g.backgroundCanvas.width = window.innerWidth
-			# g.backgroundCanvas.height = window.innerHeight
-			# g.backgroundCanvasJ.width(window.innerWidth)
-			# g.backgroundCanvasJ.height(window.innerHeight)
-			g.updateGrid()
+			# R.backgroundCanvas.width = window.innerWidth
+			# R.backgroundCanvas.height = window.innerHeight
+			# R.backgroundCanvasJ.width(window.innerWidth)
+			# R.backgroundCanvasJ.height(window.innerHeight)
+			Grid.updateGrid()
 			$(".mCustomScrollbar").mCustomScrollbar("update")
-			view.update()
+			P.view.update()
 
-			g.canvasJ.width(window.innerWidth)
-			g.canvasJ.height(window.innerHeight)
-			view.viewSize = new Size(window.innerWidth, window.innerHeight)
+			R.canvasJ.width(window.innerWidth)
+			R.canvasJ.height(window.innerHeight)
+			P.view.viewSize = new P.Size(window.innerWidth, window.innerHeight)
 
-			# g.selectionCanvasJ.width(window.innerWidth)
-			# g.selectionCanvasJ.height(window.innerHeight)
-			# g.selectionProject.view.viewSize = new Size(window.innerWidth, window.innerHeight)
+			# R.selectionCanvasJ.width(window.innerWidth)
+			# R.selectionCanvasJ.height(window.innerHeight)
+			# R.selectionProject.P.view.viewSize = new P.Size(window.innerWidth, window.innerHeight)
 			return
 
 		# mousedown event listener
@@ -840,115 +819,115 @@ define [
 
 			switch event.which						# switch on mouse button number (left, middle or right click)
 				when 2
-					g.tools['Move'].select()		# select move tool if middle mouse button
+					R.tools['Move'].select()		# select move tool if middle mouse button
 				when 3
-					g.selectedTool.finish?() 	# finish current path (in polygon mode) if right click
+					R.selectedTool.finish?() 	# finish current path (in polygon mode) if right click
 
-			if g.selectedTool.name == 'Move' 		# update 'Move' tool if it is the one selected, and return
-				# g.initialMousePosition = new Point(event.pageX, event.pageY)
-				# g.previousMousePosition = g.initialMousePosition.clone()
-				# g.selectedTool.begin()
-				g.selectedTool.beginNative(event)
+			if R.selectedTool.name == 'Move' 		# update 'Move' tool if it is the one selected, and return
+				# R.initialMousePosition = new P.Point(event.pageX, event.pageY)
+				# R.previousMousePosition = R.initialMousePosition.clone()
+				# R.selectedTool.begin()
+				R.selectedTool.beginNative(event)
 				return
 
-			g.initialMousePosition = g.jEventToPoint(event)
-			g.previousMousePosition = g.initialMousePosition.clone()
+			R.initialMousePosition = R.jEventToPoint(event)
+			R.previousMousePosition = R.initialMousePosition.clone()
 
 			return
 
 		# mousemove event listener
 		mousemove = (event) ->
-			g.mousePosition.x = event.pageX
-			g.mousePosition.y = event.pageY
+			R.mousePosition.x = event.pageX
+			R.mousePosition.y = event.pageY
 
-			if g.selectedTool.name == 'Move' and g.selectedTool.dragging
-				# mousePosition = new Point(event.pageX, event.pageY)
-				# simpleEvent = delta: g.previousMousePosition.subtract(mousePosition)
-				# g.previousMousePosition = mousePosition
+			if R.selectedTool.name == 'Move' and R.selectedTool.dragging
+				# mousePosition = new P.Point(event.pageX, event.pageY)
+				# simpleEvent = delta: R.previousMousePosition.subtract(mousePosition)
+				# R.previousMousePosition = mousePosition
 				# console.log simpleEvent.delta.toString()
-				# g.selectedTool.update(simpleEvent) 	# update 'Move' tool if it is the one selected
-				g.selectedTool.updateNative(event)
+				# R.selectedTool.update(simpleEvent) 	# update 'Move' tool if it is the one selected
+				R.selectedTool.updateNative(event)
 				return
 
-			g.RDiv.updateHiddenDivs(event)
+			R.RDiv.updateHiddenDivs(event)
 
 			# update selected RDivs
-			# if g.previousPoint?
-			# 	event.delta = new Point(event.pageX-g.previousPoint.x, event.pageY-g.previousPoint.y)
-			# 	g.previousPoint = new Point(event.pageX, event.pageY)
+			# if R.previousPoint?
+			# 	event.delta = new P.Point(event.pageX-R.previousPoint.x, event.pageY-R.previousPoint.y)
+			# 	R.previousPoint = new P.Point(event.pageX, event.pageY)
 
-			# 	for item in g.selectedItems
+			# 	for item in R.selectedItems
 			# 		item.updateSelect?(event)
 
 			# update code editor width
-			g.codeEditor?.onMouseMove(event)
+			R.codeEditor?.onMouseMove(event)
 
-			if g.currentDiv?
-				paperEvent = g.jEventToPaperEvent(event, g.previousMousePosition, g.initialMousePosition, 'mousemove')
-				g.currentDiv.updateSelect?(paperEvent)
-				g.previousMousePosition = paperEvent.point
+			if R.currentDiv?
+				paperEvent = Utils.Event.jEventToPaperEvent(event, R.previousMousePosition, R.initialMousePosition, 'mousemove')
+				R.currentDiv.updateSelect?(paperEvent)
+				R.previousMousePosition = paperEvent.point
 
 			return
 
 		# mouseup event listener
 		mouseup = (event) ->
 
-			if g.stageJ.hasClass("has-tool-box") and not $(event.target).parents('.tool-box').length>0
-				g.hideToolBox()
+			if R.stageJ.hasClass("has-tool-box") and not $(event.target).parents('.tool-box').length>0
+				R.hideToolBox()
 
-			g.codeEditor?.onMouseUp(event)
+			R.codeEditor?.onMouseUp(event)
 
-			if g.selectedTool.name == 'Move'
-				# g.selectedTool.end(g.previousMousePosition.equals(g.initialMousePosition))
-				g.selectedTool.endNative(event)
+			if R.selectedTool.name == 'Move'
+				# R.selectedTool.end(R.previousMousePosition.equals(R.initialMousePosition))
+				R.selectedTool.endNative(event)
 
 				# deselect move tool and select previous tool if middle mouse button
 				if event.which == 2 # middle mouse button
-					g.previousTool?.select()
+					R.previousTool?.select()
 				return
 
 
-			if g.currentDiv?
-				paperEvent = g.jEventToPaperEvent(event, g.previousMousePosition, g.initialMousePosition, 'mouseup')
-				g.currentDiv.endSelect?(paperEvent)
-				g.previousMousePosition = paperEvent.point
+			if R.currentDiv?
+				paperEvent = Utils.Event.jEventToPaperEvent(event, R.previousMousePosition, R.initialMousePosition, 'mouseup')
+				R.currentDiv.endSelect?(paperEvent)
+				R.previousMousePosition = paperEvent.point
 
 			# drag handles
-			# g.mousemove(event)
-			# selectedDiv.endSelect(event) for selectedDiv in g.selectedDivs
+			# R.mousemove(event)
+			# selectedDiv.endSelect(event) for selectedDiv in R.selectedDivs
 
 			# # update selected RDivs
-			# if g.previousPoint?
-			# 	event.delta = new Point(event.pageX-g.previousPoint.x, event.pageY-g.previousPoint.y)
-			# 	g.previousPoint = null
-			# 	for item in g.selectedItems
+			# if R.previousPoint?
+			# 	event.delta = new P.Point(event.pageX-R.previousPoint.x, event.pageY-R.previousPoint.y)
+			# 	R.previousPoint = null
+			# 	for item in R.selectedItems
 			# 		item.endSelect?(event)
 
 
 			return
 		# jQuery listeners
-		# g.canvasJ.mousedown( mousedown )
-		g.stageJ.mousedown( mousedown )
+		# R.canvasJ.mousedown( mousedown )
+		R.stageJ.mousedown( mousedown )
 		$(window).mousemove( mousemove )
 		$(window).mouseup( mouseup )
-		g.stageJ.mousewheel (event)->
-			g.RMoveBy(new Point(-event.deltaX, event.deltaY))
+		R.stageJ.mousewheel (event)->
+			View.moveBy(new P.Point(-event.deltaX, event.deltaY))
 			return
 
-		g.fileManager = new g.FileManager()
+		R.fileManager = new R.FileManager()
 
 		return
 
-	g.showCodeEditor = (source)->
-		if not g.codeEditor?
+	R.showCodeEditor = (source)->
+		if not R.codeEditor?
 			require ['editor'], (CodeEditor)->
-				g.codeEditor = new CodeEditor()
-				if source then g.codeEditor.setSource(source)
-				g.codeEditor.open()
+				R.codeEditor = new CodeEditor()
+				if source then R.codeEditor.setSource(source)
+				R.codeEditor.open()
 				return
 		else
-			if source then g.codeEditor.setSource(source)
-			g.codeEditor.open()
+			if source then R.codeEditor.setSource(source)
+			R.codeEditor.open()
 		return
 
 	return

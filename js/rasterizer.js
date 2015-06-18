@@ -5,9 +5,8 @@
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
-  define(['utils', 'jquery', 'paper'], function(utils) {
-    var CanvasTileRasterizer, InstantPaperTileRasterizer, PaperTileRasterizer, Rasterizer, TileRasterizer, g;
-    g = utils.g();
+  define(['utils'], function() {
+    var CanvasTileRasterizer, InstantPaperTileRasterizer, PaperTileRasterizer, Rasterizer, TileRasterizer;
     Rasterizer = (function() {
       Rasterizer.TYPE = 'default';
 
@@ -15,8 +14,35 @@
 
       Rasterizer.UNION_RATIO = 1.5;
 
+      Rasterizer.areaToImageDataUrl = function(rectangle, convertToView) {
+        var canvasTemp, contextTemp, dataURL, viewRectangle;
+        if (convertToView == null) {
+          convertToView = true;
+        }
+        if (rectangle.height <= 0 || rectangle.width <= 0) {
+          console.log('Warning: trying to extract empty area!!!');
+          return null;
+        }
+        if (convertToView) {
+          rectangle = rectangle.intersect(P.view.bounds);
+          viewRectangle = R.projectToViewRectangle(rectangle);
+        } else {
+          viewRectangle = rectangle;
+        }
+        if (viewRectangle.size.equals(P.view.size) && viewRectangle.x === 0 && viewRectangle.y === 0) {
+          return R.canvas.toDataURL("image/png");
+        }
+        canvasTemp = document.createElement('canvas');
+        canvasTemp.width = viewRectangle.width;
+        canvasTemp.height = viewRectangle.height;
+        contextTemp = canvasTemp.getContext('2d');
+        contextTemp.putImageData(R.context.getImageData(viewRectangle.x, viewRectangle.y, viewRectangle.width, viewRectangle.height), 0, 0);
+        dataURL = canvasTemp.toDataURL("image/png");
+        return dataURL;
+      };
+
       function Rasterizer() {
-        g.rasterizers[this.constructor.TYPE] = this;
+        R.rasterizers[this.constructor.TYPE] = this;
         this.rasterizeItems = true;
         return;
       }
@@ -24,16 +50,16 @@
       Rasterizer.prototype.quantizeBounds = function(bounds, scale) {
         var quantizedBounds;
         if (bounds == null) {
-          bounds = view.bounds;
+          bounds = P.view.bounds;
         }
         if (scale == null) {
-          scale = g.scale;
+          scale = R.scale;
         }
         quantizedBounds = {
-          t: g.floorToMultiple(bounds.top, scale),
-          l: g.floorToMultiple(bounds.left, scale),
-          b: g.floorToMultiple(bounds.bottom, scale),
-          r: g.floorToMultiple(bounds.right, scale)
+          t: Utils.floorToMultiple(bounds.top, scale),
+          l: Utils.floorToMultiple(bounds.left, scale),
+          b: Utils.floorToMultiple(bounds.bottom, scale),
+          r: Utils.floorToMultiple(bounds.right, scale)
         };
         return quantizedBounds;
       };
@@ -78,7 +104,7 @@
       Rasterizer.prototype.rasterizeAreasToUpdate = function() {};
 
       Rasterizer.prototype.maxArea = function() {
-        return view.bounds.area * this.constructor.MAX_AREA;
+        return P.view.bounds.area * this.constructor.MAX_AREA;
       };
 
       Rasterizer.prototype.rasterizeView = function() {};
@@ -89,7 +115,7 @@
 
       Rasterizer.prototype.rasterizeAllItems = function() {
         var item, pk, _ref;
-        _ref = g.items;
+        _ref = R.items;
         for (pk in _ref) {
           item = _ref[pk];
           if (typeof item.rasterize === "function") {
@@ -107,19 +133,44 @@
       Rasterizer.prototype.showRasters = function() {};
 
       Rasterizer.prototype.extractImage = function(rectangle, redraw) {
-        return g.areaToImageDataUrl(rectangle);
+        return Rasterizer.areaToImageDataUrl(rectangle);
       };
 
       return Rasterizer;
 
     })();
-    g.Rasterizer = Rasterizer;
+    R.Rasterizer = Rasterizer;
     TileRasterizer = (function(_super) {
       __extends(TileRasterizer, _super);
 
       TileRasterizer.TYPE = 'abstract tile';
 
       TileRasterizer.loadingBarJ = null;
+
+      TileRasterizer.addChildren = function(parent, sortedItems) {
+        var item, _i, _len, _ref;
+        if (parent.children == null) {
+          return;
+        }
+        _ref = parent.children;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          item = _ref[_i];
+          if ((item.controller != null) && P.Group.prototype.isPrototypeOf(item)) {
+            sortedItems.push(item.controller);
+            if (Lock.prototype.isPrototypeOf(item.controller)) {
+              this.addChildren(item, sortedItems);
+            }
+          }
+        }
+      };
+
+      TileRasterizer.getSortedItems = function() {
+        var sortedItems;
+        sortedItems = [];
+        this.addChildren(R.mainLayer, sortedItems);
+        this.addChildren(R.lockLayer, sortedItems);
+        return sortedItems;
+      };
 
       function TileRasterizer() {
         this.rasterizeCallback = __bind(this.rasterizeCallback, this);
@@ -142,7 +193,7 @@
 
       TileRasterizer.prototype.loadItem = function(item) {
         var _ref;
-        if (((_ref = item.data) != null ? _ref.animate : void 0) || g.selectedToolNeedsDrawings()) {
+        if (((_ref = item.data) != null ? _ref.animate : void 0) || R.selectedTool.constructor.drawItems) {
           if (typeof item.draw === "function") {
             item.draw();
           }
@@ -157,12 +208,12 @@
       };
 
       TileRasterizer.prototype.startLoading = function() {
-        this.startLoadingTime = view._time;
-        g.TileRasterizer.loadingBarJ.css({
+        this.startLoadingTime = P.view._time;
+        R.TileRasterizer.loadingBarJ.css({
           width: 0
         });
-        g.TileRasterizer.loadingBarJ.show();
-        g.deferredExecution(this.rasterizeCallback, 'rasterize', this.rasterizationDelay);
+        R.TileRasterizer.loadingBarJ.show();
+        Utils.deferredExecution(this.rasterizeCallback, 'rasterize', this.rasterizationDelay);
       };
 
       TileRasterizer.prototype.stopLoading = function(cancelTimeout) {
@@ -170,9 +221,9 @@
           cancelTimeout = true;
         }
         this.startLoadingTime = null;
-        g.TileRasterizer.loadingBarJ.hide();
+        R.TileRasterizer.loadingBarJ.hide();
         if (cancelTimeout) {
-          clearTimeout(g.updateTimeout['rasterize']);
+          clearTimeout(R.updateTimeout['rasterize']);
         }
       };
 
@@ -188,7 +239,7 @@
         }
         duration = 1000 * (time - this.startLoadingTime) / this.rasterizationDelay;
         totalWidth = 241;
-        g.TileRasterizer.loadingBarJ.css({
+        R.TileRasterizer.loadingBarJ.css({
           width: duration * totalWidth
         });
         if (duration >= 1) {
@@ -215,7 +266,7 @@
             this.stopLoading();
             break;
           case 'immediate':
-            g.callNextFrame(this.rasterizeCallback, 'rasterize');
+            Utils.callNextFrame(this.rasterizeCallback, 'rasterize');
         }
       };
 
@@ -231,13 +282,13 @@
             this.startLoading();
             break;
           case 'immediate':
-            g.callNextFrame(this.rasterizeCallback, 'rasterize');
+            Utils.callNextFrame(this.rasterizeCallback, 'rasterize');
         }
       };
 
       TileRasterizer.prototype.rasterLoaded = function(raster) {
         var allRastersAreReady, rasterColumn, x, y, _ref;
-        raster.context.clearRect(0, 0, g.scale, g.scale);
+        raster.context.clearRect(0, 0, R.scale, R.scale);
         raster.context.drawImage(raster.image, 0, 0);
         raster.ready = true;
         raster.loaded = true;
@@ -268,20 +319,20 @@
 
       TileRasterizer.prototype.getRasterBounds = function(x, y) {
         var size;
-        size = this.rasters[x][y].zoom * g.scale;
-        return new Rectangle(x, y, size, size);
+        size = this.rasters[x][y].zoom * R.scale;
+        return new P.Rectangle(x, y, size, size);
       };
 
       TileRasterizer.prototype.removeRaster = function(raster, x, y) {
         delete this.rasters[x][y];
-        if (g.isEmpty(this.rasters[x])) {
+        if (Utils.isEmpty(this.rasters[x])) {
           delete this.rasters[x];
         }
       };
 
       TileRasterizer.prototype.unload = function(limit) {
         var qZoom, raster, rasterColumn, rectangle, x, y, _ref;
-        qZoom = g.quantizeZoom(1.0 / view.zoom);
+        qZoom = R.quantizeZoom(1.0 / P.view.zoom);
         _ref = this.rasters;
         for (x in _ref) {
           rasterColumn = _ref[x];
@@ -304,12 +355,12 @@
         this.move();
         for (_i = 0, _len = rasters.length; _i < _len; _i++) {
           r = rasters[_i];
-          x = r.position.x * g.scale;
-          y = r.position.y * g.scale;
+          x = r.position.x * R.scale;
+          y = r.position.y * R.scale;
           raster = (_ref = this.rasters[x]) != null ? _ref[y] : void 0;
           if (raster && !raster.loaded) {
             raster.ready = false;
-            url = g.romanescoURL + r.url + '?' + Math.random();
+            url = R.romanescoURL + r.url + '?' + Math.random();
             this.loadImageForRaster(raster, url);
           }
         }
@@ -317,8 +368,8 @@
 
       TileRasterizer.prototype.createRasters = function(rectangle) {
         var qBounds, qZoom, scale, x, y, _i, _j, _ref, _ref1, _ref2, _ref3;
-        qZoom = g.quantizeZoom(1.0 / view.zoom);
-        scale = g.scale * qZoom;
+        qZoom = R.quantizeZoom(1.0 / P.view.zoom);
+        scale = R.scale * qZoom;
         qBounds = this.quantizeBounds(rectangle, scale);
         for (x = _i = _ref = qBounds.l, _ref1 = qBounds.r; scale > 0 ? _i <= _ref1 : _i >= _ref1; x = _i += scale) {
           for (y = _j = _ref2 = qBounds.t, _ref3 = qBounds.b; scale > 0 ? _j <= _ref3 : _j >= _ref3; y = _j += scale) {
@@ -328,14 +379,14 @@
       };
 
       TileRasterizer.prototype.move = function() {
-        this.createRasters(view.bounds);
+        this.createRasters(P.view.bounds);
       };
 
       TileRasterizer.prototype.splitAreaToRasterize = function() {
         var area, areaToRasterizeInteger, areas, maxSize;
-        maxSize = view.size.multiply(2);
-        areaToRasterizeInteger = g.expandRectangleToInteger(this.areaToRasterize);
-        area = g.expandRectangleToInteger(new Rectangle(this.areaToRasterize.topLeft, Size.min(maxSize, this.areaToRasterize.size)));
+        maxSize = P.view.size.multiply(2);
+        areaToRasterizeInteger = Utils.P.Rectangle.expandRectangleToInteger(this.areaToRasterize);
+        area = Utils.P.Rectangle.expandRectangleToInteger(new P.Rectangle(this.areaToRasterize.topLeft, P.Size.min(maxSize, this.areaToRasterize.size)));
         areas = [area.clone()];
         while (area.right < this.areaToRasterize.right || area.bottom < this.areaToRasterize.bottom) {
           if (area.right < this.areaToRasterize.right) {
@@ -362,16 +413,16 @@
         }
         rasterRectangle = this.getRasterBounds(x, y);
         intersection = rectangle.intersect(rasterRectangle);
-        destinationRectangle = new Rectangle(intersection.topLeft.subtract(rasterRectangle.topLeft).divide(qZoom), intersection.size.divide(qZoom));
+        destinationRectangle = new P.Rectangle(intersection.topLeft.subtract(rasterRectangle.topLeft).divide(qZoom), intersection.size.divide(qZoom));
         context = this.rasters[x][y].context;
         if (clearRasters) {
           context.clearRect(destinationRectangle.x, destinationRectangle.y, destinationRectangle.width, destinationRectangle.height);
         }
         if (canvas != null) {
           if (sourceRectangle != null) {
-            sourceRectangle = new Rectangle(intersection.topLeft.subtract(sourceRectangle.topLeft), intersection.size);
+            sourceRectangle = new P.Rectangle(intersection.topLeft.subtract(sourceRectangle.topLeft), intersection.size);
           } else {
-            sourceRectangle = new Rectangle(intersection.topLeft.subtract(rectangle.topLeft).divide(qZoom), intersection.size.divide(qZoom));
+            sourceRectangle = new P.Rectangle(intersection.topLeft.subtract(rectangle.topLeft).divide(qZoom), intersection.size.divide(qZoom));
           }
           context.drawImage(canvas, sourceRectangle.x, sourceRectangle.y, sourceRectangle.width, sourceRectangle.height, destinationRectangle.x, destinationRectangle.y, destinationRectangle.width, destinationRectangle.height);
         }
@@ -386,8 +437,8 @@
           sourceRectangle = null;
         }
         console.log("rasterize: " + rectangle.width + ", " + rectangle.height);
-        qZoom = g.quantizeZoom(1.0 / view.zoom);
-        scale = g.scale * qZoom;
+        qZoom = R.quantizeZoom(1.0 / P.view.zoom);
+        scale = R.scale * qZoom;
         qBounds = this.quantizeBounds(rectangle, scale);
         for (x = _i = _ref = qBounds.l, _ref1 = qBounds.r; scale > 0 ? _i <= _ref1 : _i >= _ref1; x = _i += scale) {
           for (y = _j = _ref2 = qBounds.t, _ref3 = qBounds.b; scale > 0 ? _j <= _ref3 : _j >= _ref3; y = _j += scale) {
@@ -401,30 +452,30 @@
       };
 
       TileRasterizer.prototype.rasterizeArea = function(area) {
-        view.viewSize = area.size.multiply(view.zoom);
-        view.center = area.center;
-        view.update();
-        this.rasterizeCanvas(g.canvas, area, true);
+        P.view.viewSize = area.size.multiply(P.view.zoom);
+        P.view.center = area.center;
+        P.view.update();
+        this.rasterizeCanvas(R.canvas, area, true);
       };
 
       TileRasterizer.prototype.rasterizeAreas = function(areas) {
         var area, viewPosition, viewSize, viewZoom, _i, _len;
-        viewZoom = view.zoom;
-        viewSize = view.viewSize;
-        viewPosition = view.center;
-        view.zoom = 1.0 / g.quantizeZoom(1.0 / view.zoom);
+        viewZoom = P.view.zoom;
+        viewSize = P.view.viewSize;
+        viewPosition = P.view.center;
+        P.view.zoom = 1.0 / R.quantizeZoom(1.0 / P.view.zoom);
         for (_i = 0, _len = areas.length; _i < _len; _i++) {
           area = areas[_i];
           this.rasterizeArea(area);
         }
-        view.zoom = viewZoom;
-        view.viewSize = viewSize;
-        view.center = viewPosition;
+        P.view.zoom = viewZoom;
+        P.view.viewSize = viewSize;
+        P.view.center = viewPosition;
       };
 
       TileRasterizer.prototype.prepareView = function() {
         var item, pk, _i, _len, _ref, _ref1, _ref2, _ref3;
-        _ref = g.items;
+        _ref = R.items;
         for (pk in _ref) {
           item = _ref[pk];
           item.group.visible = true;
@@ -436,11 +487,11 @@
             _ref2.visible = false;
           }
         }
-        g.grid.visible = false;
-        g.selectionLayer.visible = false;
-        g.carLayer.visible = false;
-        this.viewOnFrame = view.onFrame;
-        view.onFrame = null;
+        R.grid.visible = false;
+        R.selectionLayer.visible = false;
+        R.carLayer.visible = false;
+        this.viewOnFrame = P.view.onFrame;
+        P.view.onFrame = null;
         if ((_ref3 = this.rasterLayer) != null) {
           _ref3.visible = false;
         }
@@ -451,10 +502,10 @@
         if ((_ref = this.rasterLayer) != null) {
           _ref.visible = true;
         }
-        view.onFrame = this.viewOnFrame;
-        g.carLayer.visible = true;
-        g.selectionLayer.visible = true;
-        g.grid.visible = true;
+        P.view.onFrame = this.viewOnFrame;
+        R.carLayer.visible = true;
+        R.selectionLayer.visible = true;
+        R.grid.visible = true;
       };
 
       TileRasterizer.prototype.rasterizeCallback = function(step) {
@@ -463,8 +514,8 @@
           return;
         }
         console.log("rasterize");
-        g.logElapsedTime();
-        g.startTimer();
+        R.logElapsedTime();
+        R.startTimer();
         if (this.autoRasterization === 'deferred' || this.autoRasterization === 'disabled') {
           this.showRasters();
         }
@@ -474,7 +525,7 @@
           this.rasterizeAreas(areas);
           this.restoreView();
         } else {
-          sortedItems = g.getSortedItems();
+          sortedItems = this.constructor.getSortedItems();
           for (_i = 0, _len = areas.length; _i < _len; _i++) {
             area = areas[_i];
             this.clearAreaInRasters(area);
@@ -486,10 +537,10 @@
             }
           }
         }
-        _ref1 = g.items;
+        _ref1 = R.items;
         for (pk in _ref1) {
           item = _ref1[pk];
-          if (item === g.currentPaths[g.me] || (item.selectionRectangle != null)) {
+          if (item === R.currentPaths[R.me] || (item.selectionRectangle != null)) {
             continue;
           }
           if ((_ref2 = item.group) != null) {
@@ -510,8 +561,8 @@
         this.areaToRasterize = null;
         this.itemsAreVisible = false;
         this.stopLoading();
-        g.stopTimer('Time to rasterize path: ');
-        g.logElapsedTime();
+        R.stopTimer('Time to rasterize path: ');
+        R.logElapsedTime();
       };
 
       TileRasterizer.prototype.rasterize = function(items, excludeItems) {
@@ -520,8 +571,8 @@
           return;
         }
         console.log("ask rasterize" + (excludeItems ? " excluding items." : ""));
-        g.logElapsedTime();
-        if (!g.isArray(items)) {
+        R.logElapsedTime();
+        if (!Utils.Array.isArray(items)) {
           items = [items];
         }
         if (!excludeItems) {
@@ -534,7 +585,7 @@
           }
           this.areaToRasterize = this.areaToRasterize.unite(item.getDrawingBounds());
           if (excludeItems) {
-            g.pushIfAbsent(this.itemsToExclude, item);
+            Utils.Array.pushIfAbsent(this.itemsToExclude, item);
           }
         }
       };
@@ -546,7 +597,7 @@
         } else {
           this.areaToRasterize = this.areaToRasterize.unite(rectangle);
         }
-        g.callNextFrame(this.rasterizeCallback, 'rasterize');
+        Utils.callNextFrame(this.rasterizeCallback, 'rasterize');
       };
 
       TileRasterizer.prototype.addAreaToUpdate = function(area) {
@@ -565,8 +616,8 @@
         this.drawItems(true);
         previousItemsToExclude = this.itemsToExclude;
         previousAreaToRasterize = this.areaToRasterize;
-        previousZoom = view.zoom;
-        view.zoom = 1.0 / this.areasToUpdateQZoom;
+        previousZoom = P.view.zoom;
+        P.view.zoom = 1.0 / this.areasToUpdateQZoom;
         this.itemsToExclude = [];
         _ref = this.areasToUpdate;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -577,7 +628,7 @@
         this.areasToUpdate = [];
         this.itemsToExclude = previousItemsToExclude;
         this.areaToRasterize = previousAreaToRasterize;
-        view.zoom = previousZoom;
+        P.view.zoom = previousZoom;
       };
 
       TileRasterizer.prototype.clearRasters = function() {
@@ -587,7 +638,7 @@
           rasterColumn = _ref[x];
           for (y in rasterColumn) {
             raster = rasterColumn[y];
-            raster.context.clearRect(0, 0, g.scale, g.scale);
+            raster.context.clearRect(0, 0, R.scale, R.scale);
           }
         }
       };
@@ -603,7 +654,7 @@
         if (this.itemsAreDrawn) {
           return;
         }
-        _ref = g.items;
+        _ref = R.items;
         for (pk in _ref) {
           item = _ref[pk];
           if (item.drawing == null) {
@@ -625,7 +676,7 @@
         if (this.itemsAreVisible) {
           return;
         }
-        _ref = g.items;
+        _ref = R.items;
         for (pk in _ref) {
           item = _ref[pk];
           item.group.visible = true;
@@ -645,7 +696,7 @@
       };
 
       TileRasterizer.prototype.rasterizeView = function() {
-        this.rasterizeRectangle(view.bounds);
+        this.rasterizeRectangle(P.view.bounds);
       };
 
       TileRasterizer.prototype.hideRasters = function() {};
@@ -655,7 +706,7 @@
       TileRasterizer.prototype.hideOthers = function(itemToExclude) {
         var item, pk, _ref;
         console.log(itemToExclude.pk);
-        _ref = g.items;
+        _ref = R.items;
         for (pk in _ref) {
           item = _ref[pk];
           if (item !== itemToExclude) {
@@ -672,10 +723,10 @@
           disableDrawing = this.disableDrawing;
           this.disableDrawing = false;
           this.drawItemsAndHideRasters();
-          dataURL = g.areaToImageDataUrl(rectangle);
+          dataURL = Rasterizer.areaToImageDataUrl(rectangle);
           if (rasterizeItems) {
             this.rasterizeItems = true;
-            _ref = g.items;
+            _ref = R.items;
             for (pk in _ref) {
               item = _ref[pk];
               if (typeof item.rasterize === "function") {
@@ -690,24 +741,24 @@
           this.rasterizeImmediately();
           return dataURL;
         } else {
-          return g.areaToImageDataUrl(rectangle);
+          return Rasterizer.areaToImageDataUrl(rectangle);
         }
       };
 
       return TileRasterizer;
 
-    })(g.Rasterizer);
-    g.TileRasterizer = TileRasterizer;
+    })(R.Rasterizer);
+    R.TileRasterizer = TileRasterizer;
     PaperTileRasterizer = (function(_super) {
       __extends(PaperTileRasterizer, _super);
 
       PaperTileRasterizer.TYPE = 'paper tile';
 
       function PaperTileRasterizer() {
-        this.rasterLayer = new Layer();
+        this.rasterLayer = new P.Layer();
         this.rasterLayer.name = 'raster layer';
-        this.rasterLayer.moveBelow(g.mainLayer);
-        g.mainLayer.activate();
+        this.rasterLayer.moveBelow(R.mainLayer);
+        R.mainLayer.activate();
         PaperTileRasterizer.__super__.constructor.call(this);
         return;
       }
@@ -720,10 +771,10 @@
         raster = new Raster();
         raster.name = 'raster: ' + x + ', ' + y;
         console.log(raster.name);
-        raster.position.x = x + 0.5 * g.scale * zoom;
-        raster.position.y = y + 0.5 * g.scale * zoom;
-        raster.width = g.scale;
-        raster.height = g.scale;
+        raster.position.x = x + 0.5 * R.scale * zoom;
+        raster.position.y = y + 0.5 * R.scale * zoom;
+        raster.width = R.scale;
+        raster.height = R.scale;
         raster.scale(zoom);
         raster.context = raster.canvas.getContext('2d');
         this.rasterLayer.addChild(raster);
@@ -771,8 +822,8 @@
 
       return PaperTileRasterizer;
 
-    })(g.TileRasterizer);
-    g.PaperTileRasterizer = PaperTileRasterizer;
+    })(R.TileRasterizer);
+    R.PaperTileRasterizer = PaperTileRasterizer;
     InstantPaperTileRasterizer = (function(_super) {
       __extends(InstantPaperTileRasterizer, _super);
 
@@ -796,7 +847,7 @@
             delay = 500;
             if ((this.itemsToDraw[item.pk] == null) || time - this.itemsToDraw[item.pk] < delay) {
               this.itemsToDraw[item.pk] = time;
-              g.deferredExecution(item.draw, 'item.draw:' + item.pk, delay, [simplified, redrawing], item);
+              Utils.deferredExecution(item.draw, 'item.draw:' + item.pk, delay, [simplified, redrawing], item);
             } else {
               delete this.itemsToDraw[item.pk];
               return true;
@@ -823,7 +874,7 @@
       InstantPaperTileRasterizer.prototype.rasterizeCallback = function(step) {
         var item, pk, _ref;
         this.disableDrawing = false;
-        _ref = g.items;
+        _ref = R.items;
         for (pk in _ref) {
           item = _ref[pk];
           if ((item.drawn != null) && !item.drawn && item.getDrawingBounds().intersects(this.areaToRasterize)) {
@@ -849,8 +900,8 @@
 
       return InstantPaperTileRasterizer;
 
-    })(g.PaperTileRasterizer);
-    g.InstantPaperTileRasterizer = InstantPaperTileRasterizer;
+    })(R.PaperTileRasterizer);
+    R.InstantPaperTileRasterizer = InstantPaperTileRasterizer;
     CanvasTileRasterizer = (function(_super) {
       __extends(CanvasTileRasterizer, _super);
 
@@ -868,7 +919,7 @@
           return;
         }
         raster = {};
-        raster.canvasJ = $('<canvas hidpi="off" width="' + g.scale + '" height="' + g.scale + '">');
+        raster.canvasJ = $('<canvas hidpi="off" width="' + R.scale + '" height="' + R.scale + '">');
         raster.canvas = raster.canvasJ[0];
         raster.context = raster.canvas.getContext('2d');
         raster.image = new Image();
@@ -900,15 +951,15 @@
           for (y in rasterColumn) {
             raster = rasterColumn[y];
             y = Number(y);
-            viewPos = view.projectToView(new Point(x, y));
-            if (view.zoom === 1) {
+            viewPos = P.view.projectToView(new P.Point(x, y));
+            if (P.view.zoom === 1) {
               raster.canvasJ.css({
                 'left': viewPos.x,
                 'top': viewPos.y,
                 'transform': 'none'
               });
             } else {
-              scale = view.zoom * raster.zoom;
+              scale = P.view.zoom * raster.zoom;
               css = 'translate(' + viewPos.x + 'px,' + viewPos.y + 'px)';
               css += ' scale(' + scale + ')';
               raster.canvasJ.css({
@@ -948,45 +999,45 @@
 
       return CanvasTileRasterizer;
 
-    })(g.TileRasterizer);
-    g.CanvasTileRasterizer = CanvasTileRasterizer;
-    g.initializeRasterizers = function() {
-      g.rasterizers = {};
-      new g.Rasterizer();
-      new g.CanvasTileRasterizer();
-      new g.InstantPaperTileRasterizer();
-      g.rasterizer = new g.PaperTileRasterizer();
+    })(R.TileRasterizer);
+    R.CanvasTileRasterizer = CanvasTileRasterizer;
+    R.initializeRasterizers = function() {
+      R.rasterizers = {};
+      new R.Rasterizer();
+      new R.CanvasTileRasterizer();
+      new R.InstantPaperTileRasterizer();
+      R.rasterizer = new R.PaperTileRasterizer();
     };
-    g.addRasterizerParameters = function() {
+    R.addRasterizerParameters = function() {
       var divJ, name, parameter, parameters, rasterizer, renderingModes, type, _ref;
       renderingModes = [];
-      _ref = g.rasterizers;
+      _ref = R.rasterizers;
       for (type in _ref) {
         rasterizer = _ref[type];
         renderingModes.push(type);
       }
-      g.rasterizerFolder = new g.Folder('Rasterizer', true, g.controllerManager.folders['General']);
+      R.rasterizerFolder = new R.Folder('Rasterizer', true, R.controllerManager.folders['General']);
       divJ = $('<div>');
       divJ.addClass('loadingBar');
-      $(g.rasterizerFolder.datFolder.__ul).find('li.title').append(divJ);
-      g.TileRasterizer.loadingBarJ = divJ;
+      $(R.rasterizerFolder.datFolder.__ul).find('li.title').append(divJ);
+      R.TileRasterizer.loadingBarJ = divJ;
       parameters = {
         renderingMode: {
-          "default": g.rasterizer.constructor.TYPE,
+          "default": R.rasterizer.constructor.TYPE,
           values: renderingModes,
           label: 'Render mode',
-          onFinishChange: g.setRasterizerType
+          onFinishChange: R.setRasterizerType
         },
         rasterizeItems: {
           "default": true,
           label: 'Rasterize items',
           onFinishChange: function(value) {
             var controller, _i, _len, _ref1;
-            g.rasterizer.rasterizeItems = value;
+            R.rasterizer.rasterizeItems = value;
             if (!value) {
-              g.rasterizer.renderInView = true;
+              R.rasterizer.renderInView = true;
             }
-            _ref1 = g.rasterizerFolder.datFolder.__controllers;
+            _ref1 = R.rasterizerFolder.datFolder.__controllers;
             for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
               controller = _ref1[_i];
               if (controller.property === 'renderInView') {
@@ -1003,7 +1054,7 @@
           "default": false,
           label: 'Render in view',
           onFinishChange: function(value) {
-            g.rasterizer.renderInView = value;
+            R.rasterizer.renderInView = value;
           }
         },
         autoRasterization: {
@@ -1011,7 +1062,7 @@
           values: ['immediate', 'deferred', 'disabled'],
           label: 'Auto rasterization',
           onFinishChange: function(value) {
-            g.rasterizer.autoRasterization = value;
+            R.rasterizer.autoRasterization = value;
           }
         },
         rasterizationDelay: {
@@ -1020,25 +1071,25 @@
           max: 10000,
           lable: 'Delay',
           onFinishChange: function(value) {
-            g.rasterizer.rasterizationDelay = value;
+            R.rasterizer.rasterizationDelay = value;
           }
         },
         rasterizeImmediately: {
           "default": function() {
-            g.rasterizer.rasterizeImmediately();
+            R.rasterizer.rasterizeImmediately();
           },
           label: 'Rasterize'
         }
       };
       for (name in parameters) {
         parameter = parameters[name];
-        g.controllerManager.createController(name, parameter, g.rasterizerFolder);
+        R.controllerManager.createController(name, parameter, R.rasterizerFolder);
       }
     };
-    g.setRasterizerType = function(type) {
+    R.setRasterizerType = function(type) {
       var controller, onFinishChange, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
-      if (type === g.Rasterizer.TYPE) {
-        _ref = g.rasterizerFolder.datFolder.__controllers;
+      if (type === R.Rasterizer.TYPE) {
+        _ref = R.rasterizerFolder.datFolder.__controllers;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           controller = _ref[_i];
           if ((_ref1 = controller.property) === 'renderInView' || _ref1 === 'autoRasterization' || _ref1 === 'rasterizationDelay' || _ref1 === 'rasterizeImmediately') {
@@ -1046,44 +1097,45 @@
           }
         }
       } else {
-        _ref2 = g.rasterizerFolder.datFolder.__controllers;
+        _ref2 = R.rasterizerFolder.datFolder.__controllers;
         for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
           controller = _ref2[_j];
           $(controller.__li).show();
         }
       }
-      g.unload();
-      g.rasterizer = g.rasterizers[type];
-      _ref3 = g.rasterizerFolder.datFolder.__controllers;
+      R.unload();
+      R.rasterizer = R.rasterizers[type];
+      _ref3 = R.rasterizerFolder.datFolder.__controllers;
       for (_k = 0, _len2 = _ref3.length; _k < _len2; _k++) {
         controller = _ref3[_k];
-        if (g.rasterizer[controller.property] != null) {
+        if (R.rasterizer[controller.property] != null) {
           onFinishChange = controller.__onFinishChange;
           controller.__onFinishChange = function() {};
-          controller.setValue(g.rasterizer[controller.property]);
+          controller.setValue(R.rasterizer[controller.property]);
           controller.__onFinishChange = onFinishChange;
         }
       }
-      g.load();
+      R.load();
     };
-    g.hideCanvas = function() {
-      g.canvasJ.css({
+    R.hideCanvas = function() {
+      R.canvasJ.css({
         opacity: 0
       });
     };
-    g.showCanvas = function() {
-      g.canvasJ.css({
+    R.showCanvas = function() {
+      R.canvasJ.css({
         opacity: 1
       });
     };
-    g.hideRasters = function() {
-      g.rasterizer.hideRasters();
+    R.hideRasters = function() {
+      R.rasterizer.hideRasters();
     };
-    g.showRasters = function() {
-      g.rasterizer.showRasters();
+    R.showRasters = function() {
+      R.rasterizer.showRasters();
     };
+    return Rasterizer;
   });
 
 }).call(this);
 
-//# sourceMappingURL=rasterizer.map
+//# sourceMappingURL=Rasterizer.map

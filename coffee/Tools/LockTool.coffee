@@ -1,11 +1,9 @@
-define [
-	'utils', 'ItemTool'
-], (utils, ItemTool) ->
+define [ 'Tool' ], (Tool) ->
 
 	# RLock creation tool
-	class LockTool extends ItemTool
+	class Tool.Lock extends Tool.Item
 
-		@rname = 'Lock'
+		@label = 'Lock'
 		@description = ''
 		@iconURL = 'lock.png'
 		@favorite = true
@@ -15,9 +13,10 @@ define [
 				x: 0, y:0
 			name: 'default'
 			icon: 'key'
+		@drawItems = false
 
 		constructor: () ->
-			super(g.RLock)
+			super(Lock)
 			@textItem = null
 			return
 
@@ -25,10 +24,10 @@ define [
 		# - display lock cost (in romanescoins) in selection rectangle
 		# @param [Paper event or REvent] (usually) mouse move event
 		# @param [String] author (username) of the event
-		update: (event, from=g.me) ->
+		update: (event, from=R.me) ->
 			point = event.point
 
-			cost = g.currentPaths[from].bounds.area/1000.0
+			cost = R.currentPaths[from].bounds.area/1000.0
 
 			@textItem?.remove()
 			@textItem = new PointText(point)
@@ -43,11 +42,12 @@ define [
 		# the RLock modal window will ask the user some information about the lock he wants to create, the RLock will be saved once the user submits and created on server response
 		# @param [Paper event or REvent] (usually) mouse up event
 		# @param [String] author (username) of the event
-		end: (event, from=g.me) ->
+		end: (event, from=R.me) ->
 			@textItem?.remove()
 			if super(event, from)
-				g.RLock.initialize(g.currentPaths[from].bounds)
-				delete g.currentPaths[from]
+				Lock.initialize(R.currentPaths[from].bounds)
+				delete R.currentPaths[from]
 			return
 
-	return LockTool
+	new Tool.Lock()
+	return Tool.Lock

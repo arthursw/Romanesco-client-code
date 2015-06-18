@@ -1,10 +1,6 @@
-define [
-	'utils', 'global', 'coordinateSystems', 'options', 'jquery', 'paper'
-], (utils) ->
+define [ 'Command'], (Command) ->
 
-	g = utils.g()
-
-	class RItem
+	class Item
 
 		@indexToName =
 			0: 'bottomLeft'
@@ -29,7 +25,7 @@ define [
 		@cornersNames = ['topLeft', 'topRight', 'bottomRight', 'bottomLeft']
 		@sidesNames = ['left', 'right', 'top', 'bottom']
 
-		@valueFromName = (point, name)->
+		@valueFromName: (point, name)->
 			switch name
 				when 'left', 'right'
 					return point.x
@@ -46,6 +42,45 @@ define [
 			selected: true
 			tolerance: 5
 
+		@zIndexSortStop: (event, ui)->
+			previouslySelectedItems = R.selectedItems
+			Tool.Select.deselectAll()
+			rItem = R.items[ui.item.attr("data-pk")]
+			nextItemJ = ui.item.next()
+			if nextItemJ.length>0
+				rItem.insertAbove(R.items[nextItemJ.attr("data-pk")], null, true)
+			else
+				previousItemJ = ui.item.prev()
+				if previousItemJ.length>0
+					rItem.insertBelow(R.items[previousItemJ.attr("data-pk")], null, true)
+			for item in previouslySelectedItems
+				item.select()
+			return
+
+		@addItemToStage: (item)->
+			Item.addItemTo(item)
+			return
+
+		@addItemTo: (item, lock=null)->
+			wasSelected = item.isSelected()
+			if wasSelected then item.deselect()
+			group = if lock then lock.group else R.mainLayer
+			group.addChild(item.group)
+			item.lock = lock
+			Utils.Array.remove(item.sortedItems, item)
+			parent = lock or R
+			if R.RDiv.prototype.isPrototypeOf(item)
+				item.sortedItems = parent.sortedDivs
+				parent.itemListsJ.find(".rDiv-list").append(item.liJ)
+			else if R.RPath.prototype.isPrototypeOf(item)
+				item.sortedItems = parent.sortedPaths
+				parent.itemListsJ.find(".rPath-list").append(item.liJ)
+			else
+				console.error "Error: the item is neither an RDiv nor an RPath"
+			item.updateZIndex()
+			if wasSelected then item.select()
+			return
+
 		# @onPositionFinishChange: (value)->
 		# 	# -------------------------------------------------------------------- #
 		# 	# !!! Problem: moveToCommand will move depending on the given item !!! #
@@ -57,22 +92,22 @@ define [
 		# 		switch value[0]
 		# 			when 'x'
 		# 				x = parseFloat(value[1])
-		# 				if not g.isNumber(x)
-		# 					g.romanesco_alert 'Position invalid.', 'Warning'
+		# 				if not R.isNumber(x)
+		# 					R.alertManager.alert 'Position invalid.', 'Warning'
 		# 					return
-		# 				for item in g.selectedItems
+		# 				for item in R.selectedItems
 		# 					y = item.rectangle.center.y
-		# 					item.moveToCommand(new Point(x, y))
+		# 					item.moveToCommand(new P.Point(x, y))
 		# 			when 'y'
 		# 				y = parseFloat(value[1])
-		# 				if not g.isNumber(y)
-		# 					g.romanesco_alert 'Position invalid.', 'Warning'
+		# 				if not R.isNumber(y)
+		# 					R.alertManager.alert 'Position invalid.', 'Warning'
 		# 					return
-		# 				for item in g.selectedItems
+		# 				for item in R.selectedItems
 		# 					x = item.rectangle.center.x
-		# 					item.moveToCommand(new Point(x, y))
+		# 					item.moveToCommand(new P.Point(x, y))
 		# 			else
-		# 				g.romanesco_alert 'Position invalid.', 'Warning'
+		# 				R.alertManager.alert 'Position invalid.', 'Warning'
 		# 		return
 
 		# 	value = value.split(',')
@@ -80,13 +115,13 @@ define [
 		# 	x = parseFloat(value[0])
 		# 	y = parseFloat(value[1])
 
-		# 	if not ( g.isNumber(x) and g.isNumber(y) )
-		# 		g.romanesco_alert 'Position invalid.', 'Warning'
+		# 	if not ( R.isNumber(x) and R.isNumber(y) )
+		# 		R.alertManager.alert 'Position invalid.', 'Warning'
 		# 		return
 
-		# 	point = new Point(x, y)
+		# 	point = new P.Point(x, y)
 
-		# 	for item in g.selectedItems
+		# 	for item in R.selectedItems
 		# 		item.moveToCommand(point)
 
 		# 	return
@@ -99,25 +134,25 @@ define [
 		# 		switch value[0]
 		# 			when 'width'
 		# 				width = parseFloat(value[1])
-		# 				if not g.isNumber(width)
-		# 					g.romanesco_alert 'Size invalid.', 'Warning'
+		# 				if not R.isNumber(width)
+		# 					R.alertManager.alert 'P.Size invalid.', 'Warning'
 		# 					return
-		# 				for item in g.selectedItems
+		# 				for item in R.selectedItems
 		# 					height = item.rectangle.size.height
-		# 					item.resizeCommand(new Rectangle(item.rectangle.point, new Size(width, height)))
+		# 					item.resizeCommand(new P.Rectangle(item.rectangle.point, new P.Size(width, height)))
 		# 	return
 
 		@initializeParameters: ()->
 
 			parameters =
 				'Items':
-					align: g.parameters.align
-					distribute: g.parameters.distribute
-					delete: g.parameters.delete
+					align: R.parameters.align
+					distribute: R.parameters.distribute
+					delete: R.parameters.delete
 				'Style':
-					strokeWidth: g.parameters.strokeWidth
-					strokeColor: g.parameters.strokeColor
-					fillColor: g.parameters.fillColor
+					strokeWidth: R.parameters.strokeWidth
+					strokeColor: R.parameters.strokeColor
+					fillColor: R.parameters.fillColor
 				'Pos. & size':
 					position:
 						default: ''
@@ -126,7 +161,7 @@ define [
 						onFinishChange: @onPositionFinishChange
 					size:
 						default: ''
-						label: 'Size'
+						label: 'P.Size'
 						onChange: ()-> return
 						onFinishChange: @onSizeFinishChange
 
@@ -138,7 +173,7 @@ define [
 			copy = new @(duplicateData.rectangle, duplicateData.data)
 			if not @socketAction
 				copy.save(false)
-				g.chatSocket.emit "bounce", itemClass: @name, function: "create", arguments: [duplicateData]
+				R.chatSocket.emit "bounce", itemClass: @name, function: "create", arguments: [duplicateData]
 			return copy
 
 		constructor: (@data, @pk)->
@@ -148,21 +183,21 @@ define [
 				@setPK(@pk, true)
 			else
 				@id = if @data?.id? then @data.id else Math.random() 	# temporary id used until the server sends back the primary key (@pk)
-				g.items[@id] = @
+				R.items[@id] = @
 
-			# creation of a new object by the user: set @data to g.gui values
+			# creation of a new object by the user: set @data to R.gui values
 			if @data?
 				@secureData()
 			else
 				@data = new Object()
-				g.controllerManager.updateItemData(@)
+				R.controllerManager.updateItemData(@)
 
 			@rectangle ?= null
 
 			@selectionState = null
 			@selectionRectangle = null
 
-			@group = new Group()
+			@group = new P.Group()
 			@group.name = "group"
 			@group.controller = @
 
@@ -176,15 +211,15 @@ define [
 					value = @data[name]
 					if value? and parameter.min? and parameter.max?
 						if value < parameter.min or value > parameter.max
-							@data[name] = g.clamp(parameter.min, value, parameter.max)
+							@data[name] = Utils.clamp(parameter.min, value, parameter.max)
 			return
 
 		setParameterCommand: (controller, value)->
-			@deferredAction(g.SetParameterCommand, controller, value)
+			@deferredAction(R.SetParameterCommand, controller, value)
 			# if @data[name] == value then return
 			# @setCurrentCommand(new SetParameterCommand(@, name))
 			# @setParameter(name, value)
-			# g.deferredExecution(@addCurrentCommand, 'addCurrentCommand-' + (@id or @pk) )
+			# Utils.deferredExecution(@addCurrentCommand, 'addCurrentCommand-' + (@id or @pk) )
 			return
 
 		# @param name [String] the name of the value to change
@@ -197,7 +232,7 @@ define [
 				if update
 					@update(name)
 					controller.setValue(value)
-				g.chatSocket.emit "bounce", itemPk: @pk, function: "setParameter", arguments: [name, value, false, false]
+				R.chatSocket.emit "bounce", itemPk: @pk, function: "setParameter", arguments: [name, value, false, false]
 			return
 
 		# set path items (control path, drawing, etc.) to the right state before performing hitTest
@@ -205,7 +240,7 @@ define [
 		# @param fullySelected [Boolean] (optional) whether the control path must be fully selected before performing the hit test (it must be if we want to test over control path handles)
 		# @param strokeWidth [Number] (optional) contorl path width will be set to *strokeWidth* if it is provided
 		prepareHitTest: ()->
-			@selectionRectangle?.strokeColor = g.selectionBlue
+			@selectionRectangle?.strokeColor = R.selectionBlue
 			return
 
 		# restore path items orginial states (same as before @prepareHitTest())
@@ -215,7 +250,7 @@ define [
 			return
 
 		# perform hit test to check if the point hits the selection rectangle
-		# @param point [Point] the point to test
+		# @param point [P.Point] the point to test
 		# @param hitOptions [Object] the [paper hit test options](http://paperjs.org/reference/item/#hittest-point)
 		hitTest: (point, hitOptions)->
 			return @selectionRectangle.hitTest(point)
@@ -224,7 +259,7 @@ define [
 		# perform hit test on control path and selection rectangle with a stroke width of 1
 		# to manipulate points on the control path or selection rectangle
 		# since @hitTest() will be overridden by children RPath, it is necessary to @prepareHitTest() and @finishHitTest()
-		# @param point [Point] the point to test
+		# @param point [P.Point] the point to test
 		# @param hitOptions [Object] the [paper hit test options](http://paperjs.org/reference/item/#hittest-point)
 		# @param fullySelected [Boolean] (optional) whether the control path must be fully selected before performing the hit test (it must be if we want to test over control path handles)
 		# @return [Paper HitResult] the paper hit result
@@ -266,15 +301,15 @@ define [
 
 			@selectionState = move: true
 			if not @isSelected()
-				g.commandManager.add(new g.SelectCommand([@]), true)
+				R.commandManager.add(new R.SelectCommand([@]), true)
 			else
 				hitResult = @performHitTest(event.point, @constructor.hitOptions)
 				if hitResult? then @initializeSelection(event, hitResult)
 
 			if @selectionState.move?
-				@beginAction(new g.MoveCommand(@))
+				@beginAction(new R.MoveCommand(@))
 			else if @selectionState.resize?
-				@beginAction(new g.ResizeCommand(@))
+				@beginAction(new R.ResizeCommand(@))
 
 			return
 
@@ -298,7 +333,7 @@ define [
 		beginAction: (command)->
 			if @currentCommand
 				@endAction()
-				clearTimeout(g.updateTimeout['addCurrentCommand-' + (@id or @pk)])
+				clearTimeout(R.updateTimeout['addCurrentCommand-' + (@id or @pk)])
 			@currentCommand = command
 			return
 
@@ -308,11 +343,11 @@ define [
 
 		endAction: ()=>
 
-			positionIsValid = if @currentCommand.constructor.needValidPosition then g.validatePosition(@) else true
+			positionIsValid = if @currentCommand.constructor.needValidPosition then Lock.validatePosition(@) else true
 
 			commandChanged = @currentCommand.end(positionIsValid)
 			if positionIsValid
-				if commandChanged then g.commandManager.add(@currentCommand)
+				if commandChanged then R.commandManager.add(@currentCommand)
 			else
 				@currentCommand.undo()
 
@@ -323,7 +358,7 @@ define [
 			if not ActionCommand.prototype.isPrototypeOf(@currentCommand)
 				@beginAction(new ActionCommand(@, args))
 			@updateAction.apply(@, args)
-			g.deferredExecution(@endAction, 'addCurrentCommand-' + (@id or @pk) )
+			Utils.deferredExecution(@endAction, 'addCurrentCommand-' + (@id or @pk) )
 			return
 
 		doAction: (ActionCommand, args)->
@@ -333,12 +368,12 @@ define [
 			return
 
 		# create the selection rectangle (path used to rotate and scale the RPath)
-		# @param bounds [Paper Rectangle] the bounds of the selection rectangle
+		# @param bounds [Paper P.Rectangle] the bounds of the selection rectangle
 		createSelectionRectangle: (bounds)->
-			@selectionRectangle.insert(1, new Point(bounds.left, bounds.center.y))
-			@selectionRectangle.insert(3, new Point(bounds.center.x, bounds.top))
-			@selectionRectangle.insert(5, new Point(bounds.right, bounds.center.y))
-			@selectionRectangle.insert(7, new Point(bounds.center.x, bounds.bottom))
+			@selectionRectangle.insert(1, new P.Point(bounds.left, bounds.center.y))
+			@selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top))
+			@selectionRectangle.insert(5, new P.Point(bounds.right, bounds.center.y))
+			@selectionRectangle.insert(7, new P.Point(bounds.center.x, bounds.bottom))
 			return
 
 		# add or update the selection rectangle (path used to rotate and scale the RPath)
@@ -348,7 +383,7 @@ define [
 
 			# create the selection rectangle: rectangle path + handle at the top used for rotations
 			@selectionRectangle?.remove()
-			@selectionRectangle = new Path.Rectangle(bounds)
+			@selectionRectangle = new P.Path.Rectangle(bounds)
 			@group.addChild(@selectionRectangle)
 			@selectionRectangle.name = "selection rectangle"
 			@selectionRectangle.pivot = bounds.center
@@ -361,25 +396,25 @@ define [
 			return
 
 		setRectangle: (rectangle, update=false)->
-			if not Rectangle.prototype.isPrototypeOf(rectangle) then rectangle = new Rectangle(rectangle)
+			if not P.Rectangle.prototype.isPrototypeOf(rectangle) then rectangle = new P.Rectangle(rectangle)
 			@rectangle = rectangle
 			if @selectionRectangle then @updateSelectionRectangle()
 			if not @socketAction
 				if update then @update('rectangle')
-				g.chatSocket.emit "bounce", itemPk: @pk, function: "setRectangle", arguments: [@rectangle, false]
+				R.chatSocket.emit "bounce", itemPk: @pk, function: "setRectangle", arguments: [@rectangle, false]
 			return
 
 		updateSetRectangle: (event)->
 
-			event.point = g.snap2D(event.point)
+			event.point = Utils.Event.snap2D(event.point)
 
 			rotation = @rotation or 0
 			rectangle = @rectangle.clone()
 			delta = event.point.subtract(@rectangle.center)
-			x = new Point(1,0)
+			x = new P.Point(1,0)
 			x.angle += rotation
 			dx = x.dot(delta)
-			y = new Point(0,1)
+			y = new P.Point(0,1)
 			y.angle += rotation
 			dy = y.dot(delta)
 
@@ -389,14 +424,14 @@ define [
 			# if shift is not pressed and a corner is selected: keep aspect ratio (rectangle must have width and height greater than 0 to keep aspect ratio)
 			if not event.modifiers.shift and name in @constructor.cornersNames and rectangle.width > 0 and rectangle.height > 0
 				if Math.abs(dx / rectangle.width) > Math.abs(dy / rectangle.height)
-					dx = g.sign(dx) * Math.abs(rectangle.width * dy / rectangle.height)
+					dx = Utils.sign(dx) * Math.abs(rectangle.width * dy / rectangle.height)
 				else
-					dy = g.sign(dy) * Math.abs(rectangle.height * dx / rectangle.width)
+					dy = Utils.sign(dy) * Math.abs(rectangle.height * dx / rectangle.width)
 
 			center = rectangle.center.clone()
 			rectangle[name] = @constructor.valueFromName(center.add(dx, dy), name)
 
-			if not g.specialKey(event)
+			if not R.specialKey(event)
 				rectangle[@constructor.oppositeName[name]] = @constructor.valueFromName(center.subtract(dx, dy), name)
 			else
 				# the center of the rectangle changes when moving only one side
@@ -411,7 +446,7 @@ define [
 				rectangle.center.y = center.y
 
 			@setRectangle(rectangle)
-			g.highlightValidity(@)
+			Lock.highlightValidity(@)
 			return
 
 		endSetRectangle: ()->
@@ -419,14 +454,14 @@ define [
 			return
 
 		moveTo: (position, update)->
-			if not Point.prototype.isPrototypeOf(position) then position = new Point(position)
+			if not P.Point.prototype.isPrototypeOf(position) then position = new P.Point(position)
 			delta = position.subtract(@rectangle.center)
 			@rectangle.center = position
 			@group.translate(delta)
 
 			if not @socketAction
 				if update then @update('position')
-				g.chatSocket.emit "bounce", itemPk: @pk, function: "moveTo", arguments: [position, false]
+				R.chatSocket.emit "bounce", itemPk: @pk, function: "moveTo", arguments: [position, false]
 			return
 
 		moveBy: (delta, update)->
@@ -434,21 +469,21 @@ define [
 			return
 
 		updateMove: (event)->
-			if g.getSnap() > 1
+			if Utils.Event.getSnap() > 1
 				if @selectionState.move != true
 					cornerName = @selectionState.move
 					rectangle = @rectangle.clone()
 					@dragOffset ?= rectangle[cornerName].subtract(event.downPoint)
-					destination = g.snap2D(event.point.add(@dragOffset))
+					destination = Utils.Event.snap2D(event.point.add(@dragOffset))
 					rectangle.moveCorner(cornerName, destination)
 					@moveTo(rectangle.center)
 				else
 					@dragOffset ?= @rectangle.center.subtract(event.downPoint)
-					destination = g.snap2D(event.point.add(@dragOffset))
+					destination = Utils.Event.snap2D(event.point.add(@dragOffset))
 					@moveTo(destination)
 			else
 				@moveBy(event.delta)
-			g.highlightValidity(@)
+			Lock.highlightValidity(@)
 			return
 
 		endMove: (update)->
@@ -457,11 +492,11 @@ define [
 			return
 
 		moveToCommand: (position)->
-			g.commandManager.add(new g.MoveCommand(@, position), true)
+			R.commandManager.add(new R.MoveCommand(@, position), true)
 			return
 
 		resizeCommand: (rectangle)->
-			g.commandManager.add(new g.ResizeCommand(@, rectangle), true)
+			R.commandManager.add(new R.ResizeCommand(@, rectangle), true)
 			return
 
 		moveByCommand: (delta)->
@@ -488,13 +523,13 @@ define [
 		# highlight this RItem by drawing a blue rectangle around it
 		highlight: ()->
 			if @highlightRectangle?
-				g.updatePathRectangle(@highlightRectangle, @getBounds())
+				Utils.P.Rectangle.updatePathRectangle(@highlightRectangle, @getBounds())
 				return
-			@highlightRectangle = new Path.Rectangle(@getBounds())
-			@highlightRectangle.strokeColor = g.selectionBlue
+			@highlightRectangle = new P.Path.Rectangle(@getBounds())
+			@highlightRectangle.strokeColor = R.selectionBlue
 			@highlightRectangle.strokeScaling = false
 			@highlightRectangle.dashArray = [4, 10]
-			g.selectionLayer.addChild(@highlightRectangle)
+			R.selectionLayer.addChild(@highlightRectangle)
 			return
 
 		# common to all RItems
@@ -506,9 +541,9 @@ define [
 			return
 
 		setPK: (@pk, loading=false)->
-			g.items[@pk] = @
-			delete g.items[@id]
-			if not loading and not @socketAction then g.chatSocket.emit "bounce", itemPk: @id, function: "setPK", arguments: [@pk]
+			R.items[@pk] = @
+			delete R.items[@id]
+			if not loading and not @socketAction then R.chatSocket.emit "bounce", itemPk: @id, function: "setPK", arguments: [@pk]
 			return
 
 		# @return true if RItem is selected
@@ -528,16 +563,16 @@ define [
 			# create or update the selection rectangle
 			@selectionState = move: true
 
-			g.s = @
+			R.s = @
 
 			@updateSelectionRectangle(true)
-			g.selectedItems.push(@)
-			g.controllerManager.updateParametersForSelectedItems()
+			R.selectedItems.push(@)
+			R.controllerManager.updateParametersForSelectedItems()
 
-			g.rasterizer.selectItem(@)
+			R.rasterizer.selectItem(@)
 
 			@zindex = @group.index
-			g.selectionLayer.addChild(@group)
+			R.selectionLayer.addChild(@group)
 
 			return true
 
@@ -546,19 +581,19 @@ define [
 
 			@selectionRectangle?.remove()
 			@selectionRectangle = null
-			g.selectedItems.remove(@)
-			g.controllerManager.updateParametersForSelectedItems()
+			Utils.Array.remove(R.selectedItems, @)
+			R.controllerManager.updateParametersForSelectedItems()
 
 			if @group? 	# @group is null when item is removed (called from @remove())
 
-				g.rasterizer.deselectItem(@)
+				R.rasterizer.deselectItem(@)
 
 				if not @lock
-					@group = g.mainLayer.insertChild(@zindex, @group)
+					@group = R.mainLayer.insertChild(@zindex, @group)
 				else
 					@group = @lock.group.insertChild(@zindex, @group)
 
-			g.RDiv.showDivs()
+			R.RDiv.showDivs()
 
 			return true
 
@@ -570,9 +605,9 @@ define [
 			@deselect()
 			@highlightRectangle?.remove()
 			if @pk?
-				delete g.items[@pk]
+				delete R.items[@pk]
 			else
-				delete g.items[@id]
+				delete R.items[@id]
 
 			# @pk = null 	# pk is required to delete the path!!
 			# @id = null
@@ -589,24 +624,24 @@ define [
 
 		saveCallback: ()->
 			if @addCreateCommand
-				g.commandManager.add(new g.CreateItemCommand(@))
+				R.commandManager.add(new R.CreateItemCommand(@))
 				delete @addCreateCommand
 			return
 
 		delete: ()->
-			if not @socketAction then g.chatSocket.emit "bounce", itemPk: @pk, function: "delete", arguments: []
+			if not @socketAction then R.chatSocket.emit "bounce", itemPk: @pk, function: "delete", arguments: []
 			@pk = null
 			return
 
 		deleteCommand: ()->
-			g.commandManager.add(new g.DeleteItemCommand(@), true)
+			R.commandManager.add(new R.DeleteItemCommand(@), true)
 			return
 
 		getDuplicateData: ()->
 			return data: @getData(), rectangle: @rectangle
 
 		duplicateCommand: ()->
-			g.commandManager.add(new g.DuplicateItemCommand(@), true)
+			R.commandManager.add(new R.DuplicateItemCommand(@), true)
 			return
 
 		removeDrawing: ()->
@@ -625,348 +660,11 @@ define [
 
 		rasterize: ()->
 			if @raster? or not @drawing? then return
-			if not g.rasterizer.rasterizeItems then return
+			if not R.rasterizer.rasterizeItems then return
 			@raster = @drawing.rasterize()
 			@group.addChild(@raster)
 			@raster.sendToBack() 	# the raster (of a lock) must be send behind other items
 			@removeDrawing()
 			return
 
-	g.RItem = RItem
-
-	class RContent extends RItem
-
-		@indexToName =
-			0: 'bottomLeft'
-			1: 'left'
-			2: 'topLeft'
-			3: 'top'
-			4: 'rotation-handle'
-			5: 'top'
-			6: 'topRight'
-			7: 'right'
-			8: 'bottomRight'
-			9: 'bottom'
-
-		@initializeParameters: ()->
-			parameters = super()
-			delete parameters['Items'].align
-			parameters['Items'].duplicate = g.parameters.duplicate
-			return parameters
-
-		@parameters = @initializeParameters()
-
-		constructor: (@data, @pk, @date, itemListJ, @sortedItems)->
-			super(@data, @pk)
-			@date ?= Date.now()
-
-			@rotation = @data.rotation or 0
-
-			@liJ = $("<li>")
-			@setZindexLabel()
-			@liJ.attr("data-pk", @pk)
-			@liJ.click(@onLiClick)
-			@liJ.mouseover (event)=>
-				@highlight()
-				return
-			@liJ.mouseout (event)=>
-				@unhighlight()
-				return
-			@liJ.rItem = @
-			itemListJ.prepend(@liJ)
-			$("#RItems .mCustomScrollbar").mCustomScrollbar("scrollTo", "bottom")
-
-			if @pk?
-				@updateZIndex()
-
-			return
-
-		onLiClick: (event)=>
-			if not event.shiftKey
-				g.deselectAll()
-				bounds = @getBounds()
-				if not view.bounds.intersects(bounds)
-					g.RMoveTo(bounds.center, 1000)
-			@select()
-			return
-
-		# addToParent: ()->
-		# 	bounds = @getBounds()
-		# 	lock = g.RLock.getLockWhichContains(bounds)
-		# 	if lock? and lock.owner == g.me
-		# 		lock.addItem(@)
-		# 	else
-		# 		g.addItemToStage(@)
-		# 	return
-
-		setZindexLabel: ()->
-			dateLabel = '' + @date
-			dateLabel = dateLabel.substring(dateLabel.length-7, dateLabel.length-3)
-			zindexLabel = @constructor.rname
-			if dateLabel.length>0 then zindexLabel += ' - ' + dateLabel
-			@liJ.text(zindexLabel)
-			return
-
-		initializeSelection: (event, hitResult) ->
-			super(event, hitResult)
-
-			if hitResult?.type == 'segment'
-				if hitResult.item == @selectionRectangle 			# if the segment belongs to the selection rectangle: initialize rotation or scaling
-					if @constructor.indexToName[hitResult.segment.index] == 'rotation-handle'
-						@selectionState = rotation: true
-			return
-
-		# begin select action:
-		# - initialize selection (reset selection state)
-		# - select
-		# - hit test and initialize selection
-		# @param event [Paper event] the mouse event
-		beginSelect: (event) ->
-			super(event)
-			if @selectionState.rotation?
-				@beginAction(new g.RotationCommand(@))
-			return
-
-		# @param bounds [Paper Rectangle] the bounds of the selection rectangle
-		createSelectionRectangle: (bounds)->
-			@selectionRectangle.insert(1, new Point(bounds.left, bounds.center.y))
-			@selectionRectangle.insert(3, new Point(bounds.center.x, bounds.top))
-			@selectionRectangle.insert(3, new Point(bounds.center.x, bounds.top-25))
-			@selectionRectangle.insert(3, new Point(bounds.center.x, bounds.top))
-			@selectionRectangle.insert(7, new Point(bounds.right, bounds.center.y))
-			@selectionRectangle.insert(9, new Point(bounds.center.x, bounds.bottom))
-			return
-
-		updateSelectionRectangle: ()->
-			super()
-			@selectionRectangle.rotation = @rotation
-			return
-
-		setRotation: (rotation, update)->
-			previousRotation = @rotation
-			@group.pivot = @rectangle.center
-			@rotation = rotation
-			@group.rotate(rotation-previousRotation)
-			# @rotation = rotation
-			# @selectionRectangle.rotation = rotation
-			if not @socketAction
-				if update then @update('rotation')
-				g.chatSocket.emit "bounce", itemPk: @pk, function: "setRotation", arguments: [@rotation, false]
-			return
-
-		updateSetRotation: (event)->
-			rotation = event.point.subtract(@rectangle.center).angle + 90
-			if event.modifiers.shift or g.specialKey(event) or g.getSnap() > 1
-				rotation = g.roundToMultiple(rotation, if event.modifiers.shift then 10 else 5)
-			@setRotation(rotation)
-			g.highlightValidity(@)
-			return
-
-		endSetRotation: ()->
-			@update('rotation')
-			return
-
-		# @return [Object] @data along with @rectangle and @rotation
-		getData: ()->
-			data = jQuery.extend({}, super())
-			data.rotation = @rotation
-			return data
-
-		getBounds: ()->
-			if @rotation == 0 then return @rectangle
-			return g.getRotatedBounds(@rectangle, @rotation)
-
-		# update the z index (i.e. move the item to the right position)
-		# - RItems are kept sorted by z-index in *g.sortedPaths* and *g.sortedDivs*
-		# - z-index are initialized to the current date (this is a way to provide a global z index even with RItems which are not loaded)
-		updateZIndex: ()->
-			if not @date? then return
-
-			if @sortedItems.length==0
-				@sortedItems.push(@)
-				return
-
-			#insert item at the right place
-			found = false
-			for item, i in @sortedItems
-				if @date < item.date
-					@insertBelow(item, i)
-					found = true
-					break
-
-			if not found then @insertAbove(@sortedItems.last())
-
-			return
-
-		# insert above given *item*
-		# @param item [RItem] item on which to insert this
-		# @param index [Number] the index at which to add the item in @sortedItems
-		insertAbove: (item, index=null, update=false)->
-			@group.insertAbove(item.group)
-			if not index
-				@sortedItems.remove(@)
-				index = @sortedItems.indexOf(item) + 1
-			@sortedItems.splice(index, 0, @)
-			@liJ.insertBefore(item.liJ)
-			if update
-				if not @sortedItems[index+1]?
-					@date = Date.now()
-				else
-					previousDate = @sortedItems[index-1].date
-					nextDate = @sortedItems[index+1].date
-					@date = (previousDate + nextDate) / 2
-				@update('z-index')
-			@setZindexLabel()
-			return
-
-		# insert below given *item*
-		# @param item [RItem] item under which to insert this
-		# @param index [Number] the index at which to add the item in @sortedItems
-		insertBelow: (item, index=null, update=false)->
-			@group.insertBelow(item.group)
-			if not index
-				@sortedItems.remove(@)
-				index = @sortedItems.indexOf(item)
-			@sortedItems.splice(index, 0, @)
-			@liJ.insertAfter(item.liJ)
-			if update
-				if not @sortedItems[index-1]?
-					@date = @sortedItems[index+1].date - 1000
-				else
-					previousDate = @sortedItems[index-1].date
-					nextDate = @sortedItems[index+1].date
-					@date = (previousDate + nextDate) / 2
-				@update('z-index')
-			@setZindexLabel()
-			return
-
-		setPK: (pk)->
-			super
-			@liJ?.attr("data-pk", @pk)
-			return
-
-		# select the RItem: (only if it has no selection rectangle i.e. not already selected)
-		# @return whether the ritem was selected or not
-		select: ()->
-			if not super() then return false
-
-			@liJ.addClass('selected')
-
-			# update the global selection group (i.e. add this RPath to the group)
-			# if @group.parent != g.selectionLayer then @zindex = @group.index
-			# g.selectionLayer.addChild(@group)
-
-			return true
-
-		deselect: ()->
-			if not super() then return false
-
-			@liJ.removeClass('selected')
-
-			# if @group?
-			# 	if not @lock
-			# 		g.mainLayer.insertChild(@zindex, @group)
-			# 	else
-			# 		@lock.group.insertChild(@zindex, @group)
-
-			return true
-
-		finish: ()->
-			if not super() then return false
-
-			bounds = @getBounds()
-			if bounds.area > g.rasterizer.maxArea()
-				g.romanesco_alert("The item is too big", "Warning")
-				@remove()
-				return false
-
-			locks = g.RLock.getLocksWhichIntersect(bounds)
-
-			for lock in locks
-				if lock.rectangle.contains(bounds)
-					if lock.owner == g.me
-						lock.addItem(@)
-					else
-						g.romanesco_alert("The item intersects with a lock", "Warning")
-						@remove()
-						return false
-
-			return true
-
-		remove: ()->
-			super()
-			@sortedItems?.remove(@)
-			@liJ?.remove()
-			return
-
-		update: ()->
-			return
-
-	g.RContent = RContent
-
-	# RSelectionRectangle is just a helper to define a selection rectangle, it is used in {ScreenshotTool}
-	class RSelectionRectangle extends RItem
-
-		constructor: (@rectangle, extractImage) ->
-			super()
-
-			@drawing = new Path.Rectangle(@rectangle)
-			@drawing.name = 'selection rectangle background'
-			@drawing.strokeWidth = 1
-			@drawing.strokeColor = g.selectionBlue
-			@drawing.controller = @
-
-			@group.addChild(@drawing)
-
-			separatorJ = g.stageJ.find(".text-separator")
-			@buttonJ = g.templatesJ.find(".screenshot-btn").clone().insertAfter(separatorJ)
-
-			@buttonJ.find('.extract-btn').click (event)->
-				redraw = $(this).attr('data-click') == 'redraw-snapshot'
-				extractImage(redraw)
-				return
-
-			@updateTransform()
-
-			@select()
-
-			g.tools['Select'].select()
-
-			return
-
-		remove: ()->
-			@removing = true
-			super()
-			@buttonJ.remove()
-			g.tools['Screenshot'].selectionRectangle = null
-			return
-
-		deselect: ()->
-			if not super() then return false
-			if not @removing then @remove()
-			return true
-
-		setRectangle: (rectangle, update)->
-			super(rectangle, update)
-			g.updatePathRectangle(@drawing, rectangle)
-			@updateTransform()
-			return
-
-		moveTo: (position, update)->
-			super(position, update)
-			@updateTransform()
-			return
-
-		updateTransform: ()->
-			viewPos = view.projectToView(@rectangle.center)
-			transfrom = 'translate(' + viewPos.x + 'px,' + viewPos.y + 'px)'
-			transfrom += 'translate(-50%, -50%)'
-			@buttonJ.css( 'position': 'absolute', 'transform': transfrom, 'top': 0, 'left': 0, 'transform-origin': '50% 50%', 'z-index': 999 )
-			return
-
-		update: ()->
-			return
-
-	g.RSelectionRectangle = RSelectionRectangle
-
-	return
+	return RItem

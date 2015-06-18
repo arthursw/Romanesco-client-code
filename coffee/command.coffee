@@ -1,8 +1,4 @@
-define [
-	'utils', 'Item/item', 'jquery', 'paper'
-], (utils) ->
-
-	g = utils.g()
+define [ 'utils' ], () ->
 
 	class Command
 
@@ -14,7 +10,7 @@ define [
 			return
 
 		# item: ()->
-		# 	return g.items[@item.pk]
+		# 	return R.items[@item.pk]
 
 		superDo: ()->
 			@done = true
@@ -35,7 +31,7 @@ define [
 			return
 
 		click: ()=>
-			g.commandManager.commandClicked(@)
+			R.commandManager.commandClicked(@)
 			return
 
 		toggle: ()->
@@ -52,7 +48,7 @@ define [
 			@superDo()
 			return
 
-	g.Command = Command
+	R.Command = Command
 
 	# class DuplicateCommand extends Command
 	# 	constructor: (@item)->
@@ -102,7 +98,7 @@ define [
 			super()
 			return true
 
-	g.ResizeCommand = ResizeCommand
+	R.ResizeCommand = ResizeCommand
 
 	class RotationCommand extends Command
 
@@ -135,7 +131,7 @@ define [
 			super()
 			return true
 
-	g.RotationCommand = RotationCommand
+	R.RotationCommand = RotationCommand
 
 	class MoveCommand extends Command
 
@@ -144,16 +140,16 @@ define [
 		constructor: (@item, @newPosition)->
 			super("Move item")
 			@previousPosition = @item.rectangle.center
-			@items = g.selectedItems.slice()
+			@items = R.selectedItems.slice()
 			return
 
 		do: ()->
 			# areas = []
 			for item in @items
 				# area = item.getDrawingBounds()
-				# if area.area < g.rasterizer.maxArea() then areas.push(area)
+				# if area.area < R.rasterizer.maxArea() then areas.push(area)
 				item.moveBy(@newPosition.subtract(@previousPosition), true)
-			# g.rasterizer.rasterize(@items, false, areas)
+			# R.rasterizer.rasterize(@items, false, areas)
 			super()
 			return
 
@@ -161,9 +157,9 @@ define [
 			# areas = []
 			for item in @items
 				# area = item.getDrawingBounds()
-				# if area.area < g.rasterizer.maxArea() then areas.push(area)
+				# if area.area < R.rasterizer.maxArea() then areas.push(area)
 				item.moveBy(@previousPosition.subtract(@newPosition), true)
-			# g.rasterizer.rasterize(@items, false, areas)
+			# R.rasterizer.rasterize(@items, false, areas)
 			super()
 			return
 
@@ -182,21 +178,21 @@ define [
 				args = []
 				for item in @items
 					item.endMove(false)
-					if g.RLock.prototype.isPrototypeOf(item)
+					if Lock.prototype.isPrototypeOf(item)
 						item.update('position')
 					else
 						args.push( function: item.getUpdateFunction(), arguments: item.getUpdateArguments('position') )
 				Dajaxice.draw.multipleCalls( @updateCallback, functionsAndArguments: args)
-			# g.rasterizer.rasterize(@items)
+			# R.rasterizer.rasterize(@items)
 			super()
 			return true
 
 		updateCallback: (results)->
 			for result in results
-				g.checkError(result)
+				R.loader.checkError(result)
 			return
 
-	g.MoveCommand = MoveCommand
+	R.MoveCommand = MoveCommand
 
 	class ModifyPointCommand extends Command
 
@@ -204,9 +200,9 @@ define [
 
 		constructor: (@item)->
 			@segment = @item.selectionState.segment
-			@previousPosition = new Point(@segment.point)
-			@previousHandleIn = new Point(@segment.handleIn)
-			@previousHandleOut = new Point(@segment.handleOut)
+			@previousPosition = new P.Point(@segment.point)
+			@previousHandleIn = new P.Point(@segment.handleIn)
+			@previousHandleOut = new P.Point(@segment.handleOut)
 			super('Modify point')
 			return
 
@@ -237,7 +233,7 @@ define [
 			super()
 			return true
 
-	g.ModifyPointCommand = ModifyPointCommand
+	R.ModifyPointCommand = ModifyPointCommand
 
 	class ModifySpeedCommand extends Command
 
@@ -268,7 +264,7 @@ define [
 			super()
 			return true
 
-	g.ModifySpeedCommand = ModifySpeedCommand
+	R.ModifySpeedCommand = ModifySpeedCommand
 
 	class SetParameterCommand extends Command
 
@@ -300,7 +296,7 @@ define [
 			super()
 			return true
 
-	g.SetParameterCommand = SetParameterCommand
+	R.SetParameterCommand = SetParameterCommand
 
 	# ---- # # ---- # # ---- # # ---- #
 	# ---- # # ---- # # ---- # # ---- #
@@ -333,7 +329,7 @@ define [
 			super()
 			return
 
-	g.AddPointCommand = AddPointCommand
+	R.AddPointCommand = AddPointCommand
 
 	class DeletePointCommand extends AddPointCommand
 
@@ -342,9 +338,9 @@ define [
 		constructor: (@item, @segment)-> super(@item, @segment, 'Delete point on item')
 
 		do: ()->
-			@previousPosition = new Point(@segment.point)
-			@previousHandleIn = new Point(@segment.handleIn)
-			@previousHandleOut = new Point(@segment.handleOut)
+			@previousPosition = new P.Point(@segment.point)
+			@previousHandleIn = new P.Point(@segment.handleIn)
+			@previousHandleOut = new P.Point(@segment.handleOut)
 			@deletePoint()
 			@superDo()
 			return
@@ -355,7 +351,7 @@ define [
 			@superUndo()
 			return
 
-	g.DeletePointCommand = DeletePointCommand
+	R.DeletePointCommand = DeletePointCommand
 
 	class ModifyPointTypeCommand extends Command
 
@@ -363,9 +359,9 @@ define [
 
 		constructor: (@item, @segment, @rtype)->
 			@previousRType = @segment.rtype
-			@previousPosition = new Point(@segment.point)
-			@previousHandleIn = new Point(@segment.handleIn)
-			@previousHandleOut = new Point(@segment.handleOut)
+			@previousPosition = new P.Point(@segment.point)
+			@previousHandleIn = new P.Point(@segment.handleIn)
+			@previousHandleOut = new P.Point(@segment.handleOut)
 			super('Change point type on item')
 			return
 
@@ -380,7 +376,7 @@ define [
 			super()
 			return
 
-	g.ModifyPointTypeCommand = ModifyPointTypeCommand
+	R.ModifyPointTypeCommand = ModifyPointTypeCommand
 
 	### --- Custom command for all kinds of command which modifiy the path --- ###
 
@@ -403,7 +399,7 @@ define [
 			super()
 			return
 
-	g.ModifyControlPathCommand = ModifyControlPathCommand
+	R.ModifyControlPathCommand = ModifyControlPathCommand
 
 	class MoveViewCommand extends Command
 		constructor: (@previousPosition, @newPosition)->
@@ -416,29 +412,29 @@ define [
 		updateCommandItems: ()=>
 			console.log "updateCommandItems"
 			document.removeEventListener('command executed', @updateCommandItems)
-			for command in g.commandManager.history
+			for command in R.commandManager.history
 				if command.item?
-					if not command.item.group? and g.items[command.item.pk or command.item.id]
-						command.item = g.items[command.item.pk or command.item.id]
+					if not command.item.group? and R.items[command.item.pk or command.item.id]
+						command.item = R.items[command.item.pk or command.item.id]
 				if command.items?
 					for item, i in command.items
-						if not item.group? and g.items[item.pk or item.id]
-							command.items[i] = g.items[item.pk or item.id]
+						if not item.group? and R.items[item.pk or item.id]
+							command.items[i] = R.items[item.pk or item.id]
 			return
 
 		do: ()->
-			somethingToLoad = g.RMoveBy(@newPosition.subtract(@previousPosition), false)
+			somethingToLoad = View.moveBy(@newPosition.subtract(@previousPosition), false)
 			if somethingToLoad then document.addEventListener('command executed', @updateCommandItems)
 			super()
 			return somethingToLoad
 
 		undo: ()->
-			somethingToLoad = g.RMoveBy(@previousPosition.subtract(@newPosition), false)
+			somethingToLoad = View.moveBy(@previousPosition.subtract(@newPosition), false)
 			if somethingToLoad then document.addEventListener('command executed', @updateCommandItems)
 			super()
 			return somethingToLoad
 
-	g.MoveViewCommand = MoveViewCommand
+	R.MoveViewCommand = MoveViewCommand
 
 	# class MoveCommand extends Command
 	# 	constructor: (@item, @newPosition=null)->
@@ -470,13 +466,13 @@ define [
 		selectItems: ()->
 			for item in @items
 				item.select()
-			g.controllerManager.updateParametersForSelectedItems()
+			R.controllerManager.updateParametersForSelectedItems()
 			return
 
 		deselectItems: ()->
 			for item in @items
 				item.deselect()
-			g.controllerManager.updateParametersForSelectedItems()
+			R.controllerManager.updateParametersForSelectedItems()
 			return
 
 		do: ()->
@@ -489,12 +485,12 @@ define [
 			super()
 			return
 
-	g.SelectCommand = SelectCommand
+	R.SelectCommand = SelectCommand
 
 	class DeselectCommand extends SelectCommand
 
 		constructor: (items)->
-			super(items or g.selectedItems.slice(), 'Deselect items')
+			super(items or R.selectedItems.slice(), 'Deselect items')
 			return
 
 		do: ()->
@@ -507,12 +503,12 @@ define [
 			@superUndo()
 			return
 
-	g.DeselectCommand = DeselectCommand
+	R.DeselectCommand = DeselectCommand
 
 	# class SelectCommand extends Command
 	# 	constructor: (@items, @updateParameters, name)->
 	# 		super(name or "Select item")
-	# 		@previouslySelectedItems = g.previouslySelectedItems.slice()
+	# 		@previouslySelectedItems = R.previouslySelectedItems.slice()
 	# 		return
 
 	# 	deselectSelect: (itemsToDeselect=[], itemsToSelect=[], dontRasterizeItems=false)->
@@ -522,20 +518,20 @@ define [
 	# 		for item in itemsToSelect
 	# 			item.select(false)
 
-	# 		g.rasterizer.rasterize(itemsToSelect, dontRasterizeItems)
+	# 		R.rasterizer.rasterize(itemsToSelect, dontRasterizeItems)
 
 	# 		items = itemsToSelect.map( (item)-> return { tool: item.constructor, item: item } )
-	# 		g.updateParameters(items, true)
-	# 		g.selectedItems = itemsToSelect.slice()
+	# 		R.updateParameters(items, true)
+	# 		R.selectedItems = itemsToSelect.slice()
 	# 		return
 
 	# 	selectItems: ()->
-	# 		g.previouslySelectedItems = @previouslySelectedItems
+	# 		R.previouslySelectedItems = @previouslySelectedItems
 	# 		@deselectSelect(@previouslySelectedItems, @items, true)
 	# 		return
 
 	# 	deselectItems: ()->
-	# 		g.previouslySelectedItems = g.selectedItems.slice()
+	# 		R.previouslySelectedItems = R.selectedItems.slice()
 	# 		@deselectSelect(@items, @previouslySelectedItems)
 	# 		return
 
@@ -581,7 +577,7 @@ define [
 			return
 
 		setDuplicatedItemToCommands: ()->
-			for command in g.commandManager.history
+			for command in R.commandManager.history
 				if command == @ then continue
 				if command.item? and command.item == @itemPk then command.item = @item
 				if command.items?
@@ -590,7 +586,7 @@ define [
 			return
 
 		removeDeleteItemFromCommands: ()->
-			for command in g.commandManager.history
+			for command in R.commandManager.history
 				if command == @ then continue
 				if command.item? and command.item == @item then command.item = @item.pk or @item.id
 				if command.items?
@@ -624,7 +620,7 @@ define [
 			super()
 			return
 
-	g.CreateItemCommand = CreateItemCommand
+	R.CreateItemCommand = CreateItemCommand
 
 	class DeleteItemCommand extends CreateItemCommand
 		constructor: (item)-> super(item, 'Delete item')
@@ -639,14 +635,14 @@ define [
 			@superUndo()
 			return
 
-	g.DeleteItemCommand = DeleteItemCommand
+	R.DeleteItemCommand = DeleteItemCommand
 
 	class DuplicateItemCommand extends CreateItemCommand
 		constructor: (item)->
 			@duplicateData = item.getDuplicateData()
 			super(item, 'Duplicate item')
 
-	g.DuplicateItemCommand = DuplicateItemCommand
+	R.DuplicateItemCommand = DuplicateItemCommand
 
 	class ModifyTextCommand extends Command
 
@@ -679,7 +675,7 @@ define [
 			super()
 			return true
 
-	g.ModifyTextCommand = ModifyTextCommand
+	R.ModifyTextCommand = ModifyTextCommand
 
 	# class CreatePathCommand extends CreateItemCommand
 	# 	constructor: (item, name=null)->
@@ -890,9 +886,7 @@ define [
 			@historyJ.empty()
 			@history = []
 			@currentCommand = -1
-			@add(new g.Command("Load Romanesco"), true)
+			@add(new R.Command("Load Romanesco"), true)
 			return
 
-	g.CommandManager = CommandManager
-
-	return
+	return CommandManager

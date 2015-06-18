@@ -3,18 +3,17 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['utils', 'RTool'], function(utils, RTool) {
-    var SelectTool;
-    SelectTool = (function(_super) {
-      __extends(SelectTool, _super);
+  define(['Tool'], function(Tool) {
+    Tool.Select = (function(_super) {
+      __extends(Select, _super);
 
-      SelectTool.rname = 'Select';
+      Select.label = 'Select';
 
-      SelectTool.description = '';
+      Select.description = '';
 
-      SelectTool.iconURL = 'cursor.png';
+      Select.iconURL = 'cursor.png';
 
-      SelectTool.cursor = {
+      Select.cursor = {
         position: {
           x: 0,
           y: 0
@@ -23,7 +22,9 @@
         icon: 'cursor'
       };
 
-      SelectTool.hitOptions = {
+      Select.drawItems = false;
+
+      Select.hitOptions = {
         stroke: true,
         fill: true,
         handles: true,
@@ -33,42 +34,49 @@
         tolerance: 5
       };
 
-      function SelectTool() {
-        SelectTool.__super__.constructor.call(this, true);
+      Select.deselectAll = function() {
+        if (R.selectedItems.length > 0) {
+          R.commandManager.add(new R.DeselectCommand(), true);
+        }
+        P.project.activeLayer.selected = false;
+      };
+
+      function Select() {
+        Select.__super__.constructor.call(this, true);
         this.selectedItem = null;
         return;
       }
 
-      SelectTool.prototype.select = function(deselectItems, updateParameters) {
+      Select.prototype.select = function(deselectItems, updateParameters) {
         if (deselectItems == null) {
           deselectItems = false;
         }
         if (updateParameters == null) {
           updateParameters = true;
         }
-        SelectTool.__super__.select.call(this, false, updateParameters);
+        Select.__super__.select.call(this, false, updateParameters);
       };
 
-      SelectTool.prototype.updateParameters = function() {
-        g.controllerManager.updateParametersForSelectedItems();
+      Select.prototype.updateParameters = function() {
+        R.controllerManager.updateParametersForSelectedItems();
       };
 
-      SelectTool.prototype.createSelectionRectangle = function(event) {
+      Select.prototype.createSelectionRectangle = function(event) {
         var bounds, item, itemsToHighlight, name, rectangle, rectanglePath, _ref;
-        rectangle = new Rectangle(event.downPoint, event.point);
-        if (g.currentPaths[g.me] != null) {
-          g.updatePathRectangle(g.currentPaths[g.me], rectangle);
+        rectangle = new P.Rectangle(event.downPoint, event.point);
+        if (R.currentPaths[R.me] != null) {
+          Utils.P.Rectangle.updatePathRectangle(R.currentPaths[R.me], rectangle);
         } else {
-          rectanglePath = new Path.Rectangle(rectangle);
+          rectanglePath = new P.Path.Rectangle(rectangle);
           rectanglePath.name = 'select tool selection rectangle';
-          rectanglePath.strokeColor = g.selectionBlue;
+          rectanglePath.strokeColor = R.selectionBlue;
           rectanglePath.strokeScaling = false;
           rectanglePath.dashArray = [10, 4];
-          g.selectionLayer.addChild(rectanglePath);
-          g.currentPaths[g.me] = rectanglePath;
+          R.selectionLayer.addChild(rectanglePath);
+          R.currentPaths[R.me] = rectanglePath;
         }
         itemsToHighlight = [];
-        _ref = g.items;
+        _ref = R.items;
         for (name in _ref) {
           item = _ref[name];
           item.unhighlight();
@@ -83,20 +91,20 @@
         }
       };
 
-      SelectTool.prototype.begin = function(event) {
+      Select.prototype.begin = function(event) {
         var hitResult, name, path, _base, _ref, _ref1, _ref2;
         if (event.event.which === 2) {
           return;
         }
         console.log('begin select');
-        g.logElapsedTime();
-        _ref = g.paths;
+        R.logElapsedTime();
+        _ref = R.paths;
         for (name in _ref) {
           path = _ref[name];
           path.prepareHitTest();
         }
-        hitResult = g.project.hitTest(event.point, this.constructor.hitOptions);
-        _ref1 = g.paths;
+        hitResult = R.P.project.hitTest(event.point, this.constructor.hitOptions);
+        _ref1 = R.paths;
         for (name in _ref1) {
           path = _ref1[name];
           path.finishHitTest();
@@ -104,46 +112,46 @@
         if (hitResult && (hitResult.item.controller != null)) {
           this.selectedItem = hitResult.item.controller;
           if (!event.modifiers.shift) {
-            if (g.selectedItems.length > 0) {
-              if (g.selectedItems.indexOf((_ref2 = hitResult.item) != null ? _ref2.controller : void 0) < 0) {
-                g.commandManager.add(new g.DeselectCommand(), true);
+            if (R.selectedItems.length > 0) {
+              if (R.selectedItems.indexOf((_ref2 = hitResult.item) != null ? _ref2.controller : void 0) < 0) {
+                R.commandManager.add(new R.DeselectCommand(), true);
               }
             }
           } else {
-            g.tools['Screenshot'].checkRemoveScreenshotRectangle(hitResult.item.controller);
+            R.tools['Screenshot'].checkRemoveScreenshotRectangle(hitResult.item.controller);
           }
           if (typeof (_base = hitResult.item.controller).beginSelect === "function") {
             _base.beginSelect(event);
           }
         } else {
-          g.deselectAll();
+          Tool.Select.deselectAll();
           this.createSelectionRectangle(event);
         }
-        g.logElapsedTime();
+        R.logElapsedTime();
       };
 
-      SelectTool.prototype.update = function(event) {
-        if (!g.currentPaths[g.me] && (this.selectedItem != null)) {
+      Select.prototype.update = function(event) {
+        if (!R.currentPaths[R.me] && (this.selectedItem != null)) {
           this.selectedItem.updateSelect(event);
         } else {
           this.createSelectionRectangle(event);
         }
       };
 
-      SelectTool.prototype.end = function(event) {
+      Select.prototype.end = function(event) {
         var child, i, item, itemsAreSiblings, itemsToSelect, lock, locksToSelect, name, parent, rectangle, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
-        if (!g.currentPaths[g.me]) {
+        if (!R.currentPaths[R.me]) {
           this.selectedItem.endSelect(event);
           this.selectedItem = null;
         } else {
-          rectangle = new Rectangle(event.downPoint, event.point);
+          rectangle = new P.Rectangle(event.downPoint, event.point);
           itemsToSelect = [];
           locksToSelect = [];
-          _ref = g.items;
+          _ref = R.items;
           for (name in _ref) {
             item = _ref[name];
             if (item.getBounds().intersects(rectangle)) {
-              if (g.RLock.prototype.isPrototypeOf(item)) {
+              if (Lock.prototype.isPrototypeOf(item)) {
                 locksToSelect.push(item);
               } else {
                 itemsToSelect.push(item);
@@ -155,7 +163,7 @@
           }
           if (itemsToSelect.length > 0) {
             itemsAreSiblings = true;
-            parent = itemsToSelect.first().group.parent;
+            parent = itemsToSelect[0].group.parent;
             for (_i = 0, _len = itemsToSelect.length; _i < _len; _i++) {
               item = itemsToSelect[_i];
               if (item.group.parent !== parent) {
@@ -169,39 +177,39 @@
                 _ref1 = lock.children();
                 for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
                   child = _ref1[_k];
-                  itemsToSelect.remove(child);
+                  Utils.Array.remove(itemsToSelect, child);
                 }
               }
               itemsToSelect = itemsToSelect.concat(locksToSelect);
             }
             if (rectangle.area === 0) {
-              itemsToSelect = [itemsToSelect.first()];
+              itemsToSelect = [itemsToSelect[0]];
             }
-            g.commandManager.add(new g.SelectCommand(itemsToSelect), true);
+            R.commandManager.add(new R.SelectCommand(itemsToSelect), true);
             i = itemsToSelect.length - 1;
             while (i >= 0) {
               item = itemsToSelect[i];
               if (!item.isSelected()) {
-                itemsToSelect.remove(item);
+                Utils.Array.remove(itemsToSelect, item);
               }
               i--;
             }
           }
-          g.currentPaths[g.me].remove();
-          delete g.currentPaths[g.me];
-          _ref2 = g.items;
+          R.currentPaths[R.me].remove();
+          delete R.currentPaths[R.me];
+          _ref2 = R.items;
           for (name in _ref2) {
             item = _ref2[name];
             item.unhighlight();
           }
         }
         console.log('end select');
-        g.logElapsedTime();
+        R.logElapsedTime();
       };
 
-      SelectTool.prototype.doubleClick = function(event) {
+      Select.prototype.doubleClick = function(event) {
         var item, _i, _len, _ref;
-        _ref = g.selectedItems;
+        _ref = R.selectedItems;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           item = _ref[_i];
           if (typeof item.doubleClick === "function") {
@@ -210,50 +218,50 @@
         }
       };
 
-      SelectTool.prototype.disableSnap = function() {
-        return g.currentPaths[g.me] != null;
+      Select.prototype.disableSnap = function() {
+        return R.currentPaths[R.me] != null;
       };
 
-      SelectTool.prototype.keyUp = function(event) {
+      Select.prototype.keyUp = function(event) {
         var delta, item, selectedItems, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
         if ((_ref = event.key) === 'left' || _ref === 'right' || _ref === 'up' || _ref === 'down') {
           delta = event.modifiers.shift ? 50 : event.modifiers.option ? 5 : 1;
         }
         switch (event.key) {
           case 'right':
-            _ref1 = g.selectedItems;
+            _ref1 = R.selectedItems;
             for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
               item = _ref1[_i];
-              item.moveBy(new Point(delta, 0), true);
+              item.moveBy(new P.Point(delta, 0), true);
             }
             break;
           case 'left':
-            _ref2 = g.selectedItems;
+            _ref2 = R.selectedItems;
             for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
               item = _ref2[_j];
-              item.moveBy(new Point(-delta, 0), true);
+              item.moveBy(new P.Point(-delta, 0), true);
             }
             break;
           case 'up':
-            _ref3 = g.selectedItems;
+            _ref3 = R.selectedItems;
             for (_k = 0, _len2 = _ref3.length; _k < _len2; _k++) {
               item = _ref3[_k];
-              item.moveBy(new Point(0, -delta), true);
+              item.moveBy(new P.Point(0, -delta), true);
             }
             break;
           case 'down':
-            _ref4 = g.selectedItems;
+            _ref4 = R.selectedItems;
             for (_l = 0, _len3 = _ref4.length; _l < _len3; _l++) {
               item = _ref4[_l];
-              item.moveBy(new Point(0, delta), true);
+              item.moveBy(new P.Point(0, delta), true);
             }
             break;
           case 'escape':
-            g.deselectAll();
+            Tool.Select.deselectAll();
             break;
           case 'delete':
           case 'backspace':
-            selectedItems = g.selectedItems.slice();
+            selectedItems = R.selectedItems.slice();
             for (_m = 0, _len4 = selectedItems.length; _m < _len4; _m++) {
               item = selectedItems[_m];
               if (((_ref5 = item.selectionState) != null ? _ref5.segment : void 0) != null) {
@@ -265,10 +273,11 @@
         }
       };
 
-      return SelectTool;
+      return Select;
 
-    })(RTool);
-    return SelectTool;
+    })(Tool);
+    new Tool.Select();
+    return Tool.Select;
   });
 
 }).call(this);

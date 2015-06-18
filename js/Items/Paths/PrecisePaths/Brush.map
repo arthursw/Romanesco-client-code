@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "Brush.js",
+  "sourceRoot": "../../../..",
+  "sources": [
+    "coffee/Items/Paths/PrecisePaths/Brush.coffee"
+  ],
+  "names": [],
+  "mappings": ";AA4lBY;AAAA;AAAA"
+}

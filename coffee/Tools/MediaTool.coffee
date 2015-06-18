@@ -1,11 +1,9 @@
-define [
-	'utils', 'ItemTool'
-], (utils, ItemTool) ->
+define [ 'Tool' ], (Tool) ->
 
 	# RMedia creation tool
-	class MediaTool extends ItemTool
+	class Tool.Media extends Tool.Item
 
-		@rname = 'Media'
+		@label = 'Media'
 		@description = ''
 		@iconURL = 'image.png'
 		@favorite = true
@@ -17,7 +15,7 @@ define [
 			icon: 'image'
 
 		constructor: () ->
-			super(g.RMedia)
+			super(R.RMedia)
 			return
 
 		# End RMedia action:
@@ -25,10 +23,11 @@ define [
 		# the RMedia modal window will ask the user some information about the media he wants to create, the RMedia will be saved once the user submits and created on server response
 		# @param [Paper event or REvent] (usually) mouse up event
 		# @param [String] author (username) of the event
-		end: (event, from=g.me) ->
+		end: (event, from=R.me) ->
 			if super(event, from)
-				g.RMedia.initialize(g.currentPaths[from].bounds)
-				delete g.currentPaths[from]
+				R.RMedia.initialize(R.currentPaths[from].bounds)
+				delete R.currentPaths[from]
 			return
 
-	return MediaTool
+	new Tool.Media()
+	return Tool.Media

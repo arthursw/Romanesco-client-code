@@ -3,22 +3,21 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['utils', 'RTool'], function(utils, RTool) {
-    var MoveTool;
-    MoveTool = (function(_super) {
-      __extends(MoveTool, _super);
+  define(['Tool'], function(Tool) {
+    Tool.Move = (function(_super) {
+      __extends(Move, _super);
 
-      MoveTool.rname = 'Media';
+      Move.label = 'Media';
 
-      MoveTool.description = '';
+      Move.description = '';
 
-      MoveTool.iconURL = 'move.png';
+      Move.iconURL = 'move.png';
 
-      MoveTool.favorite = true;
+      Move.favorite = true;
 
-      MoveTool.category = '';
+      Move.category = '';
 
-      MoveTool.cursor = {
+      Move.cursor = {
         position: {
           x: 32,
           y: 32
@@ -27,8 +26,8 @@
         icon: 'move'
       };
 
-      function MoveTool() {
-        MoveTool.__super__.constructor.call(this, true);
+      function Move() {
+        Move.__super__.constructor.call(this, true);
         this.prevPoint = {
           x: 0,
           y: 0
@@ -37,7 +36,7 @@
         return;
       }
 
-      MoveTool.prototype.select = function(deselectItems, updateParameters) {
+      Move.prototype.select = function(deselectItems, updateParameters) {
         var div, _i, _len, _ref;
         if (deselectItems == null) {
           deselectItems = false;
@@ -45,33 +44,33 @@
         if (updateParameters == null) {
           updateParameters = true;
         }
-        MoveTool.__super__.select.call(this, deselectItems, updateParameters);
-        g.stageJ.addClass("moveTool");
-        _ref = g.divs;
+        Move.__super__.select.call(this, deselectItems, updateParameters);
+        R.stageJ.addClass("moveTool");
+        _ref = R.divs;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           div = _ref[_i];
           div.disableInteraction();
         }
       };
 
-      MoveTool.prototype.deselect = function() {
+      Move.prototype.deselect = function() {
         var div, _i, _len, _ref;
-        MoveTool.__super__.deselect.call(this);
-        g.stageJ.removeClass("moveTool");
-        _ref = g.divs;
+        Move.__super__.deselect.call(this);
+        R.stageJ.removeClass("moveTool");
+        _ref = R.divs;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           div = _ref[_i];
           div.enableInteraction();
         }
       };
 
-      MoveTool.prototype.begin = function(event) {};
+      Move.prototype.begin = function(event) {};
 
-      MoveTool.prototype.update = function(event) {};
+      Move.prototype.update = function(event) {};
 
-      MoveTool.prototype.end = function(moved) {};
+      Move.prototype.end = function(moved) {};
 
-      MoveTool.prototype.beginNative = function(event) {
+      Move.prototype.beginNative = function(event) {
         this.dragging = true;
         this.initialPosition = {
           x: event.pageX,
@@ -83,11 +82,11 @@
         };
       };
 
-      MoveTool.prototype.updateNative = function(event) {
+      Move.prototype.updateNative = function(event) {
         if (this.dragging) {
-          g.RMoveBy({
-            x: (this.prevPoint.x - event.pageX) / view.zoom,
-            y: (this.prevPoint.y - event.pageY) / view.zoom
+          View.moveBy({
+            x: (this.prevPoint.x - event.pageX) / P.view.zoom,
+            y: (this.prevPoint.y - event.pageY) / P.view.zoom
           });
           this.prevPoint = {
             x: event.pageX,
@@ -96,14 +95,15 @@
         }
       };
 
-      MoveTool.prototype.endNative = function(event) {
+      Move.prototype.endNative = function(event) {
         this.dragging = false;
       };
 
-      return MoveTool;
+      return Move;
 
-    })(RTool);
-    return MoveTool;
+    })(Tool);
+    new Tool.Move();
+    return Tool.Move;
   });
 
 }).call(this);

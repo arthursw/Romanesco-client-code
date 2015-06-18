@@ -6,9 +6,8 @@ requirejs.config
 	baseUrl: '../static/romanesco-client-code/js'
 	# enforceDefine: true 	# to make fallback work?? but throws Uncaught Error: No define call for app
 	paths:
-
-		'ace': ['//cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/ace', '../../libs/ace']
-		'aceTools': ['//cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/ext-language_tools', '../../libs/ace/ext-language_tools']
+		'domReady': ['//cdnjs.cloudflare.com/ajax/libs/require-domReady/2.0.1/domReady.min', '../../libs/domReady']
+		'ace': ['//cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/', '../../libs/ace/src-min-noconflict/']
 		'underscore': ['//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min', '../../libs/underscore-min']
 		'jquery': ['//code.jquery.com/jquery-2.1.3.min', 'libs/jquery-2.1.3.min']
 		'jqueryUi': ['//code.jquery.com/ui/1.11.4/jquery-ui.min', '../../libs/jquery-ui.min']
@@ -79,6 +78,11 @@ requirejs.config
 			exports: '_'
 		'jquery':
 			exports: '$'
+
+window.R = {}
+window.P = {}
+R.DajaxiceXMLHttpRequest = window.XMLHttpRequest
+window.XMLHttpRequest = window.RXMLHttpRequest
 
 # Load the main app module to start the app
 requirejs [ 'main' ]

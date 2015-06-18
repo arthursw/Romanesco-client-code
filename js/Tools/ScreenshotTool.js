@@ -4,18 +4,17 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['utils', 'RTool'], function(utils, RTool) {
-    var ScreenshotTool;
-    ScreenshotTool = (function(_super) {
-      __extends(ScreenshotTool, _super);
+  define(['Tool', 'zeroClipboard'], function(Tool, ZeroClipboard) {
+    Tool.Screenshot = (function(_super) {
+      __extends(Screenshot, _super);
 
-      ScreenshotTool.rname = 'Screenshot';
+      Screenshot.label = 'Screenshot';
 
-      ScreenshotTool.description = '';
+      Screenshot.description = '';
 
-      ScreenshotTool.iconURL = 'screenshot.png';
+      Screenshot.iconURL = 'screenshot.png';
 
-      ScreenshotTool.cursor = {
+      Screenshot.cursor = {
         position: {
           x: 0,
           y: 0
@@ -24,7 +23,9 @@
         icon: 'screenshot'
       };
 
-      function ScreenshotTool() {
+      Screenshot.drawItems = false;
+
+      function Screenshot() {
         this.downloadSVG = __bind(this.downloadSVG, this);
         this.downloadPNG = __bind(this.downloadPNG, this);
         this.publishOnPinterestCallback = __bind(this.publishOnPinterestCallback, this);
@@ -34,7 +35,7 @@
         this.publishOnFacebookCallback = __bind(this.publishOnFacebookCallback, this);
         this.publishOnFacebook = __bind(this.publishOnFacebook, this);
         this.extractImage = __bind(this.extractImage, this);
-        ScreenshotTool.__super__.constructor.call(this, true);
+        Screenshot.__super__.constructor.call(this, true);
         this.modalJ = $("#screenshotModal");
         this.modalJ.find('button[name="publish-on-facebook"]').click((function(_this) {
           return function() {
@@ -68,13 +69,13 @@
           };
         })(this));
         ZeroClipboard.config({
-          swfPath: g.romanescoURL + "static/libs/ZeroClipboard/ZeroClipboard.swf"
+          swfPath: R.romanescoURL + "static/libs/ZeroClipboard/ZeroClipboard.swf"
         });
         this.selectionRectangle = null;
         return;
       }
 
-      ScreenshotTool.prototype.getDescription = function() {
+      Screenshot.prototype.getDescription = function() {
         if (this.descriptionJ.val().length > 0) {
           return this.descriptionJ.val();
         } else {
@@ -82,49 +83,49 @@
         }
       };
 
-      ScreenshotTool.prototype.checkRemoveScreenshotRectangle = function(item) {
+      Screenshot.prototype.checkRemoveScreenshotRectangle = function(item) {
         if ((this.selectionRectangle != null) && item !== this.selectionRectangle) {
           this.selectionRectangle.remove();
         }
       };
 
-      ScreenshotTool.prototype.begin = function(event) {
+      Screenshot.prototype.begin = function(event) {
         var from;
-        from = g.me;
-        g.currentPaths[from] = new Path.Rectangle(event.point, event.point);
-        g.currentPaths[from].name = 'screenshot tool selection rectangle';
-        g.currentPaths[from].dashArray = [4, 10];
-        g.currentPaths[from].strokeColor = 'black';
-        g.currentPaths[from].strokeWidth = 1;
-        g.selectionLayer.addChild(g.currentPaths[from]);
+        from = R.me;
+        R.currentPaths[from] = new P.Path.Rectangle(event.point, event.point);
+        R.currentPaths[from].name = 'screenshot tool selection rectangle';
+        R.currentPaths[from].dashArray = [4, 10];
+        R.currentPaths[from].strokeColor = 'black';
+        R.currentPaths[from].strokeWidth = 1;
+        R.selectionLayer.addChild(R.currentPaths[from]);
       };
 
-      ScreenshotTool.prototype.update = function(event) {
+      Screenshot.prototype.update = function(event) {
         var from;
-        from = g.me;
-        g.currentPaths[from].lastSegment.point = event.point;
-        g.currentPaths[from].lastSegment.next.point.y = event.point.y;
-        g.currentPaths[from].lastSegment.previous.point.x = event.point.x;
+        from = R.me;
+        R.currentPaths[from].lastSegment.point = event.point;
+        R.currentPaths[from].lastSegment.next.point.y = event.point.y;
+        R.currentPaths[from].lastSegment.previous.point.x = event.point.x;
       };
 
-      ScreenshotTool.prototype.end = function(event) {
+      Screenshot.prototype.end = function(event) {
         var from, r;
-        from = g.me;
-        g.currentPaths[from].remove();
-        delete g.currentPaths[from];
-        r = new Rectangle(event.downPoint, event.point);
+        from = R.me;
+        R.currentPaths[from].remove();
+        delete R.currentPaths[from];
+        r = new P.Rectangle(event.downPoint, event.point);
         if (r.area < 100) {
           return;
         }
-        this.selectionRectangle = new g.RSelectionRectangle(new Rectangle(event.downPoint, event.point), this.extractImage);
+        this.selectionRectangle = new R.RSelectionRectangle(new P.Rectangle(event.downPoint, event.point), this.extractImage);
       };
 
-      ScreenshotTool.prototype.extractImage = function(redraw) {
+      Screenshot.prototype.extractImage = function(redraw) {
         var copyDataBtnJ, imgJ, maxHeight, twitterLinkJ, twitterScriptJ;
         this.rectangle = this.selectionRectangle.getBounds();
         this.selectionRectangle.remove();
-        this.dataURL = g.rasterizer.extractImage(this.rectangle, redraw);
-        this.locationURL = g.romanescoURL + location.hash;
+        this.dataURL = R.rasterizer.extractImage(this.rectangle, redraw);
+        this.locationURL = R.romanescoURL + location.hash;
         this.descriptionJ.attr('placeholder', 'Artwork made with Romanesco: ' + this.locationURL);
         copyDataBtnJ = this.modalJ.find('button[name="copy-data-url"]');
         copyDataBtnJ.attr("data-clipboard-text", this.dataURL);
@@ -147,27 +148,27 @@
           client.on("ready", function(readyEvent) {
             console.log("ZeroClipboard SWF is ready!");
             client.on("aftercopy", function(event) {
-              g.romanesco_alert("Image data url was successfully copied into the clipboard!", "success");
+              R.alertManager.alert("Image data url was successfully copied into the clipboard!", "success");
               this.destroy();
             });
           });
         });
       };
 
-      ScreenshotTool.prototype.saveImage = function(callback) {
+      Screenshot.prototype.saveImage = function(callback) {
         Dajaxice.draw.saveImage(callback, {
           'image': this.dataURL
         });
-        g.romanesco_alert("Your image is being uploaded...", "info");
+        R.alertManager.alert("Your image is being uploaded...", "info");
       };
 
-      ScreenshotTool.prototype.publishOnFacebook = function() {
+      Screenshot.prototype.publishOnFacebook = function() {
         this.saveImage(this.publishOnFacebookCallback);
       };
 
-      ScreenshotTool.prototype.publishOnFacebookCallback = function(result) {
+      Screenshot.prototype.publishOnFacebookCallback = function(result) {
         var caption;
-        g.romanesco_alert("Your image was successfully uploaded to Romanesco, posting to Facebook...", "info");
+        R.alertManager.alert("Your image was successfully uploaded to Romanesco, posting to Facebook...", "info");
         caption = this.getDescription();
         FB.ui({
           method: "feed",
@@ -175,24 +176,24 @@
           caption: caption,
           description: "Romanesco is an infinite collaborative drawing app.",
           link: this.locationURL,
-          picture: g.romanescoURL + result.url
+          picture: R.romanescoURL + result.url
         }, function(response) {
           if (response && response.post_id) {
-            g.romanesco_alert("Your Post was successfully published!", "success");
+            R.alertManager.alert("Your Post was successfully published!", "success");
           } else {
-            g.romanesco_alert("An error occured. Your post was not published.", "error");
+            R.alertManager.alert("An error occured. Your post was not published.", "error");
           }
         });
       };
 
-      ScreenshotTool.prototype.publishOnFacebookAsPhoto = function() {
-        if (!g.loggedIntoFacebook) {
+      Screenshot.prototype.publishOnFacebookAsPhoto = function() {
+        if (!R.loggedIntoFacebook) {
           FB.login((function(_this) {
             return function(response) {
               if (response && !response.error) {
                 _this.saveImage(_this.publishOnFacebookAsPhotoCallback);
               } else {
-                g.romanesco_alert("An error occured when trying to log you into facebook.", "error");
+                R.alertManager.alert("An error occured when trying to log you into facebook.", "error");
               }
             };
           })(this));
@@ -201,35 +202,35 @@
         }
       };
 
-      ScreenshotTool.prototype.publishOnFacebookAsPhotoCallback = function(result) {
+      Screenshot.prototype.publishOnFacebookAsPhotoCallback = function(result) {
         var caption;
-        g.romanesco_alert("Your image was successfully uploaded to Romanesco, posting to Facebook...", "info");
+        R.alertManager.alert("Your image was successfully uploaded to Romanesco, posting to Facebook...", "info");
         caption = this.getDescription();
         FB.api("/me/photos", "POST", {
-          "url": g.romanescoURL + result.url,
+          "url": R.romanescoURL + result.url,
           "message": caption
         }, function(response) {
           if (response && !response.error) {
-            g.romanesco_alert("Your Post was successfully published!", "success");
+            R.alertManager.alert("Your Post was successfully published!", "success");
           } else {
-            g.romanesco_alert("An error occured. Your post was not published.", "error");
+            R.alertManager.alert("An error occured. Your post was not published.", "error");
             console.log(response.error);
           }
         });
       };
 
-      ScreenshotTool.prototype.publishOnPinterest = function() {
+      Screenshot.prototype.publishOnPinterest = function() {
         this.saveImage(this.publishOnPinterestCallback);
       };
 
-      ScreenshotTool.prototype.publishOnPinterestCallback = function(result) {
+      Screenshot.prototype.publishOnPinterestCallback = function(result) {
         var buttonJ, caption, description, imageUrl, imgJ, linkJ, linkJcopy, pinterestModalJ, siteUrl, submit;
-        g.romanesco_alert("Your image was successfully uploaded to Romanesco...", "info");
+        R.alertManager.alert("Your image was successfully uploaded to Romanesco...", "info");
         pinterestModalJ = $("#customModal");
         pinterestModalJ.modal('show');
         pinterestModalJ.addClass("pinterest-modal");
         pinterestModalJ.find(".modal-title").text("Publish on Pinterest");
-        siteUrl = encodeURI(g.romanescoURL);
+        siteUrl = encodeURI(R.romanescoURL);
         imageUrl = siteUrl + result.url;
         caption = this.getDescription();
         description = encodeURI(caption);
@@ -255,34 +256,34 @@
         });
       };
 
-      ScreenshotTool.prototype.downloadPNG = function() {
+      Screenshot.prototype.downloadPNG = function() {
         this.modalJ.find("a.png")[0].click();
         this.modalJ.modal('hide');
       };
 
-      ScreenshotTool.prototype.downloadSVG = function() {
+      Screenshot.prototype.downloadSVG = function() {
         var blob, bounds, canvasTemp, controlPath, fileName, item, itemsToSave, link, position, rectanglePath, svg, svgGroup, tempProject, url, _i, _j, _k, _len, _len1, _len2, _ref;
-        rectanglePath = new Path.Rectangle(this.rectangle);
+        rectanglePath = new P.Path.Rectangle(this.rectangle);
         itemsToSave = [];
-        _ref = project.activeLayer.children;
+        _ref = P.project.activeLayer.children;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           item = _ref[_i];
           bounds = item.bounds;
           if (item.controller != null) {
             controlPath = item.controller.controlPath;
             if (this.rectangle.contains(bounds) || (this.rectangle.intersects(bounds) && (controlPath != null ? controlPath.getIntersections(rectanglePath).length : void 0) > 0)) {
-              g.pushIfAbsent(itemsToSave, item.controller);
+              Utils.Array.pushIfAbsent(itemsToSave, item.controller);
             }
           }
         }
-        svgGroup = new Group();
+        svgGroup = new P.Group();
         for (_j = 0, _len1 = itemsToSave.length; _j < _len1; _j++) {
           item = itemsToSave[_j];
           if (item.drawing == null) {
             item.draw();
           }
         }
-        view.update();
+        P.view.update();
         for (_k = 0, _len2 = itemsToSave.length; _k < _len2; _k++) {
           item = itemsToSave[_k];
           svgGroup.addChild(item.drawing.clone());
@@ -300,7 +301,7 @@
           asString: true
         });
         tempProject.remove();
-        paper.projects.first().activate();
+        paper.projects[0].activate();
         blob = new Blob([svg], {
           type: 'image/svg+xml'
         });
@@ -312,12 +313,13 @@
         this.modalJ.modal('hide');
       };
 
-      ScreenshotTool.prototype.copyURL = function() {};
+      Screenshot.prototype.copyURL = function() {};
 
-      return ScreenshotTool;
+      return Screenshot;
 
-    })(RTool);
-    return ScreenshotTool;
+    })(Tool);
+    new Tool.Screenshot();
+    return Tool.Screenshot;
   });
 
 }).call(this);

@@ -1,8 +1,4 @@
-define [
-	'utils', 'Item/item', 'jquery', 'paper'
-], (utils) ->
-
-	g = utils.g()
+define [ 'Item' ], (Item) ->
 
 	# RLock are locked area which can only be modified by their author
 	# all RItems on the area are also locked, and can be unlocked if the user drags them outside the div
@@ -24,26 +20,26 @@ define [
 	# - it is usefull to add and edit items on the area
 	#
 
-	class RLock extends g.RItem
-		@rname = 'Lock'
+	class Lock extends Item
+		@label = 'Lock'
 		@object_type = 'lock'
 
 		@initialize: (rectangle)->
 			submit = (data)->
 				switch data.object_type
 					when 'lock'
-						lock = new g.RLock(rectangle, data)
+						lock = new Lock(rectangle, data)
 					when 'website'
-						lock = new g.RWebsite(rectangle, data)
+						lock = new Lock.Website(rectangle, data)
 					when 'video-game'
-						lock = new g.RVideoGame(rectangle, data)
+						lock = new Lock.VideoGame(rectangle, data)
 					when 'link'
-						lock = new g.RLink(rectangle, data)
+						lock = new Lock.Link(rectangle, data)
 				lock.save(true)
 				lock.update('rectangle') 	# update to add items which are under the lock
 				lock.select()
 				return
-			g.RModal.initialize('Create a locked area', submit)
+			R.RModal.initialize('Create a locked area', submit)
 
 			radioButtons = [
 				{ value: 'lock', checked: true, label: 'Create simple lock', submitShortcut: true, linked: [] }
@@ -52,11 +48,11 @@ define [
 				# { value: 'video-game', checked: false, label: 'Create  video game (® x2)', linked: ['message'] }
 			]
 
-			radioGroupJ = g.RModal.addRadioGroup('object_type', radioButtons)
-			g.RModal.addCheckbox('restrictArea', 'Restrict area', "Users visiting your website will not be able to go out of the site boundaries.")
-			g.RModal.addCheckbox('disableToolbar', 'Disable toolbar', "Users will not have access to the toolbar on your site.")
-			g.RModal.addTextInput('linkName', 'Site name', 'text', '', 'Site name')
-			g.RModal.addTextInput('url', 'http://', 'url', 'url', 'URL')
+			radioGroupJ = R.RModal.addRadioGroup('object_type', radioButtons)
+			R.RModal.addCheckbox('restrictArea', 'Restrict area', "Users visiting your website will not be able to go out of the site boundaries.")
+			R.RModal.addCheckbox('disableToolbar', 'Disable toolbar', "Users will not have access to the toolbar on your site.")
+			R.RModal.addTextInput('linkName', 'Site name', 'text', '', 'Site name')
+			R.RModal.addTextInput('url', 'http://', 'url', 'url', 'URL')
 			siteURLJ = $("""
 				<div class="form-group siteName">
 					<label for="modalSiteName">Site name</label>
@@ -69,60 +65,146 @@ define [
 			siteUrlExtractor = (data, siteURLJ)->
 				data.siteURL = siteURLJ.find("#modalSiteName").val()
 				return true
-			g.RModal.addCustomContent('siteName', siteURLJ, siteUrlExtractor)
-			g.RModal.addTextInput('message', 'Enter the message you want others to see when they look at this link.', 'text', '', 'Message', true)
+			R.RModal.addCustomContent('siteName', siteURLJ, siteUrlExtractor)
+			R.RModal.addTextInput('message', 'Enter the message you want others to see when they look at this link.', 'text', '', 'Message', true)
 
 			radioGroupJ.click (event)->
 				lockType = radioGroupJ.find('input[type=radio][name=object_type]:checked')[0].value
 				for radioButton in radioButtons
 					if radioButton.value == lockType
-						for name, extractor of g.RModal.extractors
+						for name, extractor of R.RModal.extractors
 							if radioButton.linked.indexOf(name) >= 0
 								extractor.div.show()
 							else if name != 'object_type'
 								extractor.div.hide()
 				return
 			radioGroupJ.click()
-			g.RModal.show()
+			R.RModal.show()
 			radioGroupJ.find('input:first').focus()
 			return
 
+		@highlightStage: (color)->
+			R.backgroundRectangle = new P.Path.Rectangle(P.view.bounds)
+			R.backgroundRectangle.fillColor = color
+			R.backgroundRectangle.sendToBack()
+			return
+
+		@unhighlightStage: ()->
+			R.backgroundRectangle?.remove()
+			R.backgroundRectangle = null
+			return
+
+		@highlightValidity: (item)->
+			@validatePosition(item, null, true)
+			return
+
+		# - check if *bounds* is valid: does not intersect with a planet nor a lock
+		# - if bounds is not defined, the bounds of the item will be used
+		# - cancel all highlights
+		# - if the item has been dragged over a lock or out of a lock: highlight (if *highlight*) or update the items accordingly
+		# @param item [RItem] the item to check
+		# @param bounds [Paper P.Rectangle] (optional) the bounds to consider, item's bounds are used if *bounds* is null
+		# @param highlight [boolean] (optional) whether to highlight or update the items
+		@validatePosition: (item, bounds=null, highlight=false)->
+			if R.RSelectionRectangle.prototype.isPrototypeOf(item)
+				return true
+
+			if item.getDrawingBounds?() > R.rasterizer.maxArea()
+				if highlight
+					R.alertManager.alert('The path is too big.', 'Warning')
+				else
+					return false
+
+			bounds ?= item.getBounds()
+
+			R.limitPathV?.strokeColor = 'green'
+			R.limitPathH?.strokeColor = 'green'
+
+			for lock in R.locks
+				lock.unhighlight()
+
+			@unhighlightStage()
+
+			if Grid.rectangleOverlapsTwoPlanets(bounds)
+				if highlight
+					R.limitPathV?.strokeColor = 'red'
+					R.limitPathH?.strokeColor = 'red'
+				else
+					return false
+
+			locks = Lock.getLocksWhichIntersect(bounds)
+
+			for lock in locks
+				if Lock.prototype.isPrototypeOf(item)
+					if item != lock
+						if highlight
+							lock.highlight('red')
+						else
+							return false
+				else
+					if lock.getBounds().contains(bounds) and R.me == lock.owner
+						if item.lock != lock
+							if highlight
+								lock.highlight('green')
+							else
+								lock.addItem(item)
+					else
+						if highlight
+							lock.highlight('red')
+						else
+							return false
+
+			if locks.length == 0
+				if item.lock?
+					if highlight
+						@highlightStage('green')
+					else
+						Item.addItemToStage(item)
+
+			# if item is a lock: check that it still contains its children
+			if Lock.prototype.isPrototypeOf(item)
+				if not item.containsChildren()
+					if highlight
+						item.highlight('red')
+					else
+						return false
+			return true
 		# # @param point [Paper point] the point to test
 		# # @return [RLock] the intersecting lock or null
 		# @intersectPoint: (point)->
-		# 	for lock in g.locks
+		# 	for lock in R.locks
 		# 		if lock.getBounds().contains(point)
-		# 			return g.items[lock.pk]
+		# 			return R.items[lock.pk]
 		# 	return null
 
-		# # @param rectangle [Paper Rectangle] the rectangle to test
+		# # @param rectangle [Paper P.Rectangle] the rectangle to test
 		# # @return [Boolean] whether it intersects a lock
 		# @intersectsRectangle: (rectangle)->
 		# 	return @intersectRectangle(rectangle).length>0
 
-		# @param rectangle [Paper Rectangle] the rectangle to test
+		# @param rectangle [Paper P.Rectangle] the rectangle to test
 		# @return [Array<RLock>] the locks
 		@getLockWhichContains: (rectangle)->
-			for lock in g.locks
+			for lock in R.locks
 				if lock.getBounds().contains(rectangle)
 					return lock
 			return null
 
-		# @param rectangle [Paper Rectangle] the rectangle to test
+		# @param rectangle [Paper P.Rectangle] the rectangle to test
 		# @return [Array<RLock>] the intersecting locks
 		@getLocksWhichIntersect: (rectangle)->
 			locks = []
-			for lock in g.locks
+			for lock in R.locks
 				if lock.getBounds().intersects(rectangle)
 					locks.push(lock)
 			return locks
 
 		# @getSelectedLock: (warnIfMultipleLocksSelected)->
 		# 	lock = null
-		# 	for item in g.selectedItems
-		# 		if g.RLock.prototype.isPrototypeOf(item)
+		# 	for item in R.selectedItems
+		# 		if Lock.prototype.isPrototypeOf(item)
 		# 			if lock != null and warnIfMultipleLocksSelected
-		# 				g.romanesco_alert "Two locks are selected, please choose a single lock.", "Warning"
+		# 				R.alertManager.alert "Two locks are selected, please choose a single lock.", "Warning"
 		# 				return null
 		# 			lock = item
 		# 	return lock
@@ -130,11 +212,11 @@ define [
 		@initializeParameters: ()->
 			parameters = super()
 
-			strokeWidth = $.extend(true, {}, g.parameters.strokeWidth)
+			strokeWidth = $.extend(true, {}, R.parameters.strokeWidth)
 			strokeWidth.default = 1
-			strokeColor = $.extend(true, {}, g.parameters.strokeColor)
+			strokeColor = $.extend(true, {}, R.parameters.strokeColor)
 			strokeColor.default = 'black'
-			fillColor = $.extend(true, {}, g.parameters.fillColor)
+			fillColor = $.extend(true, {}, R.parameters.fillColor)
 			fillColor.default = 'white'
 			fillColor.defaultCheck = true
 			fillColor.defaultFunction = null
@@ -147,13 +229,13 @@ define [
 					type: 'button'
 					label: 'Link module'
 					default: ()->
-						for item in g.selectedItems
-							if g.RLock.prototype.isPrototypeOf(item)
+						for item in R.selectedItems
+							if Lock.prototype.isPrototypeOf(item)
 								item.askForModule()
 						return
 					initializeController: (controller)->
 						spanJ = $(controller.domElement).find('.property-name')
-						firstItem = g.selectedItems.first()
+						firstItem = R.selectedItems[0]
 						if firstItem?.data?.moduleName?
 							spanJ.text('Change module (' + firstItem.data.moduleName + ')')
 						return
@@ -161,22 +243,23 @@ define [
 			return parameters
 
 		@parameters = @initializeParameters()
+		@createTool(@)
 
 		constructor: (@rectangle, @data=null, @pk=null, @owner=null, @date, @modulePk) ->
 			super(@data, @pk)
 
-			g.locks.push(@)
+			R.locks.push(@)
 
 			@group.name = 'lock group'
 
 			@draw()
-			g.lockLayer.addChild(@group)
+			R.lockLayer.addChild(@group)
 
 			# create special list to contains children paths
 			@sortedPaths = []
 			@sortedDivs = []
 
-			@itemListsJ = g.templatesJ.find(".layer").clone()
+			@itemListsJ = R.templatesJ.find(".layer").clone()
 			pkString = '' + (@pk or @id)
 			pkString = pkString.substring(pkString.length-3)
 			title = "Lock ..." + pkString
@@ -186,12 +269,12 @@ define [
 			titleJ.click (event)=>
 				@itemListsJ.toggleClass('closed')
 				if not event.shiftKey
-					g.deselectAll()
+					Tool.Select.deselectAll()
 				@select()
 				return
 
-			@itemListsJ.find('.rDiv-list').sortable( stop: g.zIndexSortStop, delay: 250 )
-			@itemListsJ.find('.rPath-list').sortable( stop: g.zIndexSortStop, delay: 250 )
+			@itemListsJ.find('.rDiv-list').sortable( stop: Item.zIndexSortStop, delay: 250 )
+			@itemListsJ.find('.rPath-list').sortable( stop: Item.zIndexSortStop, delay: 250 )
 
 			@itemListsJ.mouseover (event)=>
 				@highlight()
@@ -200,37 +283,37 @@ define [
 				@unhighlight()
 				return
 
-			g.itemListsJ.prepend(@itemListsJ)
-			@itemListsJ = g.itemListsJ.find(".layer:first")
+			R.itemListsJ.prepend(@itemListsJ)
+			@itemListsJ = R.itemListsJ.find(".layer:first")
 
 			# check if items are under this lock
-			for pk, item in g.items
-				if g.RLock.prototype.isPrototypeOf(item)
+			for pk, item in R.items
+				if Lock.prototype.isPrototypeOf(item)
 					continue
 				if item.getBounds().intersects(@rectangle)
 					@addItem(item)
 
 			# check if the lock must be entirely loaded
 			if @data?.loadEntireArea
-				g.entireAreas.push(@)
+				R.entireAreas.push(@)
 
 			if @modulePk?
-				Dajaxice.draw.getModuleSource(g.initializeModule, { pk: @modulePk, accepted: true })
+				Dajaxice.draw.getModuleSource(R.initializeModule, { pk: @modulePk, accepted: true })
 
 			return
 
 		initializeModule: ()->
-			if not g.checkError(result) then return
+			if not R.loader.checkError(result) then return
 			module = JSON.parse(result.module)
-			g.parentLock = @
-			g.runModule(module)
+			R.parentLock = @
+			R.runModule(module)
 			return
 
 		draw: ()->
 			if @drawing? then @drawing.remove()
 			if @raster? then @raster.remove()
 			@raster = null
-			@drawing = new Path.Rectangle(@rectangle)
+			@drawing = new P.Path.Rectangle(@rectangle)
 			@drawing.name = 'rlock background'
 			@drawing.strokeWidth = if @data.strokeWidth>0 then @data.strokeWidth else 1
 			@drawing.strokeColor = if @data.strokeColor? then @data.strokeColor else 'black'
@@ -254,12 +337,12 @@ define [
 
 		save: (addCreateCommand=true) ->
 
-			if g.rectangleOverlapsTwoPlanets(@rectangle)
+			if Grid.rectangleOverlapsTwoPlanets(@rectangle)
 				return
 
 			if @rectangle.area == 0
 				@remove()
-				g.romanesco_alert "Error: your box is not valid.", "error"
+				R.alertManager.alert "Error: your box is not valid.", "error"
 				return
 
 			data = @getData()
@@ -270,8 +353,8 @@ define [
 				loadEntireArea: data.loadEntireArea
 
 			args =
-				city: city: g.city
-				box: g.boxFromRectangle(@rectangle)
+				city: city: R.city
+				box: R.boxFromRectangle(@rectangle)
 				object_type: @constructor.object_type
 				data: JSON.stringify(data)
 				siteData: JSON.stringify(siteData)
@@ -282,7 +365,7 @@ define [
 
 		# check if the save was successful and set @pk if it is
 		saveCallback: (result)=>
-			g.checkError(result)
+			R.loader.checkError(result)
 			if not result.pk?  		# if @pk is null, the path was not saved, do not set pk nor rasterize
 				@remove()
 				return
@@ -302,12 +385,12 @@ define [
 			delete @updateAfterSave
 
 			# check if position is valid
-			if g.rectangleOverlapsTwoPlanets(@rectangle)
+			if Grid.rectangleOverlapsTwoPlanets(@rectangle)
 				return
 
 			# initialize data to be saved
 			updateBoxArgs =
-				box: g.boxFromRectangle(@rectangle)
+				box: R.boxFromRectangle(@rectangle)
 				pk: @pk
 				object_type: @object_type
 				name: @data.name
@@ -324,8 +407,8 @@ define [
 				itemsToUpdate = if type == 'position' then @children() else []
 
 				# check if new items are inside @rectangle
-				for pk, item of g.items
-					if not g.RLock.prototype.isPrototypeOf(item)
+				for pk, item of R.items
+					if not Lock.prototype.isPrototypeOf(item)
 						if item.lock != @ and @rectangle.contains(item.getBounds())
 							@addItem(item)
 							itemsToUpdate.push(item)
@@ -338,7 +421,7 @@ define [
 
 		updateCallback: (results)->
 			for result in results
-				g.checkError(result)
+				R.loader.checkError(result)
 			return
 
 		# called when user deletes the item by pressing delete key or from the gui
@@ -347,13 +430,13 @@ define [
 		delete: () ->
 			@remove()
 			if not @pk? then return
-			if not @socketAction then Dajaxice.draw.deleteBox( g.checkError, { 'pk': @pk } )
+			if not @socketAction then Dajaxice.draw.deleteBox( R.loader.checkError, { 'pk': @pk } )
 			super
 			return
 
 		setRectangle: (rectangle, update)->
 			super(rectangle, update)
-			g.updatePathRectangle(@drawing, rectangle)
+			Utils.P.Rectangle.updatePathRectangle(@drawing, rectangle)
 			return
 
 		moveTo: (position, update)->
@@ -361,7 +444,7 @@ define [
 			for item in @children()
 				item.rectangle.center.x += delta.x
 				item.rectangle.center.y += delta.y
-				if g.RDiv.prototype.isPrototypeOf(item)
+				if R.RDiv.prototype.isPrototypeOf(item)
 					item.updateTransform()
 			super(position, update)
 			return
@@ -380,7 +463,7 @@ define [
 
 		# can not select a lock which the user does not own
 		select: (updateOptions=true) =>
-			if not super(updateOptions) or @owner != g.me then return false
+			if not super(updateOptions) or @owner != R.me then return false
 			for item in @children()
 				item.deselect()
 			return true
@@ -391,7 +474,7 @@ define [
 
 			@itemListsJ.remove()
 			@itemListsJ = null
-			g.locks.remove(@)
+			Utils.Array.remove(R.locks, @)
 			@drawing = null
 			super
 			return
@@ -400,12 +483,12 @@ define [
 			return @sortedDivs.concat(@sortedPaths)
 
 		addItem: (item)->
-			g.addItemTo(item, @)
+			Item.addItemTo(item, @)
 			item.lock = @
 			return
 
 		removeItem: (item)->
-			g.addItemToStage(item)
+			Item.addItemToStage(item)
 			item.lock = null
 			return
 
@@ -422,25 +505,23 @@ define [
 			return
 
 		createSelectModuleModal: (result)->
-			g.codeEditor.createModuleEditorModal(result, @addModule)
-			g.RModal.modalJ.find("tr.module[data-pk='#{@modulePk}']").css('background-color': 'rgba(213, 18, 18, 0.54)')
+			R.codeEditor.createModuleEditorModal(result, @addModule)
+			R.RModal.modalJ.find("tr.module[data-pk='#{@modulePk}']").css('background-color': 'rgba(213, 18, 18, 0.54)')
 			return
 
 		addModule: ()->
 			@modulePk = $(this).attr("data-pk")
 			@data.moduleName = $(this).attr("data-name")
-			Dajaxice.draw.updateBox( g.checkError, { pk: @pk, modulePk: @modulePk } )
+			Dajaxice.draw.updateBox( R.loader.checkError, { pk: @pk, modulePk: @modulePk } )
 			return
-
-	g.RLock = RLock
 
 	# RWebsite:
 	#  - extends RLock and provide the author a special website adresse
 	#  - the owner of the site can choose a few options: "restrict area" and "hide toolbar"
 	#  - a user going to a site with the "restricted area" option can not go outside the area
 	#  - the tool bar will be hidden to users navigating to site with the "hide toolbar" option
-	class RWebsite extends RLock
-		@rname = 'Website'
+	class Lock.Website extends Lock
+		@label = 'Website'
 		@object_type = 'website'
 
 		# overload {RDiv#constructor}
@@ -454,14 +535,12 @@ define [
 		enableInteraction: () ->
 			return
 
-	g.RWebsite = RWebsite
-
 	# RVideogame:
 	# - a video game is an area which can interact with other RItems (very experimental)
 	# - video games are always loaded entirely (the whole area is loaded at the same time with its items)
 	# this a default videogame class which must be redefined in custom scripts
-	class RVideoGame extends RLock
-		@rname = 'Video game'
+	class Lock.VideoGame extends Lock
+		@label = 'Video game'
 		@object_type = 'video-game'
 
 		# overload {RDiv#constructor}
@@ -498,9 +577,9 @@ define [
 						@currentCheckpoint = checkpoint.data.checkpointNumber
 						if @currentCheckpoint == 0
 							@startTime = Date.now()
-							g.romanesco_alert "Game started, go go go!", "success"
+							R.alertManager.alert "Game started, go go go!", "success"
 						else
-							g.romanesco_alert "Checkpoint " + @currentCheckpoint + " passed!", "success"
+							R.alertManager.alert "Checkpoint " + @currentCheckpoint + " passed!", "success"
 					if @currentCheckpoint == @checkpoints.length-1
 						@finishGame()
 			return
@@ -508,16 +587,14 @@ define [
 		# ends the game: called when user passes the last checkpoint!
 		finishGame: ()->
 			time = (Date.now() - @startTime)/1000
-			g.romanesco_alert "You won ! Your time is: " + time.toFixed(2) + " seconds.", "success"
+			R.alertManager.alert "You won ! Your time is: " + time.toFixed(2) + " seconds.", "success"
 			@currentCheckpoint = -1
 			return
 
-	g.RVideoGame = RVideoGame
-
 	# todo: make the link enabled even with the move tool?
 	# RLink: extends RLock but works as a link: the one who clicks on it is redirected to the website
-	class RLink extends RLock
-		@rname = 'Link'
+	class Lock.Link extends Lock
+		@label = 'Link'
 		@modalTitle = "Insert a hyperlink"
 		@modalTitleUpdate = "Modify your link"
 		@object_type = 'link'
@@ -536,14 +613,13 @@ define [
 				if @linkJ.attr("href").indexOf("http://romanesc.co/#") == 0
 					location = @linkJ.attr("href").replace("http://romanesc.co/#", "")
 					pos = location.split(',')
-					p = new Point()
+					p = new P.Point()
 					p.x = parseFloat(pos[0])
 					p.y = parseFloat(pos[1])
-					g.RMoveTo(p, 1000)
+					View.moveTo(p, 1000)
 					event.preventDefault()
 					return false
 				return
 			return
 
-	g.RLink = RLink
-	return
+	return Lock

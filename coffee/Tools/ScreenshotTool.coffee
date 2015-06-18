@@ -1,7 +1,4 @@
-define [
-	'utils', 'RTool'
-], (utils, RTool) ->
-
+define [ 'Tool', 'zeroClipboard' ], (Tool, ZeroClipboard) ->
 
 	# todo: ZeroClipboard.destroy()
 	# ScreenshotTool to take a screenshot and save it or publish it on different social platforms (facebook, pinterest or twitter)
@@ -9,9 +6,9 @@ define [
 	# - when the user release the mouse, a special (temporary) resizable RDiv (RSelectionRectangle) is created so that the user can adjust the screenshot box to fit his needs (this must be imporved, with better visibility and the possibility to better snap the box to the grid)
 	# - once the user adjusted the box, he can take the screenshot by clicking the "Take screenshot" button at the center of the RSelectionRectangle
 	# - a modal window asks the user how to exploit the newly created image (copy it, save it, or publish it on facebook, twitter or pinterest)
-	class ScreenshotTool extends RTool
+	class Tool.Screenshot extends Tool
 
-		@rname = 'Screenshot'
+		@label = 'Screenshot'
 		@description = ''
 		@iconURL = 'screenshot.png'
 		@cursor =
@@ -19,6 +16,7 @@ define [
 				x: 0, y: 0
 			name: 'crosshair'
 			icon: 'screenshot'
+		@drawItems = false
 
 		# Initialize screenshot modal (init button click event handlers)
 		constructor: () ->
@@ -35,7 +33,7 @@ define [
 				@modalJ.find('a[name="publish-on-twitter"]').attr("data-text", @getDescription())
 				return
 
-			ZeroClipboard.config( swfPath: g.romanescoURL + "static/libs/ZeroClipboard/ZeroClipboard.swf" )
+			ZeroClipboard.config( swfPath: R.romanescoURL + "static/libs/ZeroClipboard/ZeroClipboard.swf" )
 			# ZeroClipboard.destroy()
 			@selectionRectangle = null
 
@@ -52,39 +50,39 @@ define [
 
 		# create selection rectangle
 		begin: (event) ->
-			from = g.me
-			g.currentPaths[from] = new Path.Rectangle(event.point, event.point)
-			g.currentPaths[from].name = 'screenshot tool selection rectangle'
-			g.currentPaths[from].dashArray = [4, 10]
-			g.currentPaths[from].strokeColor = 'black'
-			g.currentPaths[from].strokeWidth = 1
-			g.selectionLayer.addChild(g.currentPaths[from])
+			from = R.me
+			R.currentPaths[from] = new P.Path.Rectangle(event.point, event.point)
+			R.currentPaths[from].name = 'screenshot tool selection rectangle'
+			R.currentPaths[from].dashArray = [4, 10]
+			R.currentPaths[from].strokeColor = 'black'
+			R.currentPaths[from].strokeWidth = 1
+			R.selectionLayer.addChild(R.currentPaths[from])
 			return
 
 		# update selection rectangle
 		update: (event) ->
-			from = g.me
-			g.currentPaths[from].lastSegment.point = event.point
-			g.currentPaths[from].lastSegment.next.point.y = event.point.y
-			g.currentPaths[from].lastSegment.previous.point.x = event.point.x
+			from = R.me
+			R.currentPaths[from].lastSegment.point = event.point
+			R.currentPaths[from].lastSegment.next.point.y = event.point.y
+			R.currentPaths[from].lastSegment.previous.point.x = event.point.x
 			return
 
 		# - remove selection rectangle
 		# - return if rectangle is too small
 		# - create the RSelectionRectangle (so that the user can adjust the screenshot box to fit his needs)
 		end: (event) ->
-			from = g.me
+			from = R.me
 			# remove selection rectangle
-			g.currentPaths[from].remove()
-			delete g.currentPaths[from]
-			# view.update()
+			R.currentPaths[from].remove()
+			delete R.currentPaths[from]
+			# P.view.update()
 
 			# return if rectangle is too small
-			r = new Rectangle(event.downPoint, event.point)
+			r = new P.Rectangle(event.downPoint, event.point)
 			if r.area<100
 				return
 
-			@selectionRectangle = new g.RSelectionRectangle(new Rectangle(event.downPoint, event.point), @extractImage)
+			@selectionRectangle = new R.RSelectionRectangle(new P.Rectangle(event.downPoint, event.point), @extractImage)
 
 			return
 
@@ -94,9 +92,9 @@ define [
 			@rectangle = @selectionRectangle.getBounds()
 			@selectionRectangle.remove()
 
-			@dataURL = g.rasterizer.extractImage(@rectangle, redraw)
+			@dataURL = R.rasterizer.extractImage(@rectangle, redraw)
 
-			@locationURL = g.romanescoURL + location.hash
+			@locationURL = R.romanescoURL + location.hash
 
 			@descriptionJ.attr('placeholder', 'Artwork made with Romanesco: ' + @locationURL)
 			# initialize modal (data url and image)
@@ -131,7 +129,7 @@ define [
 						# `this` === `client`
 						# `event.target` === the element that was clicked
 						# event.target.style.display = "none"
-						g.romanesco_alert("Image data url was successfully copied into the clipboard!", "success")
+						R.alertManager.alert("Image data url was successfully copied into the clipboard!", "success")
 						this.destroy()
 						return
 					return
@@ -147,7 +145,7 @@ define [
 		saveImage: (callback)->
 			# ajaxPost '/saveImage', {'image': @dataURL } , callback
 			Dajaxice.draw.saveImage( callback, {'image': @dataURL } )
-			g.romanesco_alert "Your image is being uploaded...", "info"
+			R.alertManager.alert "Your image is being uploaded...", "info"
 			return
 
 		# Save image and call publish on facebook callback
@@ -158,7 +156,7 @@ define [
 		# (Called once the image is uploaded) add a facebook dialog box in which user can add more info and publish the image
 		# todo: check if upload was successful?
 		publishOnFacebookCallback: (result)=>
-			g.romanesco_alert "Your image was successfully uploaded to Romanesco, posting to Facebook...", "info"
+			R.alertManager.alert "Your image was successfully uploaded to Romanesco, posting to Facebook...", "info"
 			caption = @getDescription()
 			FB.ui(
 				method: "feed"
@@ -166,12 +164,12 @@ define [
 				caption: caption
 				description: ("Romanesco is an infinite collaborative drawing app.")
 				link: @locationURL
-				picture: g.romanescoURL + result.url
+				picture: R.romanescoURL + result.url
 			, (response) ->
 				if response and response.post_id
-					g.romanesco_alert "Your Post was successfully published!", "success"
+					R.alertManager.alert "Your Post was successfully published!", "success"
 				else
-					g.romanesco_alert "An error occured. Your post was not published.", "error"
+					R.alertManager.alert "An error occured. Your post was not published.", "error"
 				return
 			)
 
@@ -180,7 +178,7 @@ define [
 			# imageData = 'data:image/png;base64,'+result.image
 			# image = new Image()
 			# image.src = imageData
-			# g.canvasJ[0].getContext("2d").drawImage(image, 300, 300)
+			# R.canvasJ[0].getContext("2d").drawImage(image, 300, 300)
 
 			# # FB.login( () ->
 			# # 	if (response.session) {
@@ -213,12 +211,12 @@ define [
 		# - log in to facebook (if not already logged in)
 		# - save image to publish photo when/if logged in
 		publishOnFacebookAsPhoto: ()=>
-			if not g.loggedIntoFacebook
+			if not R.loggedIntoFacebook
 				FB.login( (response)=>
 					if response and !response.error
 						@saveImage(@publishOnFacebookAsPhotoCallback)
 					else
-						g.romanesco_alert "An error occured when trying to log you into facebook.", "error"
+						R.alertManager.alert "An error occured when trying to log you into facebook.", "error"
 					return
 				)
 			else
@@ -228,20 +226,20 @@ define [
 		# (Called once the image is uploaded) directly publish the image
 		# todo: check if upload was successful?
 		publishOnFacebookAsPhotoCallback: (result)=>
-			g.romanesco_alert "Your image was successfully uploaded to Romanesco, posting to Facebook...", "info"
+			R.alertManager.alert "Your image was successfully uploaded to Romanesco, posting to Facebook...", "info"
 			caption = @getDescription()
 			FB.api(
 				"/me/photos",
 				"POST",
 				{
-					"url": g.romanescoURL + result.url
+					"url": R.romanescoURL + result.url
 					"message": caption
 				},
 				(response)->
 					if response and !response.error
-						g.romanesco_alert "Your Post was successfully published!", "success"
+						R.alertManager.alert "Your Post was successfully published!", "success"
 					else
-						g.romanesco_alert("An error occured. Your post was not published.", "error")
+						R.alertManager.alert("An error occured. Your post was not published.", "error")
 						console.log response.error
 					return
 			)
@@ -255,7 +253,7 @@ define [
 		# (Called once the image is uploaded) add a modal dialog to publish the image on pinterest (the pinterest button must link to an image already existing on the server)
 		# todo: check if upload was successful?
 		publishOnPinterestCallback: (result)=>
-			g.romanesco_alert "Your image was successfully uploaded to Romanesco...", "info"
+			R.alertManager.alert "Your image was successfully uploaded to Romanesco...", "info"
 
 			# initialize pinterest modal
 			pinterestModalJ = $("#customModal")
@@ -263,7 +261,7 @@ define [
 			pinterestModalJ.addClass("pinterest-modal")
 			pinterestModalJ.find(".modal-title").text("Publish on Pinterest")
 			# siteUrl = encodeURI('http://romanesc.co/')
-			siteUrl = encodeURI(g.romanescoURL)
+			siteUrl = encodeURI(R.romanescoURL)
 			imageUrl = siteUrl+result.url
 			caption = @getDescription()
 			description = encodeURI(caption)
@@ -315,30 +313,30 @@ define [
 		# (chrome will open the save image dialog, other browsers will open the image in a new window/tab for the user to be able to save it)
 		downloadSVG: ()=>
 			# get rectangle and retrieve items in this rectangle
-			rectanglePath = new Path.Rectangle(@rectangle)
+			rectanglePath = new P.Path.Rectangle(@rectangle)
 
 			itemsToSave = []
-			for item in project.activeLayer.children
+			for item in P.project.activeLayer.children
 				bounds = item.bounds
 				if item.controller?
 					controlPath = item.controller.controlPath
 					if @rectangle.contains(bounds) or ( @rectangle.intersects(bounds) and controlPath?.getIntersections(rectanglePath).length>0 )
-						g.pushIfAbsent(itemsToSave, item.controller)
+						Utils.Array.pushIfAbsent(itemsToSave, item.controller)
 
 			# put the retrieved items in a group
-			svgGroup = new Group()
+			svgGroup = new P.Group()
 
 			# draw items which were not drawn
 			for item in itemsToSave
 				if not item.drawing? then item.draw()
 
-			view.update()
+			P.view.update()
 
 			# add items to svg group
 			for item in itemsToSave
 				svgGroup.addChild(item.drawing.clone())
 
-			# create a new paper project and add the new Group (fit group and project positions and dimensions according to the selected rectangle)
+			# create a new paper project and add the new P.Group (fit group and project positions and dimensions according to the selected rectangle)
 			rectanglePath.remove()
 			position = svgGroup.position.subtract(@rectangle.topLeft)
 			fileName = "image.svg"
@@ -354,7 +352,7 @@ define [
 			# export new Project to svg, remove the new Project
 			svg = tempProject.exportSVG( asString: true )
 			tempProject.remove()
-			paper.projects.first().activate()
+			paper.projects[0].activate()
 
 			# create an svg image, create a link to download the image, and click it
 			blob = new Blob([svg], {type: 'image/svg+xml'})
@@ -371,4 +369,5 @@ define [
 		copyURL: ()->
 			return
 
-	return ScreenshotTool
+	new Tool.Screenshot()
+	return Tool.Screenshot

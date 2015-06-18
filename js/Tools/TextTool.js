@@ -3,18 +3,17 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['utils', 'ItemTool'], function(utils, ItemTool) {
-    var TextTool;
-    TextTool = (function(_super) {
-      __extends(TextTool, _super);
+  define(['Tool'], function(Tool) {
+    Tool.Text = (function(_super) {
+      __extends(Text, _super);
 
-      TextTool.rname = 'Text';
+      Text.label = 'Text';
 
-      TextTool.description = '';
+      Text.description = '';
 
-      TextTool.iconURL = 'text.png';
+      Text.iconURL = 'text.png';
 
-      TextTool.cursor = {
+      Text.cursor = {
         position: {
           x: 0,
           y: 0
@@ -22,32 +21,33 @@
         name: 'crosshair'
       };
 
-      function TextTool() {
-        TextTool.__super__.constructor.call(this, g.RText);
+      function Text() {
+        Text.__super__.constructor.call(this, Text);
         return;
       }
 
-      TextTool.prototype.end = function(event, from) {
+      Text.prototype.end = function(event, from) {
         var text;
         if (from == null) {
-          from = g.me;
+          from = R.me;
         }
-        if (TextTool.__super__.end.call(this, event, from)) {
-          text = new g.RText(g.currentPaths[from].bounds);
+        if (Text.__super__.end.call(this, event, from)) {
+          text = new R.RText(R.currentPaths[from].bounds);
           text.finish();
           if (!text.group) {
             return;
           }
           text.select();
           text.save(true);
-          delete g.currentPaths[from];
+          delete R.currentPaths[from];
         }
       };
 
-      return TextTool;
+      return Text;
 
-    })(ItemTool);
-    return TextTool;
+    })(Tool.Item);
+    new Tool.Text();
+    return Tool.Text;
   });
 
 }).call(this);

@@ -3,22 +3,21 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['utils', 'ItemTool'], function(utils, ItemTool) {
-    var MediaTool;
-    MediaTool = (function(_super) {
-      __extends(MediaTool, _super);
+  define(['Tool'], function(Tool) {
+    Tool.Media = (function(_super) {
+      __extends(Media, _super);
 
-      MediaTool.rname = 'Media';
+      Media.label = 'Media';
 
-      MediaTool.description = '';
+      Media.description = '';
 
-      MediaTool.iconURL = 'image.png';
+      Media.iconURL = 'image.png';
 
-      MediaTool.favorite = true;
+      Media.favorite = true;
 
-      MediaTool.category = '';
+      Media.category = '';
 
-      MediaTool.cursor = {
+      Media.cursor = {
         position: {
           x: 0,
           y: 0
@@ -27,25 +26,26 @@
         icon: 'image'
       };
 
-      function MediaTool() {
-        MediaTool.__super__.constructor.call(this, g.RMedia);
+      function Media() {
+        Media.__super__.constructor.call(this, R.RMedia);
         return;
       }
 
-      MediaTool.prototype.end = function(event, from) {
+      Media.prototype.end = function(event, from) {
         if (from == null) {
-          from = g.me;
+          from = R.me;
         }
-        if (MediaTool.__super__.end.call(this, event, from)) {
-          g.RMedia.initialize(g.currentPaths[from].bounds);
-          delete g.currentPaths[from];
+        if (Media.__super__.end.call(this, event, from)) {
+          R.RMedia.initialize(R.currentPaths[from].bounds);
+          delete R.currentPaths[from];
         }
       };
 
-      return MediaTool;
+      return Media;
 
-    })(ItemTool);
-    return MediaTool;
+    })(Tool.Item);
+    new Tool.Media();
+    return Tool.Media;
   });
 
 }).call(this);

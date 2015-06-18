@@ -3,122 +3,121 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['utils', 'RTool'], function(utils, RTool) {
-    var ItemTool;
-    ItemTool = (function(_super) {
-      __extends(ItemTool, _super);
+  define(['Tool'], function(Tool) {
+    Tool.Item = (function(_super) {
+      __extends(Item, _super);
 
-      function ItemTool(RItem) {
+      function Item(RItem) {
         this.RItem = RItem;
-        ItemTool.__super__.constructor.call(this, true);
+        Item.__super__.constructor.call(this, true);
         return;
       }
 
-      ItemTool.prototype.select = function(deselectItems, updateParameters) {
+      Item.prototype.select = function(deselectItems, updateParameters) {
         if (deselectItems == null) {
           deselectItems = true;
         }
         if (updateParameters == null) {
           updateParameters = true;
         }
-        g.rasterizer.drawItems();
-        ItemTool.__super__.select.apply(this, arguments);
+        R.rasterizer.drawItems();
+        Item.__super__.select.apply(this, arguments);
       };
 
-      ItemTool.prototype.begin = function(event, from) {
+      Item.prototype.begin = function(event, from) {
         var point;
         if (from == null) {
-          from = g.me;
+          from = R.me;
         }
         point = event.point;
-        g.deselectAll();
-        g.currentPaths[from] = new Path.Rectangle(point, point);
-        g.currentPaths[from].name = 'div tool rectangle';
-        g.currentPaths[from].dashArray = [4, 10];
-        g.currentPaths[from].strokeColor = 'black';
-        g.selectionLayer.addChild(g.currentPaths[from]);
-        if ((g.me != null) && from === g.me) {
-          g.chatSocket.emit("bounce", {
+        Tool.Select.deselectAll();
+        R.currentPaths[from] = new P.Path.Rectangle(point, point);
+        R.currentPaths[from].name = 'div tool rectangle';
+        R.currentPaths[from].dashArray = [4, 10];
+        R.currentPaths[from].strokeColor = 'black';
+        R.selectionLayer.addChild(R.currentPaths[from]);
+        if ((R.me != null) && from === R.me) {
+          R.chatSocket.emit("bounce", {
             tool: this.name,
             "function": "begin",
-            "arguments": [event, g.me, g.currentPaths[from].data]
+            "arguments": [event, R.me, R.currentPaths[from].data]
           });
         }
       };
 
-      ItemTool.prototype.update = function(event, from) {
+      Item.prototype.update = function(event, from) {
         var bounds, lock, locks, point, _i, _len;
         if (from == null) {
-          from = g.me;
+          from = R.me;
         }
         point = event.point;
-        g.currentPaths[from].segments[2].point = point;
-        g.currentPaths[from].segments[1].point.x = point.x;
-        g.currentPaths[from].segments[3].point.y = point.y;
-        g.currentPaths[from].fillColor = null;
-        bounds = g.currentPaths[from].bounds;
-        locks = g.RLock.getLocksWhichIntersect(bounds);
+        R.currentPaths[from].segments[2].point = point;
+        R.currentPaths[from].segments[1].point.x = point.x;
+        R.currentPaths[from].segments[3].point.y = point.y;
+        R.currentPaths[from].fillColor = null;
+        bounds = R.currentPaths[from].bounds;
+        locks = Lock.getLocksWhichIntersect(bounds);
         for (_i = 0, _len = locks.length; _i < _len; _i++) {
           lock = locks[_i];
-          if (lock.owner !== g.me || (this.name !== 'Lock' && !lock.rectangle.contains(bounds))) {
-            g.currentPaths[from].fillColor = 'red';
+          if (lock.owner !== R.me || (this.name !== 'Lock' && !lock.rectangle.contains(bounds))) {
+            R.currentPaths[from].fillColor = 'red';
           }
         }
-        if (g.rectangleOverlapsTwoPlanets(bounds)) {
-          g.currentPaths[from].fillColor = 'red';
+        if (Grid.rectangleOverlapsTwoPlanets(bounds)) {
+          R.currentPaths[from].fillColor = 'red';
         }
-        if ((g.me != null) && from === g.me) {
-          g.chatSocket.emit("bounce", {
+        if ((R.me != null) && from === R.me) {
+          R.chatSocket.emit("bounce", {
             tool: this.name,
             "function": "update",
-            "arguments": [event, g.me]
+            "arguments": [event, R.me]
           });
         }
       };
 
-      ItemTool.prototype.end = function(event, from) {
+      Item.prototype.end = function(event, from) {
         var bounds, lock, locks, point, _i, _len;
         if (from == null) {
-          from = g.me;
+          from = R.me;
         }
-        if (from !== g.me) {
-          g.currentPaths[from].remove();
-          delete g.currentPaths[from];
+        if (from !== R.me) {
+          R.currentPaths[from].remove();
+          delete R.currentPaths[from];
           return false;
         }
         point = event.point;
-        g.currentPaths[from].remove();
-        bounds = g.currentPaths[from].bounds;
-        locks = g.RLock.getLocksWhichIntersect(bounds);
+        R.currentPaths[from].remove();
+        bounds = R.currentPaths[from].bounds;
+        locks = Lock.getLocksWhichIntersect(bounds);
         for (_i = 0, _len = locks.length; _i < _len; _i++) {
           lock = locks[_i];
-          if (lock.owner !== g.me || (this.name !== 'Lock' && !lock.rectangle.contains(bounds))) {
-            g.romanesco_alert('Your item intersects with a locked area.', 'error');
+          if (lock.owner !== R.me || (this.name !== 'Lock' && !lock.rectangle.contains(bounds))) {
+            R.alertManager.alert('Your item intersects with a locked area.', 'error');
             return false;
           }
         }
-        if (g.rectangleOverlapsTwoPlanets(bounds)) {
-          g.romanesco_alert('Your item overlaps with two planets.', 'error');
+        if (Grid.rectangleOverlapsTwoPlanets(bounds)) {
+          R.alertManager.alert('Your item overlaps with two planets.', 'error');
           return false;
         }
-        if (g.currentPaths[from].bounds.area < 100) {
-          g.currentPaths[from].width = 10;
-          g.currentPaths[from].height = 10;
+        if (R.currentPaths[from].bounds.area < 100) {
+          R.currentPaths[from].width = 10;
+          R.currentPaths[from].height = 10;
         }
-        if ((g.me != null) && from === g.me) {
-          g.chatSocket.emit("bounce", {
+        if ((R.me != null) && from === R.me) {
+          R.chatSocket.emit("bounce", {
             tool: this.name,
             "function": "end",
-            "arguments": [event, g.me]
+            "arguments": [event, R.me]
           });
         }
         return true;
       };
 
-      return ItemTool;
+      return Item;
 
-    })(RTool);
-    return ItemTool;
+    })(Tool);
+    return Tool.Item;
   });
 
 }).call(this);

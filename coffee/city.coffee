@@ -1,30 +1,26 @@
-define [
-	'utils', 'jquery'
-], (utils) ->
+define ['utils'], () ->
 
-	g = utils.g()
-
-	g.initializeCities = ()->
-		g.toolsJ.find("[data-name='Create']").click ()->
+	R.initializeCities = ()->
+		R.toolsJ.find("[data-name='Create']").click ()->
 			submit = (data)->
-				Dajaxice.draw.createCity(g.loadCityFromServer, name: data.name, public: data.public)
+				Dajaxice.draw.createCity(R.loadCityFromServer, name: data.name, public: data.public)
 				return
-			modal = g.RModal.createModal( title: 'Create city', submit: submit, postSubmit: 'load' )
+			modal = R.RModal.createModal( title: 'Create city', submit: submit, postSubmit: 'load' )
 			modal.addTextInput( label: "City name", name: 'name', required: true, submitShortcut: true, placeholder: 'Paris' )
 			modal.addCheckbox( label: "Public", name: 'public', helpMessage: "Public cities will be accessible by anyone.", defaultValue: true )
 			modal.show()
 			return
 
-		g.toolsJ.find("[data-name='Open']").click ()->
-			modal = g.RModal.createModal( title: 'Open city', name: 'open-city' )
+		R.toolsJ.find("[data-name='Open']").click ()->
+			modal = R.RModal.createModal( title: 'Open city', name: 'open-city' )
 			modal.modalBodyJ.find('.modal-footer').hide()
 			modal.addProgressBar()
 			modal.show()
-			Dajaxice.draw.loadCities(g.loadCities)
+			Dajaxice.draw.loadCities(R.loadCities)
 			return
 		return
 
-	g.modifyCity = (event)->
+	R.modifyCity = (event)->
 
 		event.stopPropagation()
 		buttonJ = $(this)
@@ -36,12 +32,12 @@ define [
 		updateCity = (data)->
 
 			callback = (result)->
-				modal = g.RModal.getModalByTitle('Modify city')
+				modal = R.RModal.getModalByTitle('Modify city')
 				modal.hide()
-				if not g.checkError(result) then return
+				if not R.loader.checkError(result) then return
 				city = JSON.parse(result.city)
-				g.romanesco_alert "City successfully renamed to: " + city.name, "info"
-				modalBodyJ = g.RModal.getModalByTitle('Open city').modalBodyJ
+				R.alertManager.alert "City successfully renamed to: " + city.name, "info"
+				modalBodyJ = R.RModal.getModalByTitle('Open city').modalBodyJ
 				rowJ = modalBodyJ.find('[data-pk="' + city._id.$oid + '"]')
 				rowJ.attr('data-name', city.name)
 				rowJ.attr('data-public', Number(city.public or 0))
@@ -52,7 +48,7 @@ define [
 			Dajaxice.draw.updateCity(callback, pk: data.data.pk, name: data.name, public: data.public )
 			return
 
-		modal = g.RModal.createModal(title: 'Modify city', submit: updateCity, data: { pk: pk }, postSubmit: 'load' )
+		modal = R.RModal.createModal(title: 'Modify city', submit: updateCity, data: { pk: pk }, postSubmit: 'load' )
 		modal.addTextInput( name: 'name', label: 'Name', defaultValue: name, required: true, submitShortcut: true )
 		modal.addCheckbox( name: 'public', label: 'Public', helpMessage: "Public cities will be accessible by anyone.", defaultValue: isPublic )
 		modal.show()
@@ -74,25 +70,25 @@ define [
 		# 	isPublic = publicJ.is(':checked')
 
 		# 	callback = (result)->
-		# 		if not g.checkError(result) then return
+		# 		if not R.loader.checkError(result) then return
 		# 		city = JSON.parse(result.city)
-		# 		g.romanesco_alert "City successfully renamed to: " + city.name, "info"
+		# 		R.alertManager.alert "City successfully renamed to: " + city.name, "info"
 		# 		return
 
 		# 	Dajaxice.draw.updateCity(callback, pk: pk, name: newName, 'public': isPublic )
 		# 	inputJ.hide()
 		# 	publicJ.attr('disabled', true)
-		# 	buttonJ.off('click').click(g.modifyCity)
+		# 	buttonJ.off('click').click(R.modifyCity)
 		# 	return
 
 		return
 
-	g.loadCities = (result)->
-		if not g.checkError(result) then return
+	R.loadCities = (result)->
+		if not R.loader.checkError(result) then return
 		userCities = JSON.parse(result.userCities)
 		publicCities = JSON.parse(result.publicCities)
 
-		modal = g.RModal.getModalByTitle('Open city')
+		modal = R.RModal.getModalByTitle('Open city')
 		modal.removeProgressBar()
 		modalBodyJ = modal.modalBodyJ
 
@@ -127,13 +123,13 @@ define [
 					td2J.append(publicJ)
 
 					modifyButtonJ = $('<button class="btn btn-default">').text('Modify')
-					modifyButtonJ.click(g.modifyCity)
+					modifyButtonJ.click(R.modifyCity)
 
 					deleteButtonJ = $('<button class="btn  btn-default">').text('Delete')
 					deleteButtonJ.click (event)->
 						event.stopPropagation()
 						name = $(this).parents('tr:first').attr('data-name')
-						Dajaxice.draw.deleteCity(g.checkError, name: name)
+						Dajaxice.draw.deleteCity(R.loader.checkError, name: name)
 						return
 					td3J.append(modifyButtonJ)
 					td3J.append(deleteButtonJ)
@@ -142,7 +138,7 @@ define [
 				loadButtonJ.click ()->
 					name = $(this).parents('tr:first').attr('data-name')
 					owner = $(this).parents('tr:first').attr('data-owner')
-					g.loadCity(name, owner)
+					R.loadCity(name, owner)
 					return
 
 				td3J.append(loadButtonJ)
@@ -154,22 +150,22 @@ define [
 
 		return
 
-	g.loadCityFromServer = (result)->
-		g.RModal.getModalByTitle('Create city')?.hide()
-		if not g.checkError(result) then return
+	R.loadCityFromServer = (result)->
+		R.RModal.getModalByTitle('Create city')?.hide()
+		if not R.loader.checkError(result) then return
 		city = JSON.parse(result.city)
-		g.loadCity(city.name, city.owner)
+		R.loadCity(city.name, city.owner)
 		return
 
-	g.loadCity = (name, owner)->
-		g.RModal.getModalByTitle('Open city')?.hide()
-		g.unload()
-		g.city =
+	R.loadCity = (name, owner)->
+		R.RModal.getModalByTitle('Open city')?.hide()
+		R.unload()
+		R.city =
 			owner: owner
 			name: name
 			site: null
-		g.load()
-		g.updateHash()
+		R.load()
+		View.updateHash()
 		return
 
 	return

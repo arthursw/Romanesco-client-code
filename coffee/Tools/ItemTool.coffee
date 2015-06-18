@@ -1,6 +1,4 @@
-define [
-	'utils', 'RTool'
-], (utils, RTool) ->
+define [ 'Tool' ], (Tool) ->
 
 	# ItemTool: mother class of all RDiv creation tools (this will create a new div on top of the canvas, with custom content, and often resizable)
 	# User will create a selection rectangle
@@ -9,9 +7,9 @@ define [
 	# - initialize a modal to ask the user more info about the RDiv
 	# - or directly save the RDiv
 	# the RDiv will be created on server response
-	# begin, update, and end handlers are called by onMouseDown handler (then from == g.me, data == null) and by socket.on "begin" signal (then from == author of the signal, data == RItem initial data)
+	# begin, update, and end handlers are called by onMouseDown handler (then from == R.me, data == null) and by socket.on "begin" signal (then from == author of the signal, data == RItem initial data)
 	# begin, update, and end handlers emit the events to websocket
-	class ItemTool extends RTool
+	class Tool.Item extends Tool
 
 		constructor: (@RItem) ->
 			super(true)
@@ -19,7 +17,7 @@ define [
 			return
 
 		select: (deselectItems=true, updateParameters=true)->
-			g.rasterizer.drawItems()
+			R.rasterizer.drawItems()
 			super
 			return
 
@@ -28,20 +26,20 @@ define [
 		# - emit event on websocket (if user is the author of the event)
 		# @param [Paper event or REvent] (usually) mouse down event
 		# @param [String] author (username) of the event
-		# begin, update, and end handlers are called by onMouseDown handler (then from == g.me, data == null) and by socket.on "begin" signal (then from == author of the signal, data == RItem initial data)
-		begin: (event, from=g.me) ->
+		# begin, update, and end handlers are called by onMouseDown handler (then from == R.me, data == null) and by socket.on "begin" signal (then from == author of the signal, data == RItem initial data)
+		begin: (event, from=R.me) ->
 			point = event.point
 
-			g.deselectAll()
+			Tool.Select.deselectAll()
 
-			g.currentPaths[from] = new Path.Rectangle(point, point)
-			g.currentPaths[from].name = 'div tool rectangle'
-			g.currentPaths[from].dashArray = [4, 10]
-			g.currentPaths[from].strokeColor = 'black'
-			g.selectionLayer.addChild(g.currentPaths[from])
+			R.currentPaths[from] = new P.Path.Rectangle(point, point)
+			R.currentPaths[from].name = 'div tool rectangle'
+			R.currentPaths[from].dashArray = [4, 10]
+			R.currentPaths[from].strokeColor = 'black'
+			R.selectionLayer.addChild(R.currentPaths[from])
 
-			# if g.me? and from==g.me then g.chatSocket.emit( "begin", g.me, g.eventToObject(event), @name, g.currentPaths[from].data )
-			if g.me? and from==g.me then g.chatSocket.emit "bounce", tool: @name, function: "begin", arguments: [event, g.me, g.currentPaths[from].data]
+			# if R.me? and from==R.me then R.chatSocket.emit( "begin", R.me, R.eventToObject(event), @name, R.currentPaths[from].data )
+			if R.me? and from==R.me then R.chatSocket.emit "bounce", tool: @name, function: "begin", arguments: [event, R.me, R.currentPaths[from].data]
 			return
 
 		# Update div action:
@@ -49,25 +47,25 @@ define [
 		# - emit event on websocket (if user is the author of the event)
 		# @param [Paper event or REvent] (usually) mouse down event
 		# @param [String] author (username) of the event
-		update: (event, from=g.me) ->
+		update: (event, from=R.me) ->
 			point = event.point
 
-			g.currentPaths[from].segments[2].point = point
-			g.currentPaths[from].segments[1].point.x = point.x
-			g.currentPaths[from].segments[3].point.y = point.y
-			g.currentPaths[from].fillColor = null
+			R.currentPaths[from].segments[2].point = point
+			R.currentPaths[from].segments[1].point.x = point.x
+			R.currentPaths[from].segments[3].point.y = point.y
+			R.currentPaths[from].fillColor = null
 
-			bounds = g.currentPaths[from].bounds
-			locks = g.RLock.getLocksWhichIntersect(bounds)
+			bounds = R.currentPaths[from].bounds
+			locks = Lock.getLocksWhichIntersect(bounds)
 			for lock in locks
-				if lock.owner != g.me or (@name != 'Lock' and not lock.rectangle.contains(bounds))
-					g.currentPaths[from].fillColor = 'red'
+				if lock.owner != R.me or (@name != 'Lock' and not lock.rectangle.contains(bounds))
+					R.currentPaths[from].fillColor = 'red'
 
-			if g.rectangleOverlapsTwoPlanets(bounds)
-				g.currentPaths[from].fillColor = 'red'
+			if Grid.rectangleOverlapsTwoPlanets(bounds)
+				R.currentPaths[from].fillColor = 'red'
 
-			# if g.me? and from==g.me then g.chatSocket.emit( "update", g.me, point, @name )
-			if g.me? and from==g.me then g.chatSocket.emit "bounce", tool: @name, function: "update", arguments: [event, g.me]
+			# if R.me? and from==R.me then R.chatSocket.emit( "update", R.me, point, @name )
+			if R.me? and from==R.me then R.chatSocket.emit "bounce", tool: @name, function: "update", arguments: [event, R.me]
 			return
 
 		# End div action:
@@ -77,35 +75,35 @@ define [
 		# - emit event on websocket (if user is the author of the event)
 		# @param [Paper event or REvent] (usually) mouse down event
 		# @param [String] author (username) of the event
-		end: (event, from=g.me) ->
-			if from != g.me 					# if event come from websocket (another user in the room is creating the RDiv): just remove the selection rectangle
-				g.currentPaths[from].remove()
-				delete g.currentPaths[from]
+		end: (event, from=R.me) ->
+			if from != R.me 					# if event come from websocket (another user in the room is creating the RDiv): just remove the selection rectangle
+				R.currentPaths[from].remove()
+				delete R.currentPaths[from]
 				return false
 
 			point = event.point
 
-			g.currentPaths[from].remove()
+			R.currentPaths[from].remove()
 
-			bounds = g.currentPaths[from].bounds
-			locks = g.RLock.getLocksWhichIntersect(bounds)
+			bounds = R.currentPaths[from].bounds
+			locks = Lock.getLocksWhichIntersect(bounds)
 			for lock in locks
-				if lock.owner != g.me or (@name != 'Lock' and not lock.rectangle.contains(bounds))
-					g.romanesco_alert 'Your item intersects with a locked area.', 'error'
+				if lock.owner != R.me or (@name != 'Lock' and not lock.rectangle.contains(bounds))
+					R.alertManager.alert 'Your item intersects with a locked area.', 'error'
 					return false
 
 			# check if div if valid (does not overlap two planets, and does not intersects with an RLock), return false otherwise
-			if g.rectangleOverlapsTwoPlanets(bounds)
-				g.romanesco_alert 'Your item overlaps with two planets.', 'error'
+			if Grid.rectangleOverlapsTwoPlanets(bounds)
+				R.alertManager.alert 'Your item overlaps with two planets.', 'error'
 				return false
 
-			if g.currentPaths[from].bounds.area < 100 			# resize div to 10x10 if area if lower than 100
-				g.currentPaths[from].width = 10
-				g.currentPaths[from].height = 10
+			if R.currentPaths[from].bounds.area < 100 			# resize div to 10x10 if area if lower than 100
+				R.currentPaths[from].width = 10
+				R.currentPaths[from].height = 10
 
-			# if g.me? and from==g.me then g.chatSocket.emit( "end", g.me, point, @name )
-			if g.me? and from==g.me then g.chatSocket.emit "bounce", tool: @name, function: "end", arguments: [event, g.me]
+			# if R.me? and from==R.me then R.chatSocket.emit( "end", R.me, point, @name )
+			if R.me? and from==R.me then R.chatSocket.emit "bounce", tool: @name, function: "end", arguments: [event, R.me]
 
 			return true
 
-	return ItemTool
+	return Tool.Item

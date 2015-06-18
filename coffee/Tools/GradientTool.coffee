@@ -1,24 +1,31 @@
-define [
-	'utils', 'RTool'
-], (utils, RTool) ->
+define [ 'Tool' ], (Tool) ->
 
 
-	class GradientTool extends RTool
+	class Tool.Gradient extends Tool
+
+		@label = 'Gradient'
+		@description = ''
+		@favorite = true
+		@category = ''
+		@cursor =
+			position:
+				x: 0, y:0
+			name: 'default'
 
 		@handleSize = 5
 
 		constructor: ()->
-			super('Gradient', false)
+			super(false)
 			@handles = []
 			@radial = false
 			return
 
 		getDefaultGradient: (color)->
-			if g.selectedItems.length==1
-				bounds = g.selectedItems[0].getBounds()
+			if R.selectedItems.length==1
+				bounds = R.selectedItems[0].getBounds()
 			else
-				bounds = view.bounds.scale(0.25)
-			color = if color? then new Color(color) else g.defaultColor.random()
+				bounds = P.view.bounds.scale(0.25)
+			color = if color? then new Color(color) else Utils.Array.random(R.defaultColor)
 			firstColor = color.clone()
 			firstColor.alpha = 0.2
 			secondColor = color.clone()
@@ -42,10 +49,10 @@ define [
 
 			@radial = value.gradient?.radial
 
-			@group = new Group()
+			@group = new P.Group()
 
-			origin = new Point(value.origin)
-			destination = new Point(value.destination)
+			origin = new P.Point(value.origin)
+			destination = new P.Point(value.destination)
 			delta = destination.subtract(origin)
 
 			for stop in value.gradient.stops
@@ -60,16 +67,16 @@ define [
 			@startHandle ?= @createHandle(origin, 0, 'red')
 			@endHandle ?= @createHandle(destination, 1, 'blue')
 
-			@line = new Path()
+			@line = new P.Path()
 			@line.add(@startHandle.position)
 			@line.add(@endHandle.position)
 
 			@group.addChild(@line)
 			@line.sendToBack()
-			@line.strokeColor = g.selectionBlue
+			@line.strokeColor = R.selectionBlue
 			@line.strokeWidth = 1
 
-			g.selectionLayer.addChild(@group)
+			R.selectionLayer.addChild(@group)
 
 			@selectHandle(@startHandle)
 			if updateGradient
@@ -77,11 +84,11 @@ define [
 			return
 
 		select: (deselectItems=true, updateParameters=true)->
-			if g.selectedTool == @ then return
+			if R.selectedTool == @ then return
 
-			g.previousTool = g.selectedTool
-			g.selectedTool?.deselect()
-			g.selectedTool = @
+			R.previousTool = R.selectedTool
+			R.selectedTool?.deselect()
+			R.selectedTool = @
 
 			@initialize(true, updateParameters)
 			return
@@ -137,19 +144,19 @@ define [
 
 			# @controller.setGradient(gradient)
 
-			# for item in g.selectedItems
+			# for item in R.selectedItems
 			# 	# do not update if the value was never set (not even to null), update if it was set (even to null, for colors)
 			# 	if typeof item.data?[@controller.name] isnt 'undefined'
 			# 		item.setParameterCommand(@controller.name, gradient, @controller)
 			return
 
 		createHandle: (position, location, color, initialization=false)->
-			handle = new Path.Circle(position, @constructor.handleSize)
+			handle = new P.Path.Circle(position, @constructor.handleSize)
 			handle.name = 'handle'
 
 			@group.addChild(handle)
 
-			handle.strokeColor = g.selectionBlue
+			handle.strokeColor = R.selectionBlue
 			handle.strokeWidth = 1
 			handle.fillColor = color
 
@@ -170,13 +177,13 @@ define [
 
 		removeHandle: (handle)->
 			if handle == @startHandle or handle == @endHandle then return
-			@handles.remove(handle)
+			Utils.Array.remove(@handles, handle)
 			handle.remove()
 			@updateGradient()
 			return
 
 		doubleClick: (event) ->
-			point = view.viewToProject(new Point(event.pageX, event.pageY))
+			point = P.view.viewToProject(new P.Point(event.pageX, event.pageY))
 			hitResult = @group.hitTest(point)
 			if hitResult
 				if hitResult.item == @line
@@ -214,4 +221,5 @@ define [
 			@dragging = false
 			return
 
-	return GradientTool
+	new Tool.Gradient()
+	return Tool.Gradient
