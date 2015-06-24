@@ -126,7 +126,7 @@
           R.unload();
           R.city = areaObject.city;
         }
-        area = Utils.P.Rectangle.expandRectangleToInteger(R.rectangleFromBox(areaObject));
+        area = Utils.Rectangle.expandRectangleToInteger(R.rectangleFromBox(areaObject));
         R.areaToRasterize = area;
         delta = area.center.subtract(P.view.center);
         P.project.P.view.scrollBy(delta);

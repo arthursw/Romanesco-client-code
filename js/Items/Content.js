@@ -125,6 +125,9 @@
 
       Content.prototype.setRotation = function(rotation, update) {
         var previousRotation;
+        if (update == null) {
+          update = true;
+        }
         previousRotation = this.rotation;
         this.group.pivot = this.rectangle.center;
         this.rotation = rotation;
@@ -151,8 +154,10 @@
         Lock.highlightValidity(this);
       };
 
-      Content.prototype.endSetRotation = function() {
-        this.update('rotation');
+      Content.prototype.endSetRotation = function(update) {
+        if (update) {
+          this.update('rotation');
+        }
       };
 
       Content.prototype.getData = function() {
@@ -166,7 +171,7 @@
         if (this.rotation === 0) {
           return this.rectangle;
         }
-        return Utils.P.Rectangle.getRotatedBounds(this.rectangle, this.rotation);
+        return Utils.Rectangle.getRotatedBounds(this.rectangle, this.rotation);
       };
 
       Content.prototype.updateZIndex = function() {

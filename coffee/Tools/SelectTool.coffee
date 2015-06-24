@@ -23,6 +23,8 @@ define [ 'Tool' ], (Tool) ->
 			selected: true
 			tolerance: 5
 
+		@selectionRectangle = null
+
 		# Deselect all RItems (and paper items)
 		@deselectAll: ()->
 			if R.selectedItems.length>0
@@ -44,25 +46,7 @@ define [ 'Tool' ], (Tool) ->
 			R.controllerManager.updateParametersForSelectedItems()
 			return
 
-		# Create selection rectangle path (remove if existed)
-		# @param [Paper event] event containing down and current positions to draw the rectangle
-		createSelectionRectangle: (event)->
-			rectangle = new P.Rectangle(event.downPoint, event.point)
-
-			if R.currentPaths[R.me]?
-				Utils.P.Rectangle.updatePathRectangle(R.currentPaths[R.me], rectangle)
-			else
-				# R.currentPaths[R.me] = new P.Group()
-				rectanglePath = new P.Path.Rectangle(rectangle)
-				rectanglePath.name = 'select tool selection rectangle'
-				rectanglePath.strokeColor = R.selectionBlue
-				rectanglePath.strokeScaling = false
-				rectanglePath.dashArray = [10, 4]
-				# R.currentPaths[R.me].addChild(rectanglePath)
-
-				R.selectionLayer.addChild(rectanglePath)
-				R.currentPaths[R.me] = rectanglePath
-
+		highlightItemsUnderRectangle: (rectangle)->
 			itemsToHighlight = []
 
 			# Add all items which have bounds intersecting with the selection rectangle (1st version)
@@ -71,15 +55,95 @@ define [ 'Tool' ], (Tool) ->
 				bounds = item.getBounds()
 				if bounds.intersects(rectangle)
 					item.highlight()
-					console.log item.highlightRectangle.index
-					# rectanglePath = new P.Path.Rectangle(bounds)
-					# rectanglePath.name = 'select tool selection rectangle highlight'
-					# rectanglePath.strokeColor = 'red'
-					# rectanglePath.dashArray = [10, 4]
-					# R.currentPaths[R.me].addChild(rectanglePath)
 				# if the user just clicked (not dragged a selection rectangle): just select the first item
 				if rectangle.area == 0
 					break
+			return
+
+		unhighlightItems: ()->
+			for name, item of R.items
+				item.unhighlight()
+			return
+
+		# Create selection rectangle path (remove if existed)
+		# @param [Paper event] event containing down and current positions to draw the rectangle
+		createSelectionHighlight: (event)->
+			rectangle = new P.Rectangle(event.downPoint, event.point)
+
+			# R.currentPaths[R.me] = new P.Group()
+			highlightPath = new P.Path.Rectangle(rectangle)
+			highlightPath.name = 'select tool selection rectangle'
+			highlightPath.strokeColor = R.selectionBlue
+			highlightPath.strokeScaling = false
+			highlightPath.dashArray = [10, 4]
+
+			R.selectionLayer.addChild(highlightPath)
+			R.currentPaths[R.me] = highlightPath
+			@highlightItemsUnderRectangle(rectangle)
+			return
+
+		updateSelectionHighlight: ()->
+			rectangle = new P.Rectangle(event.downPoint, event.point)
+			Utils.Rectangle.updatePathRectangle(R.currentPaths[R.me], rectangle)
+			@highlightItemsUnderRectangle(rectangle)
+			return
+
+		createCurrentCommand: (hitResult, event)->
+			g.commandManager.beginAction(new Command[@transformState.type](R.selectedItems), event)
+			return
+
+		populateItemsToSelect: (itemsToSelect, locksToSelect, rectangle)->
+			# Add all items which have bounds intersecting with the selection rectangle (1st version)
+			for name, item of R.items
+				if item.getBounds().intersects(rectangle)
+					if Lock.prototype.isPrototypeOf(item)
+						locksToSelect.push(item)
+					else
+						itemsToSelect.push(item)
+			return
+
+		# check if items all have the same parent
+		itemsAreSiblings: (itemsToSelect)->
+			itemsAreSiblings = true
+			parent = itemsToSelect[0].group.parent
+			for item in itemsToSelect
+				if item.group.parent != parent
+					itemsAreSiblings = false
+					break
+			return itemsAreSiblings
+
+		# remove all lock children from itemsToSelect
+		removeLocksChildren: (itemsToSelect, locksToSelect)->
+			for lock in locksToSelect
+				for child in lock.children()
+					Utils.Array.remove(itemsToSelect, child)
+			return
+
+		selectItems: (event)->
+			rectangle = new P.Rectangle(event.downPoint, event.point)
+
+			itemsToSelect = []
+			locksToSelect = []
+
+			@populateItemsToSelect(itemsToSelect, locksToSelect, rectangle)
+
+			if itemsToSelect.length == 0
+				itemsToSelect = locksToSelect
+
+			if itemsToSelect.length > 0
+
+				# if items have different parents, remove children from itemsToSelect and add locks
+				if not @itemsAreSiblings(itemsToSelect)
+					@removeLocksChildren(itemsToSelect, locksToSelect)
+
+					# add locks to itemsToSelect
+					itemsToSelect = itemsToSelect.concat(locksToSelect)
+
+				# if the user just clicked (not dragged a selection rectangle): just select the first item
+				if rectangle.area == 0 then itemsToSelect = [itemsToSelect[0]]
+
+				R.commandManager.add(new R.SelectCommand(itemsToSelect), true)
+				@constructor.selectionRectangle = new SelectionRectangle(itemsToSelect)
 			return
 
 		# Begin selection:
@@ -90,34 +154,49 @@ define [ 'Tool' ], (Tool) ->
 		begin: (event) ->
 			if event.event.which == 2 then return 		# if the wheel button was clicked: return
 
-			console.log 'begin select'
-			R.logElapsedTime()
+			hitResult = null
 
-			# project = if R.selectionLayer.children.length == 0 then R.project else R.selectionProject
+			if @constructor.selectionRectangle?
+				hitResult = @constructor.selectionRectangle.hitTest()
 
-			# perform hit test to see if there is any item under the mouse
-			path.prepareHitTest() for name, path of R.paths
-			hitResult = R.P.project.hitTest(event.point, @constructor.hitOptions)
-			path.finishHitTest() for name, path of R.paths
+			if not hitResult?
+				path.prepareHitTest() for name, path of R.paths
+				hitResult = P.project.hitTest(event.point, @constructor.hitOptions)
+				path.finishHitTest() for name, path of R.paths
 
 			if hitResult and hitResult.item.controller? 		# if user hits a path: select it
-				@selectedItem = hitResult.item.controller
+				@createCurrentCommand(hitResult, event)
+			else
+				@constructor.deselectAll()
+				@createSelectionHighlight(event)
+			return
 
-				if not event.modifiers.shift 	# if shift is not pressed: deselect previous items
-					if R.selectedItems.length>0
-						if R.selectedItems.indexOf(hitResult.item?.controller)<0
-							R.commandManager.add(new R.DeselectCommand(), true)
-					# else
-					# 	if R.selectedDivs.length>0 then Tool.Select.deselectAll()
-				else
-					R.tools['Screenshot'].checkRemoveScreenshotRectangle(hitResult.item.controller)
 
-				hitResult.item.controller.beginSelect?(event)
-			else 												# otherwise: remove selection group and create selection rectangle
-				Tool.Select.deselectAll()
-				@createSelectionRectangle(event)
+			# # project = if R.selectionLayer.children.length == 0 then R.project else R.selectionProject
 
-			R.logElapsedTime()
+			# # perform hit test to see if there is any item under the mouse
+			# path.prepareHitTest() for name, path of R.paths
+			# hitResult = P.project.hitTest(event.point, @constructor.hitOptions)
+			# path.finishHitTest() for name, path of R.paths
+
+			# if hitResult and hitResult.item.controller? 		# if user hits a path: select it
+			# 	@selectedItem = hitResult.item.controller
+
+			# 	if not event.modifiers.shift 	# if shift is not pressed: deselect previous items
+			# 		if R.selectedItems.length>0
+			# 			if R.selectedItems.indexOf(hitResult.item?.controller)<0
+			# 				R.commandManager.add(new R.DeselectCommand(), true)
+			# 		# else
+			# 		# 	if R.selectedDivs.length>0 then Tool.Select.deselectAll()
+			# 	else
+			# 		R.tools['Screenshot'].checkRemoveScreenshotRectangle(hitResult.item.controller)
+
+			# 	hitResult.item.controller.beginSelect?(event)
+			# else 												# otherwise: remove selection group and create selection rectangle
+			# 	Tool.Select.deselectAll()
+			# 	@createSelectionRectangle(event)
+
+			# R.logElapsedTime()
 
 			return
 
@@ -125,16 +204,21 @@ define [ 'Tool' ], (Tool) ->
 		# - update selected RItems if there is no selection rectangle
 		# - update selection rectangle if there is one
 		update: (event) ->
-			if not R.currentPaths[R.me] and @selectedItem? 			# update selected RItems if there is no selection rectangle
-				@selectedItem.updateSelect(event)
-				# selectedItems = R.selectedItems
-				# if selectedItems.length == 1
-				# 	selectedItems[0].updateSelect(event)
-				# else
-				# 	for item in selectedItems
-				# 		item.updateMoveBy?(event)
-			else 									# update selection rectangle if there is one
-				@createSelectionRectangle(event)
+			if @constructor.selectionRectangle?
+				R.commandManager.updateAction(event)
+			else if R.currentPaths[R.me]?
+				@updateSelectionHighlight(event)
+
+			# if not R.currentPaths[R.me] and @selectedItem? 			# update selected RItems if there is no selection rectangle
+			# 	@selectedItem.updateSelect(event)
+			# 	# selectedItems = R.selectedItems
+			# 	# if selectedItems.length == 1
+			# 	# 	selectedItems[0].updateSelect(event)
+			# 	# else
+			# 	# 	for item in selectedItems
+			# 	# 		item.updateMoveBy?(event)
+			# else 									# update selection rectangle if there is one
+			# 	@createSelectionRectangle(event)
 			return
 
 		# End selection:
@@ -142,6 +226,16 @@ define [ 'Tool' ], (Tool) ->
 		# - create selection group is there is a selection rectangle
 		#   update parameters from selected RItems and remove selection rectangle
 		end: (event) ->
+			if @constructor.selectionRectangle?
+				R.commandManager.endAction(event)
+			else if R.currentPaths[R.me]?
+				@selectItems(event)
+				R.currentPaths[R.me].remove()
+				delete R.currentPaths[R.me]
+				@unhighlightItems()
+
+			return
+
 			if not R.currentPaths[R.me] 		# end selection action on selected RItems if there is no selection rectangle
 				# selectedItems = R.selectedItems
 				# if selectedItems.length == 1

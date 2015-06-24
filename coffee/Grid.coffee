@@ -84,7 +84,7 @@ define ['utils'], ()->
 
 		# draw grid
 		snap = Utils.Event.getSnap()
-		bounds = Utils.P.Rectangle.expandRectangleToMultiple(P.view.bounds, snap)
+		bounds = Utils.Rectangle.expandRectangleToMultiple(P.view.bounds, snap)
 
 		left = bounds.left
 		top = bounds.top

@@ -154,6 +154,38 @@
         return copy;
       };
 
+
+      /* Actions */
+
+      Item.id = Math.random();
+
+      Item.beginAction = function(command) {
+        if (this.currentCommand) {
+          this.endAction();
+          clearTimeout(R.updateTimeout['addCurrentCommand-' + this.id]);
+        }
+        this.currentCommand = command;
+      };
+
+      Item.updateAction = function() {
+        this.currentCommand.update.apply(this.currentCommand, arguments);
+      };
+
+      Item.endAction = function() {
+        Item.currentCommand.end(positionIsValid);
+        Item.currentCommand = null;
+      };
+
+      Item.deferredAction = function() {
+        var ActionCommand, args, items;
+        ActionCommand = arguments[0], items = arguments[1], args = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
+        if (!ActionCommand.prototype.isPrototypeOf(this.currentCommand)) {
+          this.beginAction(new ActionCommand(items, args));
+        }
+        this.updateAction.apply(args);
+        Utils.deferredExecution(this.endAction, 'addCurrentCommand-' + this.id);
+      };
+
       function Item(data, pk) {
         var _ref;
         this.data = data;
@@ -343,12 +375,6 @@
         Utils.deferredExecution(this.endAction, 'addCurrentCommand-' + (this.id || this.pk));
       };
 
-      Item.prototype.doAction = function(ActionCommand, args) {
-        this.beginAction(new ActionCommand(this));
-        this.updateAction.apply(this, args);
-        this.endAction();
-      };
-
       Item.prototype.createSelectionRectangle = function(bounds) {
         this.selectionRectangle.insert(1, new P.Point(bounds.left, bounds.center.y));
         this.selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top));
@@ -373,7 +399,7 @@
 
       Item.prototype.setRectangle = function(rectangle, update) {
         if (update == null) {
-          update = false;
+          update = true;
         }
         if (!P.Rectangle.prototype.isPrototypeOf(rectangle)) {
           rectangle = new P.Rectangle(rectangle);
@@ -430,12 +456,14 @@
           rectangle.height = Math.abs(rectangle.height);
           rectangle.center.y = center.y;
         }
-        this.setRectangle(rectangle);
+        this.setRectangle(rectangle, false);
         Lock.highlightValidity(this);
       };
 
-      Item.prototype.endSetRectangle = function() {
-        this.update('rectangle');
+      Item.prototype.endSetRectangle = function(update) {
+        if (update) {
+          this.update('rectangle');
+        }
       };
 
       Item.prototype.moveTo = function(position, update) {
@@ -528,7 +556,7 @@
 
       Item.prototype.highlight = function() {
         if (this.highlightRectangle != null) {
-          Utils.P.Rectangle.updatePathRectangle(this.highlightRectangle, this.getBounds());
+          Utils.Rectangle.updatePathRectangle(this.highlightRectangle, this.getBounds());
           return;
         }
         this.highlightRectangle = new P.Path.Rectangle(this.getBounds());
@@ -544,6 +572,10 @@
         }
         this.highlightRectangle.remove();
         this.highlightRectangle = null;
+      };
+
+      Item.prototype.getPk = function() {
+        return this.pk || this.id;
       };
 
       Item.prototype.setPK = function(pk, loading) {
@@ -637,15 +669,12 @@
       };
 
       Item.prototype.save = function(addCreateCommand) {
-        this.addCreateCommand = addCreateCommand;
-      };
-
-      Item.prototype.saveCallback = function() {
-        if (this.addCreateCommand) {
+        if (addCreateCommand) {
           R.commandManager.add(new R.CreateItemCommand(this));
-          delete this.addCreateCommand;
         }
       };
+
+      Item.prototype.saveCallback = function() {};
 
       Item.prototype["delete"] = function() {
         if (!this.socketAction) {

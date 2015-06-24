@@ -38,7 +38,7 @@
         permanent: true,
         onChange: function(value) {
           var div, _j, _len, _ref;
-          R.P.project.P.view.zoom = value / 100.0;
+          P.project.P.view.zoom = value / 100.0;
           Grid.updateGrid();
           R.rasterizer.move();
           _ref = R.divs;

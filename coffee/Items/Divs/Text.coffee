@@ -351,8 +351,8 @@ define ['Div'], (Div) ->
 		# update = false when called by parameter.onChange from websocket
 		# overload {RDiv#setParameter}
 		# update text content and font styles, effects and colors
-		setParameter: (controller, value)->
-			super(controller, value)
+		setParameter: (name, value)->
+			super(name, value)
 			switch controller.name
 				when 'fontStyle', 'fontFamily', 'fontSize', 'effect', 'fontColor'
 					@setFont(false)

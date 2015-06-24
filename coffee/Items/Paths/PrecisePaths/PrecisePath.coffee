@@ -487,7 +487,7 @@ define ['Path'], (Path) ->
 		# deselect control path, remove selection highlight (@see PrecisePath.highlightSelectedPoint) and call RPath.deselect
 		deselect: ()->
 			if not super() then return false
-			# R.P.project.activeLayer.insertChild(@index, @controlPath)
+			# P.project.activeLayer.insertChild(@index, @controlPath)
 			# control path can be null if user is removing the path
 			@controlPath?.selected = false
 			@selectionHighlight?.remove()
@@ -586,7 +586,7 @@ define ['Path'], (Path) ->
 			@selectionRectangle.visible = @data.showSelectionRectangle
 			return
 
-		setRectangle: (rectangle, update)->
+		setRectangle: (rectangle, update=true)->
 			previousRectangle = @rectangle.clone()
 			super(rectangle, update)
 			@controlPath.pivot = previousRectangle.center
@@ -599,7 +599,7 @@ define ['Path'], (Path) ->
 			@controlPath.rotate(@rotation)
 			return
 
-		# setRotation: (rotation, update)->
+		# setRotation: (rotation, update=true)->
 		# 	previousRotation = @rotation
 		# 	@drawing.pivot = @rectangle.center
 		# 	super(rotation, update)
@@ -806,12 +806,13 @@ define ['Path'], (Path) ->
 
 			return
 
-		endModifyPoint: ()->
-			if @data.smooth then @controlPath.smooth()
-			@draw()
-			@rasterize()
-			@selectionHighlight.bringToFront()
-			@update('points')
+		endModifyPoint: (update)->
+			if update
+				if @data.smooth then @controlPath.smooth()
+				@draw()
+				@rasterize()
+				@selectionHighlight.bringToFront()
+				@update('points')
 			return
 
 		modifyPointTypeCommand: (rtype)->
@@ -897,8 +898,8 @@ define ['Path'], (Path) ->
 
 		# overload {RPath#parameterChanged}, but update the control path state if 'smooth' was changed
 		# called when a parameter is changed
-		setParameter: (controller, value, updateGUI, update)->
-			super(controller, value, updateGUI, update)
+		setParameter: (name, value, updateGUI, update)->
+			super(name, value, updateGUI, update)
 			switch controller.name
 				when 'showSelectionRectangle'
 					@selectionRectangle?.selected = @data.showSelectionRectangle

@@ -189,11 +189,17 @@
       };
 
       Div.prototype.setRectangle = function(rectangle, update) {
+        if (update == null) {
+          update = true;
+        }
         Div.__super__.setRectangle.call(this, rectangle, update);
         this.updateTransform();
       };
 
       Div.prototype.setRotation = function(rotation, update) {
+        if (update == null) {
+          update = true;
+        }
         Div.__super__.setRotation.call(this, rotation, update);
         this.updateTransform();
       };

@@ -2,37 +2,37 @@ define [ 'Command'], (Command) ->
 
 	class Item
 
-		@indexToName =
-			0: 'bottomLeft'
-			1: 'left'
-			2: 'topLeft'
-			3: 'top'
-			4: 'topRight'
-			5: 'right'
-			6: 'bottomRight'
-			7: 'bottom'
+		# @indexToName =
+		# 	0: 'bottomLeft'
+		# 	1: 'left'
+		# 	2: 'topLeft'
+		# 	3: 'top'
+		# 	4: 'topRight'
+		# 	5: 'right'
+		# 	6: 'bottomRight'
+		# 	7: 'bottom'
 
-		@oppositeName =
-			'top': 'bottom'
-			'bottom': 'top'
-			'left': 'right'
-			'right': 'left'
-			'topLeft': 'bottomRight'
-			'topRight':  'bottomLeft'
-			'bottomRight':  'topLeft'
-			'bottomLeft':  'topRight'
+		# @oppositeName =
+		# 	'top': 'bottom'
+		# 	'bottom': 'top'
+		# 	'left': 'right'
+		# 	'right': 'left'
+		# 	'topLeft': 'bottomRight'
+		# 	'topRight':  'bottomLeft'
+		# 	'bottomRight':  'topLeft'
+		# 	'bottomLeft':  'topRight'
 
-		@cornersNames = ['topLeft', 'topRight', 'bottomRight', 'bottomLeft']
-		@sidesNames = ['left', 'right', 'top', 'bottom']
+		# @cornersNames = ['topLeft', 'topRight', 'bottomRight', 'bottomLeft']
+		# @sidesNames = ['left', 'right', 'top', 'bottom']
 
-		@valueFromName: (point, name)->
-			switch name
-				when 'left', 'right'
-					return point.x
-				when 'top', 'bottom'
-					return point.y
-				else
-					return point
+		# @valueFromName: (point, name)->
+		# 	switch name
+		# 		when 'left', 'right'
+		# 			return point.x
+		# 		when 'top', 'bottom'
+		# 			return point.y
+		# 		else
+		# 			return point
 
 		# Paper hitOptions for hitTest function to check which items (corresponding to those criterias) are under a point
 		@hitOptions =
@@ -170,7 +170,7 @@ define [ 'Command'], (Command) ->
 		@parameters = @initializeParameters()
 
 		@create: (duplicateData)->
-			copy = new @(duplicateData.rectangle, duplicateData.data)
+			copy = new @(duplicateData)
 			if not @socketAction
 				copy.save(false)
 				R.chatSocket.emit "bounce", itemClass: @name, function: "create", arguments: [duplicateData]
@@ -181,6 +181,7 @@ define [ 'Command'], (Command) ->
 			# if the RPath is being loaded: directly set pk and load path
 			if @pk?
 				@setPK(@pk, true)
+				R.commandManager.loadItem(@)
 			else
 				@id = if @data?.id? then @data.id else Math.random() 	# temporary id used until the server sends back the primary key (@pk)
 				R.items[@id] = @
@@ -200,6 +201,7 @@ define [ 'Command'], (Command) ->
 			@group = new P.Group()
 			@group.name = "group"
 			@group.controller = @
+
 
 			return
 
@@ -224,234 +226,232 @@ define [ 'Command'], (Command) ->
 
 		# @param name [String] the name of the value to change
 		# @param value [Anything] the new value
-		setParameter: (controller, value, update)->
-			name = controller.name
+		setParameter: (name, value, update)->
 			@data[name] = value
 			@changed = name
 			if not @socketAction
 				if update
 					@update(name)
-					controller.setValue(value)
 				R.chatSocket.emit "bounce", itemPk: @pk, function: "setParameter", arguments: [name, value, false, false]
 			return
 
-		# set path items (control path, drawing, etc.) to the right state before performing hitTest
-		# store the current state of items, and change their state (the original states will be restored in @finishHitTest())
-		# @param fullySelected [Boolean] (optional) whether the control path must be fully selected before performing the hit test (it must be if we want to test over control path handles)
-		# @param strokeWidth [Number] (optional) contorl path width will be set to *strokeWidth* if it is provided
-		prepareHitTest: ()->
-			@selectionRectangle?.strokeColor = R.selectionBlue
-			return
+		# # set path items (control path, drawing, etc.) to the right state before performing hitTest
+		# # store the current state of items, and change their state (the original states will be restored in @finishHitTest())
+		# # @param fullySelected [Boolean] (optional) whether the control path must be fully selected before performing the hit test (it must be if we want to test over control path handles)
+		# # @param strokeWidth [Number] (optional) contorl path width will be set to *strokeWidth* if it is provided
+		# prepareHitTest: ()->
+		# 	@selectionRectangle?.strokeColor = R.selectionBlue
+		# 	return
 
-		# restore path items orginial states (same as before @prepareHitTest())
-		# @param fullySelected [Boolean] (optional) whether the control path must be fully selected before performing the hit test (it must be if we want to test over control path handles)
-		finishHitTest: ()->
-			@selectionRectangle?.strokeColor = null
-			return
+		# # restore path items orginial states (same as before @prepareHitTest())
+		# # @param fullySelected [Boolean] (optional) whether the control path must be fully selected before performing the hit test (it must be if we want to test over control path handles)
+		# finishHitTest: ()->
+		# 	@selectionRectangle?.strokeColor = null
+		# 	return
 
-		# perform hit test to check if the point hits the selection rectangle
-		# @param point [P.Point] the point to test
-		# @param hitOptions [Object] the [paper hit test options](http://paperjs.org/reference/item/#hittest-point)
-		hitTest: (point, hitOptions)->
-			return @selectionRectangle.hitTest(point)
+		# # perform hit test to check if the point hits the selection rectangle
+		# # @param point [P.Point] the point to test
+		# # @param hitOptions [Object] the [paper hit test options](http://paperjs.org/reference/item/#hittest-point)
+		# performHitTest: (point, hitOptions)->
+		# 	return @selectionRectangle.hitTest(point)
 
-		# when hit through websocket, must be (fully)Selected to hitTest
-		# perform hit test on control path and selection rectangle with a stroke width of 1
-		# to manipulate points on the control path or selection rectangle
-		# since @hitTest() will be overridden by children RPath, it is necessary to @prepareHitTest() and @finishHitTest()
-		# @param point [P.Point] the point to test
-		# @param hitOptions [Object] the [paper hit test options](http://paperjs.org/reference/item/#hittest-point)
-		# @param fullySelected [Boolean] (optional) whether the control path must be fully selected before performing the hit test (it must be if we want to test over control path handles)
-		# @return [Paper HitResult] the paper hit result
-		performHitTest: (point, hitOptions, fullySelected=true)->
-			@prepareHitTest(fullySelected, 1)
-			hitResult = @hitTest(point, hitOptions)
-			@finishHitTest(fullySelected)
-			return hitResult
+		# # when hit through websocket, must be (fully)Selected to hitTest
+		# # perform hit test on control path and selection rectangle with a stroke width of 1
+		# # to manipulate points on the control path or selection rectangle
+		# # since @hitTest() will be overridden by children RPath, it is necessary to @prepareHitTest() and @finishHitTest()
+		# # @param point [P.Point] the point to test
+		# # @param hitOptions [Object] the [paper hit test options](http://paperjs.org/reference/item/#hittest-point)
+		# # @param fullySelected [Boolean] (optional) whether the control path must be fully selected before performing the hit test (it must be if we want to test over control path handles)
+		# # @return [Paper HitResult] the paper hit result
+		# hitTest: (point, hitOptions, fullySelected=true)->
+		# 	@prepareHitTest(fullySelected, 1)
+		# 	hitResult = @performHitTest(point, hitOptions)
+		# 	@finishHitTest(fullySelected)
+		# 	return hitResult
 
 		# intialize the selection:
 		# determine which action to perform depending on the the *hitResult* (move by default, edit point if segment from contorl path, etc.)
 		# set @selectionState which will be used during the selection process (select begin, update, end)
 		# @param event [Paper event] the mouse event
 		# @param hitResult [Paper HitResult] [paper hit result](http://paperjs.org/reference/hitresult/) form the hit test
-		initializeSelection: (event, hitResult) ->
-			if hitResult.item == @selectionRectangle
-				@selectionState = move: true
-				if hitResult?.type == 'stroke'
-					selectionBounds = @rectangle.clone().expand(10)
-					# for sideName in @constructor.sidesNames
-					# 	if Math.abs( selectionBounds[sideName] - @constructor.valueFromName(hitResult.point, sideName) ) < @constructor.hitOptions.tolerance
-					# 		@selectionState.move = sideName
-					minDistance = Infinity
-					for cornerName in @constructor.cornersNames
-						distance = selectionBounds[cornerName].getDistance(hitResult.point, true)
-						if distance < minDistance
-							@selectionState.move = cornerName
-							minDistance = distance
-				else if hitResult?.type == 'segment'
-					@selectionState = resize: { index: hitResult.segment.index }
-			return
+		# initializeSelection: (event, hitResult) ->
+		# 	if hitResult.item == @selectionRectangle
+		# 		@selectionState = move: true
+		# 		if hitResult?.type == 'stroke'
+		# 			selectionBounds = @rectangle.clone().expand(10)
+		# 			# for sideName in @constructor.sidesNames
+		# 			# 	if Math.abs( selectionBounds[sideName] - @constructor.valueFromName(hitResult.point, sideName) ) < @constructor.hitOptions.tolerance
+		# 			# 		@selectionState.move = sideName
+		# 			minDistance = Infinity
+		# 			for cornerName in @constructor.cornersNames
+		# 				distance = selectionBounds[cornerName].getDistance(hitResult.point, true)
+		# 				if distance < minDistance
+		# 					@selectionState.move = cornerName
+		# 					minDistance = distance
+		# 		else if hitResult?.type == 'segment'
+		# 			@selectionState = resize: { index: hitResult.segment.index }
+		# 	return
 
-		# begin select action:
-		# - initialize selection (reset selection state)
-		# - select
-		# - hit test and initialize selection
-		# @param event [Paper event] the mouse event
-		beginSelect: (event) ->
+		# # begin select action:
+		# # - initialize selection (reset selection state)
+		# # - select
+		# # - hit test and initialize selection
+		# # @param event [Paper event] the mouse event
+		# beginSelect: (event) ->
 
-			@selectionState = move: true
-			if not @isSelected()
-				R.commandManager.add(new R.SelectCommand([@]), true)
-			else
-				hitResult = @performHitTest(event.point, @constructor.hitOptions)
-				if hitResult? then @initializeSelection(event, hitResult)
+		# 	@selectionState = move: true
+		# 	if not @isSelected()
+		# 		R.commandManager.add(updateActionR.SelectCommand([@]), true)
+		# 	else
+		# 		hitResult = @performHitTest(event.point, @constructor.hitOptions)
+		# 		if hitResult? then @initializeSelection(event, hitResult)
 
-			if @selectionState.move?
-				@beginAction(new R.MoveCommand(@))
-			else if @selectionState.resize?
-				@beginAction(new R.ResizeCommand(@))
+		# 	if @selectionState.move?
+		# 		@beginAction(new R.MoveCommand(@))
+		# 	else if @selectionState.resize?
+		# 		@beginAction(new R.ResizeCommand(@))
 
-			return
+		# 	return
 
-		# depending on the selected item, updateSelect will:
-		# - rotate the group,
-		# - scale the group,
-		# - or move the group.
-		# @param event [Paper event] the mouse event
-		updateSelect: (event)->
-			@updateAction(event)
-			return
+		# # depending on the selected item, updateSelect will:
+		# # - rotate the group,
+		# # - scale the group,
+		# # - or move the group.
+		# # @param event [Paper event] the mouse event
+		# updateSelect: (event)->
+		# 	@updateAction(event)
+		# 	return
 
-		# end the selection action:
-		# - nullify selectionState
-		# - redraw in normal mode (not fast mode)
-		# - update select command
-		endSelect: (event)->
-			@endAction()
-			return
+		# # end the selection action:
+		# # - nullify selectionState
+		# # - redraw in normal mode (not fast mode)
+		# # - update select command
+		# endSelect: (event)->
+		# 	@endAction()
+		# 	return
 
-		beginAction: (command)->
-			if @currentCommand
-				@endAction()
-				clearTimeout(R.updateTimeout['addCurrentCommand-' + (@id or @pk)])
-			@currentCommand = command
-			return
+		# beginAction: (command)->
+		# 	if @currentCommand
+		# 		@endAction()
+		# 		clearTimeout(R.updateTimeout['addCurrentCommand-' + (@id or @pk)])
+		# 	@currentCommand = command
+		# 	return
 
-		updateAction: ()->
-			@currentCommand.update.apply(@currentCommand, arguments)
-			return
+		# updateAction: ()->
+		# 	@currentCommand.update.apply(@currentCommand, arguments)
+		# 	return
 
-		endAction: ()=>
+		# endAction: ()=>
 
-			positionIsValid = if @currentCommand.constructor.needValidPosition then Lock.validatePosition(@) else true
+		# 	positionIsValid = if @currentCommand.constructor.needValidPosition then Lock.validatePosition(@) else true
 
-			commandChanged = @currentCommand.end(positionIsValid)
-			if positionIsValid
-				if commandChanged then R.commandManager.add(@currentCommand)
-			else
-				@currentCommand.undo()
+		# 	commandChanged = @currentCommand.end(positionIsValid)
+		# 	if positionIsValid
+		# 		if commandChanged then R.commandManager.add(@currentCommand)
+		# 	else
+		# 		@currentCommand.undo()
 
-			@currentCommand = null
-			return
+		# 	@currentCommand = null
+		# 	return
 
-		deferredAction: (ActionCommand, args...)->
-			if not ActionCommand.prototype.isPrototypeOf(@currentCommand)
-				@beginAction(new ActionCommand(@, args))
-			@updateAction.apply(@, args)
-			Utils.deferredExecution(@endAction, 'addCurrentCommand-' + (@id or @pk) )
-			return
+		# deferredAction: (ActionCommand, args...)->
+		# 	if not ActionCommand.prototype.isPrototypeOf(@currentCommand)
+		# 		@beginAction(new ActionCommand(@, args))
+		# 	@updateAction.apply(@, args)
+		# 	Utils.deferredExecution(@endAction, 'addCurrentCommand-' + (@id or @pk) )
+		# 	return
 
-		doAction: (ActionCommand, args)->
-			@beginAction(new ActionCommand(@))
-			@updateAction.apply(@, args)
-			@endAction()
-			return
+		# doAction: (ActionCommand, args)->
+		# 	@beginAction(new ActionCommand(@))
+		# 	@updateAction.apply(@, args)
+		# 	@endAction()
+		# 	return
 
-		# create the selection rectangle (path used to rotate and scale the RPath)
-		# @param bounds [Paper P.Rectangle] the bounds of the selection rectangle
-		createSelectionRectangle: (bounds)->
-			@selectionRectangle.insert(1, new P.Point(bounds.left, bounds.center.y))
-			@selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top))
-			@selectionRectangle.insert(5, new P.Point(bounds.right, bounds.center.y))
-			@selectionRectangle.insert(7, new P.Point(bounds.center.x, bounds.bottom))
-			return
+		# # create the selection rectangle (path used to rotate and scale the RPath)
+		# # @param bounds [Paper P.Rectangle] the bounds of the selection rectangle
+		# createSelectionRectangle: (bounds)->
+		# 	@selectionRectangle.insert(1, new P.Point(bounds.left, bounds.center.y))
+		# 	@selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top))
+		# 	@selectionRectangle.insert(5, new P.Point(bounds.right, bounds.center.y))
+		# 	@selectionRectangle.insert(7, new P.Point(bounds.center.x, bounds.bottom))
+		# 	return
 
-		# add or update the selection rectangle (path used to rotate and scale the RPath)
-		# redefined by RShape# the selection rectangle is slightly different for a shape since it is never reset (rotation and scale are stored in database)
-		updateSelectionRectangle: ()->
-			bounds = @rectangle.clone().expand(10)
+		# # add or update the selection rectangle (path used to rotate and scale the RPath)
+		# # redefined by RShape# the selection rectangle is slightly different for a shape since it is never reset (rotation and scale are stored in database)
+		# updateSelectionRectangle: ()->
+		# 	bounds = @rectangle.clone().expand(10)
 
-			# create the selection rectangle: rectangle path + handle at the top used for rotations
-			@selectionRectangle?.remove()
-			@selectionRectangle = new P.Path.Rectangle(bounds)
-			@group.addChild(@selectionRectangle)
-			@selectionRectangle.name = "selection rectangle"
-			@selectionRectangle.pivot = bounds.center
+		# 	# create the selection rectangle: rectangle path + handle at the top used for rotations
+		# 	@selectionRectangle?.remove()
+		# 	@selectionRectangle = new P.Path.Rectangle(bounds)
+		# 	@group.addChild(@selectionRectangle)
+		# 	@selectionRectangle.name = "selection rectangle"
+		# 	@selectionRectangle.pivot = bounds.center
 
-			@createSelectionRectangle(bounds)
+		# 	@createSelectionRectangle(bounds)
 
-			@selectionRectangle.selected = true
-			@selectionRectangle.controller = @
+		# 	@selectionRectangle.selected = true
+		# 	@selectionRectangle.controller = @
 
-			return
+		# 	return
 
-		setRectangle: (rectangle, update=false)->
+		setRectangle: (rectangle, update=true)->
 			if not P.Rectangle.prototype.isPrototypeOf(rectangle) then rectangle = new P.Rectangle(rectangle)
 			@rectangle = rectangle
-			if @selectionRectangle then @updateSelectionRectangle()
+			# if @selectionRectangle then @updateSelectionRectangle()
 			if not @socketAction
 				if update then @update('rectangle')
 				R.chatSocket.emit "bounce", itemPk: @pk, function: "setRectangle", arguments: [@rectangle, false]
 			return
 
-		updateSetRectangle: (event)->
+		# updateSetRectangle: (event)->
 
-			event.point = Utils.Event.snap2D(event.point)
+		# 	event.point = Utils.Event.snap2D(event.point)
 
-			rotation = @rotation or 0
-			rectangle = @rectangle.clone()
-			delta = event.point.subtract(@rectangle.center)
-			x = new P.Point(1,0)
-			x.angle += rotation
-			dx = x.dot(delta)
-			y = new P.Point(0,1)
-			y.angle += rotation
-			dy = y.dot(delta)
+		# 	rotation = @rotation or 0
+		# 	rectangle = @rectangle.clone()
+		# 	delta = event.point.subtract(@rectangle.center)
+		# 	x = new P.Point(1,0)
+		# 	x.angle += rotation
+		# 	dx = x.dot(delta)
+		# 	y = new P.Point(0,1)
+		# 	y.angle += rotation
+		# 	dy = y.dot(delta)
 
-			index = @selectionState.resize.index
-			name = @constructor.indexToName[index]
+		# 	index = @selectionState.resize.index
+		# 	name = @constructor.indexToName[index]
 
-			# if shift is not pressed and a corner is selected: keep aspect ratio (rectangle must have width and height greater than 0 to keep aspect ratio)
-			if not event.modifiers.shift and name in @constructor.cornersNames and rectangle.width > 0 and rectangle.height > 0
-				if Math.abs(dx / rectangle.width) > Math.abs(dy / rectangle.height)
-					dx = Utils.sign(dx) * Math.abs(rectangle.width * dy / rectangle.height)
-				else
-					dy = Utils.sign(dy) * Math.abs(rectangle.height * dx / rectangle.width)
+		# 	# if shift is not pressed and a corner is selected: keep aspect ratio (rectangle must have width and height greater than 0 to keep aspect ratio)
+		# 	if not event.modifiers.shift and name in @constructor.cornersNames and rectangle.width > 0 and rectangle.height > 0
+		# 		if Math.abs(dx / rectangle.width) > Math.abs(dy / rectangle.height)
+		# 			dx = Utils.sign(dx) * Math.abs(rectangle.width * dy / rectangle.height)
+		# 		else
+		# 			dy = Utils.sign(dy) * Math.abs(rectangle.height * dx / rectangle.width)
 
-			center = rectangle.center.clone()
-			rectangle[name] = @constructor.valueFromName(center.add(dx, dy), name)
+		# 	center = rectangle.center.clone()
+		# 	rectangle[name] = @constructor.valueFromName(center.add(dx, dy), name)
 
-			if not R.specialKey(event)
-				rectangle[@constructor.oppositeName[name]] = @constructor.valueFromName(center.subtract(dx, dy), name)
-			else
-				# the center of the rectangle changes when moving only one side
-				# the center must be repositionned with the previous center as pivot point (necessary when rotation > 0)
-				rectangle.center = center.add(rectangle.center.subtract(center).rotate(rotation))
+		# 	if not R.specialKey(event)
+		# 		rectangle[@constructor.oppositeName[name]] = @constructor.valueFromName(center.subtract(dx, dy), name)
+		# 	else
+		# 		# the center of the rectangle changes when moving only one side
+		# 		# the center must be repositionned with the previous center as pivot point (necessary when rotation > 0)
+		# 		rectangle.center = center.add(rectangle.center.subtract(center).rotate(rotation))
 
-			if rectangle.width < 0
-				rectangle.width = Math.abs(rectangle.width)
-				rectangle.center.x = center.x
-			if rectangle.height < 0
-				rectangle.height = Math.abs(rectangle.height)
-				rectangle.center.y = center.y
+		# 	if rectangle.width < 0
+		# 		rectangle.width = Math.abs(rectangle.width)
+		# 		rectangle.center.x = center.x
+		# 	if rectangle.height < 0
+		# 		rectangle.height = Math.abs(rectangle.height)
+		# 		rectangle.center.y = center.y
 
-			@setRectangle(rectangle)
-			Lock.highlightValidity(@)
-			return
+		# 	@setRectangle(rectangle, false)
+		# 	Lock.highlightValidity(@)
+		# 	return
 
-		endSetRectangle: ()->
-			@update('rectangle')
-			return
+		# endSetRectangle: (update)->
+		# 	if update then @update('rectangle')
+		# 	return
 
 		moveTo: (position, update)->
 			if not P.Point.prototype.isPrototypeOf(position) then position = new P.Point(position)
@@ -468,40 +468,40 @@ define [ 'Command'], (Command) ->
 			@moveTo(@rectangle.center.add(delta), update)
 			return
 
-		updateMove: (event)->
-			if Utils.Event.getSnap() > 1
-				if @selectionState.move != true
-					cornerName = @selectionState.move
-					rectangle = @rectangle.clone()
-					@dragOffset ?= rectangle[cornerName].subtract(event.downPoint)
-					destination = Utils.Event.snap2D(event.point.add(@dragOffset))
-					rectangle.moveCorner(cornerName, destination)
-					@moveTo(rectangle.center)
-				else
-					@dragOffset ?= @rectangle.center.subtract(event.downPoint)
-					destination = Utils.Event.snap2D(event.point.add(@dragOffset))
-					@moveTo(destination)
-			else
-				@moveBy(event.delta)
-			Lock.highlightValidity(@)
-			return
+		# updateMove: (event)->
+		# 	if Utils.Event.getSnap() > 1
+		# 		if @selectionState.move != true
+		# 			cornerName = @selectionState.move
+		# 			rectangle = @rectangle.clone()
+		# 			@dragOffset ?= rectangle[cornerName].subtract(event.downPoint)
+		# 			destination = Utils.Event.snap2D(event.point.add(@dragOffset))
+		# 			rectangle.moveCorner(cornerName, destination)
+		# 			@moveTo(rectangle.center)
+		# 		else
+		# 			@dragOffset ?= @rectangle.center.subtract(event.downPoint)
+		# 			destination = Utils.Event.snap2D(event.point.add(@dragOffset))
+		# 			@moveTo(destination)
+		# 	else
+		# 		@moveBy(event.delta)
+		# 	Lock.highlightValidity(@)
+		# 	return
 
-		endMove: (update)->
-			@dragOffset = null
-			if update then @update('position')
-			return
+		# endMove: (update)->
+		# 	@dragOffset = null
+		# 	if update then @update('position')
+		# 	return
 
-		moveToCommand: (position)->
-			R.commandManager.add(new R.MoveCommand(@, position), true)
-			return
+		# moveToCommand: (position)->
+		# 	R.commandManager.add(new R.MoveCommand(@, position), true)
+		# 	return
 
-		resizeCommand: (rectangle)->
-			R.commandManager.add(new R.ResizeCommand(@, rectangle), true)
-			return
+		# resizeCommand: (rectangle)->
+		# 	R.commandManager.add(new R.ResizeCommand(@, rectangle), true)
+		# 	return
 
-		moveByCommand: (delta)->
-			@moveToCommand(@rectangle.center.add(delta), true)
-			return
+		# moveByCommand: (delta)->
+		# 	@moveToCommand(@rectangle.center.add(delta), true)
+		# 	return
 
 		# @return [Object] @data along with @rectangle and @rotation
 		getData: ()->
@@ -523,7 +523,7 @@ define [ 'Command'], (Command) ->
 		# highlight this RItem by drawing a blue rectangle around it
 		highlight: ()->
 			if @highlightRectangle?
-				Utils.P.Rectangle.updatePathRectangle(@highlightRectangle, @getBounds())
+				Utils.Rectangle.updatePathRectangle(@highlightRectangle, @getBounds())
 				return
 			@highlightRectangle = new P.Path.Rectangle(@getBounds())
 			@highlightRectangle.strokeColor = R.selectionBlue
@@ -540,7 +540,11 @@ define [ 'Command'], (Command) ->
 			@highlightRectangle = null
 			return
 
+		getPk: ()->
+			return @pk or @id
+
 		setPK: (@pk, loading=false)->
+			if @id? then R.commandManager.setItemPk(@id, @pk)
 			R.items[@pk] = @
 			delete R.items[@id]
 			if not loading and not @socketAction then R.chatSocket.emit "bounce", itemPk: @id, function: "setPK", arguments: [@pk]
@@ -598,6 +602,7 @@ define [ 'Command'], (Command) ->
 			return true
 
 		remove: ()->
+			R.commandManager.unloadItem(@)
 			if not @group then return
 
 			@group.remove()
@@ -619,13 +624,15 @@ define [ 'Command'], (Command) ->
 				return false
 			return true
 
-		save: (@addCreateCommand)->
+		save: (addCreateCommand)->
+			if addCreateCommand then R.commandManager.add(new R.CreateItemCommand(@))
 			return
 
 		saveCallback: ()->
-			if @addCreateCommand
-				R.commandManager.add(new R.CreateItemCommand(@))
-				delete @addCreateCommand
+			return
+
+		addUpdateFunctionAndArguments: (args, type)->
+			args.push( function: @getUpdateFunction(type), arguments: @getUpdateArguments(type) )
 			return
 
 		delete: ()->
@@ -638,7 +645,7 @@ define [ 'Command'], (Command) ->
 			return
 
 		getDuplicateData: ()->
-			return data: @getData(), rectangle: @rectangle
+			return data: @getData(), rectangle: @rectangle, pk: @getPk()
 
 		duplicateCommand: ()->
 			R.commandManager.add(new R.DuplicateItemCommand(@), true)

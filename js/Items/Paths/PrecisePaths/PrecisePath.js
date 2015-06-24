@@ -599,6 +599,9 @@
 
       PrecisePath.prototype.setRectangle = function(rectangle, update) {
         var previousRectangle;
+        if (update == null) {
+          update = true;
+        }
         previousRectangle = this.rectangle.clone();
         PrecisePath.__super__.setRectangle.call(this, rectangle, update);
         this.controlPath.pivot = previousRectangle.center;
@@ -840,14 +843,16 @@
         this.modifyPoint(segment, segment.point, segment.handleIn, segment.handleOut, true, false);
       };
 
-      PrecisePath.prototype.endModifyPoint = function() {
-        if (this.data.smooth) {
-          this.controlPath.smooth();
+      PrecisePath.prototype.endModifyPoint = function(update) {
+        if (update) {
+          if (this.data.smooth) {
+            this.controlPath.smooth();
+          }
+          this.draw();
+          this.rasterize();
+          this.selectionHighlight.bringToFront();
+          this.update('points');
         }
-        this.draw();
-        this.rasterize();
-        this.selectionHighlight.bringToFront();
-        this.update('points');
       };
 
       PrecisePath.prototype.modifyPointTypeCommand = function(rtype) {

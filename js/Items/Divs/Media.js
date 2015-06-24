@@ -127,6 +127,9 @@
 
       Media.prototype.setRectangle = function(rectangle, update) {
         var height, width, _ref;
+        if (update == null) {
+          update = true;
+        }
         Media.__super__.setRectangle.call(this, rectangle, update);
         width = this.divJ.width();
         height = this.divJ.height();

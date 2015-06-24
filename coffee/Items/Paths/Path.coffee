@@ -165,8 +165,8 @@ define [ 'Content', 'PathTool' ], (Content, PathTool) ->
 			@rasterize()
 			return
 
-		setRectangle: (event, update)->
-			super(event, update)
+		setRectangle: (rectangle, update=true)->
+			super(rectangle, update)
 			@draw(update)
 			return
 
@@ -271,8 +271,8 @@ define [ 'Content', 'PathTool' ], (Content, PathTool) ->
 		# @param value [Anything] the new value
 		# @param updateGUI [Boolean] (optional, default is false) whether to update the GUI (parameters bar), true when called from SetParameterCommand
 
-		setParameter: (controller, value, updateGUI, update)->
-			super(controller, value, updateGUI, update)
+		setParameter: (name, value, updateGUI, update)->
+			super(name, value, updateGUI, update)
 			# if not @drawing then R.updateView() 	# update the view if it was rasterized
 			@previousBoundingBox ?= @getDrawingBounds()
 			@draw()		# if draw in simple mode, then how to see the change of simplified parameters?
@@ -582,7 +582,6 @@ define [ 'Content', 'PathTool' ], (Content, PathTool) ->
 		# @remove() just removes visually
 		delete: ()->
 			if @lock? and @lock.owner != R.me then return
-			@group.visible = false
 			@remove()
 			# R.rasterizeArea(bounds)
 			if not @pk? then return

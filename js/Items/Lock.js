@@ -509,8 +509,11 @@
       };
 
       Lock.prototype.setRectangle = function(rectangle, update) {
+        if (update == null) {
+          update = true;
+        }
         Lock.__super__.setRectangle.call(this, rectangle, update);
-        Utils.P.Rectangle.updatePathRectangle(this.drawing, rectangle);
+        Utils.Rectangle.updatePathRectangle(this.drawing, rectangle);
       };
 
       Lock.prototype.moveTo = function(position, update) {

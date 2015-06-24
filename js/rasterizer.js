@@ -385,8 +385,8 @@
       TileRasterizer.prototype.splitAreaToRasterize = function() {
         var area, areaToRasterizeInteger, areas, maxSize;
         maxSize = P.view.size.multiply(2);
-        areaToRasterizeInteger = Utils.P.Rectangle.expandRectangleToInteger(this.areaToRasterize);
-        area = Utils.P.Rectangle.expandRectangleToInteger(new P.Rectangle(this.areaToRasterize.topLeft, P.Size.min(maxSize, this.areaToRasterize.size)));
+        areaToRasterizeInteger = Utils.Rectangle.expandRectangleToInteger(this.areaToRasterize);
+        area = Utils.Rectangle.expandRectangleToInteger(new P.Rectangle(this.areaToRasterize.topLeft, P.Size.min(maxSize, this.areaToRasterize.size)));
         areas = [area.clone()];
         while (area.right < this.areaToRasterize.right || area.bottom < this.areaToRasterize.bottom) {
           if (area.right < this.areaToRasterize.right) {

@@ -65,7 +65,7 @@
         var bounds, item, itemsToHighlight, name, rectangle, rectanglePath, _ref;
         rectangle = new P.Rectangle(event.downPoint, event.point);
         if (R.currentPaths[R.me] != null) {
-          Utils.P.Rectangle.updatePathRectangle(R.currentPaths[R.me], rectangle);
+          Utils.Rectangle.updatePathRectangle(R.currentPaths[R.me], rectangle);
         } else {
           rectanglePath = new P.Path.Rectangle(rectangle);
           rectanglePath.name = 'select tool selection rectangle';
@@ -103,7 +103,7 @@
           path = _ref[name];
           path.prepareHitTest();
         }
-        hitResult = R.P.project.hitTest(event.point, this.constructor.hitOptions);
+        hitResult = P.project.hitTest(event.point, this.constructor.hitOptions);
         _ref1 = R.paths;
         for (name in _ref1) {
           path = _ref1[name];

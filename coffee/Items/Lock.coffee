@@ -325,9 +325,9 @@ define [ 'Item' ], (Item) ->
 		# @param name [String] the name of the value to change
 		# @param value [Anything] the new value
 		# @param updateGUI [Boolean] (optional, default is false) whether to update the GUI (parameters bar), true when called from SetParameterCommand
-		setParameter: (controller, value, updateGUI, update)->
-			super(controller, value, updateGUI, update)
-			switch controller.name
+		setParameter: (name, value, updateGUI, update)->
+			super(name, value, updateGUI, update)
+			switch name
 				when 'strokeWidth', 'strokeColor', 'fillColor'
 					if not @raster?
 						@drawing[name] = @data[name]
@@ -376,6 +376,11 @@ define [ 'Item' ], (Item) ->
 			if @updateAfterSave?
 				@update(@updateAfterSave)
 			super
+			return
+
+		addUpdateFunctionAndArguments: (args, type)->
+			for item in @children()
+				item.addUpdateFunctionAndArguments(args, type)
 			return
 
 		update: (type) =>
@@ -434,9 +439,9 @@ define [ 'Item' ], (Item) ->
 			super
 			return
 
-		setRectangle: (rectangle, update)->
+		setRectangle: (rectangle, update=true)->
 			super(rectangle, update)
-			Utils.P.Rectangle.updatePathRectangle(@drawing, rectangle)
+			Utils.Rectangle.updatePathRectangle(@drawing, rectangle)
 			return
 
 		moveTo: (position, update)->

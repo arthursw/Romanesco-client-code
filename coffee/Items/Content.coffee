@@ -2,17 +2,17 @@ define [ 'Item' ], (Item) ->
 
 	class Content extends Item
 
-		@indexToName =
-			0: 'bottomLeft'
-			1: 'left'
-			2: 'topLeft'
-			3: 'top'
-			4: 'rotation-handle'
-			5: 'top'
-			6: 'topRight'
-			7: 'right'
-			8: 'bottomRight'
-			9: 'bottom'
+		# @indexToName =
+		# 	0: 'bottomLeft'
+		# 	1: 'left'
+		# 	2: 'topLeft'
+		# 	3: 'top'
+		# 	4: 'rotation-handle'
+		# 	5: 'top'
+		# 	6: 'topRight'
+		# 	7: 'right'
+		# 	8: 'bottomRight'
+		# 	9: 'bottom'
 
 		@initializeParameters: ()->
 			parameters = super()
@@ -73,42 +73,42 @@ define [ 'Item' ], (Item) ->
 			@liJ.text(zindexLabel)
 			return
 
-		initializeSelection: (event, hitResult) ->
-			super(event, hitResult)
+		# initializeSelection: (event, hitResult) ->
+		# 	super(event, hitResult)
 
-			if hitResult?.type == 'segment'
-				if hitResult.item == @selectionRectangle 			# if the segment belongs to the selection rectangle: initialize rotation or scaling
-					if @constructor.indexToName[hitResult.segment.index] == 'rotation-handle'
-						@selectionState = rotation: true
-			return
+		# 	if hitResult?.type == 'segment'
+		# 		if hitResult.item == @selectionRectangle 			# if the segment belongs to the selection rectangle: initialize rotation or scaling
+		# 			if @constructor.indexToName[hitResult.segment.index] == 'rotation-handle'
+		# 				@selectionState = rotation: true
+		# 	return
 
-		# begin select action:
-		# - initialize selection (reset selection state)
-		# - select
-		# - hit test and initialize selection
-		# @param event [Paper event] the mouse event
-		beginSelect: (event) ->
-			super(event)
-			if @selectionState.rotation?
-				@beginAction(new R.RotationCommand(@))
-			return
+		# # begin select action:
+		# # - initialize selection (reset selection state)
+		# # - select
+		# # - hit test and initialize selection
+		# # @param event [Paper event] the mouse event
+		# beginSelect: (event) ->
+		# 	super(event)
+		# 	if @selectionState.rotation?
+		# 		@beginAction(new R.RotationCommand(@))
+		# 	return
 
-		# @param bounds [Paper P.Rectangle] the bounds of the selection rectangle
-		createSelectionRectangle: (bounds)->
-			@selectionRectangle.insert(1, new P.Point(bounds.left, bounds.center.y))
-			@selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top))
-			@selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top-25))
-			@selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top))
-			@selectionRectangle.insert(7, new P.Point(bounds.right, bounds.center.y))
-			@selectionRectangle.insert(9, new P.Point(bounds.center.x, bounds.bottom))
-			return
+		# # @param bounds [Paper P.Rectangle] the bounds of the selection rectangle
+		# createSelectionRectangle: (bounds)->
+		# 	@selectionRectangle.insert(1, new P.Point(bounds.left, bounds.center.y))
+		# 	@selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top))
+		# 	@selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top-25))
+		# 	@selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top))
+		# 	@selectionRectangle.insert(7, new P.Point(bounds.right, bounds.center.y))
+		# 	@selectionRectangle.insert(9, new P.Point(bounds.center.x, bounds.bottom))
+		# 	return
 
-		updateSelectionRectangle: ()->
-			super()
-			@selectionRectangle.rotation = @rotation
-			return
+		# updateSelectionRectangle: ()->
+		# 	super()
+		# 	@selectionRectangle.rotation = @rotation
+		# 	return
 
-		setRotation: (rotation, update)->
+		setRotation: (rotation, update=true)->
 			previousRotation = @rotation
 			@group.pivot = @rectangle.center
 			@rotation = rotation
@@ -120,17 +120,17 @@ define [ 'Item' ], (Item) ->
 				R.chatSocket.emit "bounce", itemPk: @pk, function: "setRotation", arguments: [@rotation, false]
 			return
 
-		updateSetRotation: (event)->
-			rotation = event.point.subtract(@rectangle.center).angle + 90
-			if event.modifiers.shift or R.specialKey(event) or Utils.Event.getSnap() > 1
-				rotation = Utils.roundToMultiple(rotation, if event.modifiers.shift then 10 else 5)
-			@setRotation(rotation)
-			Lock.highlightValidity(@)
-			return
+		# updateSetRotation: (event)->
+		# 	rotation = event.point.subtract(@rectangle.center).angle + 90
+		# 	if event.modifiers.shift or R.specialKey(event) or Utils.Event.getSnap() > 1
+		# 		rotation = Utils.roundToMultiple(rotation, if event.modifiers.shift then 10 else 5)
+		# 	@setRotation(rotation)
+		# 	Lock.highlightValidity(@)
+		# 	return
 
-		endSetRotation: ()->
-			@update('rotation')
-			return
+		# endSetRotation: (update)->
+		# 	if update then @update('rotation')
+		# 	return
 
 		# @return [Object] @data along with @rectangle and @rotation
 		getData: ()->
@@ -140,7 +140,7 @@ define [ 'Item' ], (Item) ->
 
 		getBounds: ()->
 			if @rotation == 0 then return @rectangle
-			return Utils.P.Rectangle.getRotatedBounds(@rectangle, @rotation)
+			return Utils.Rectangle.getRotatedBounds(@rectangle, @rotation)
 
 		# update the z index (i.e. move the item to the right position)
 		# - RItems are kept sorted by z-index in *R.sortedPaths* and *R.sortedDivs*

@@ -80,7 +80,7 @@ define ['Div', 'oembed'], (Div) ->
 			return true
 
 		# update the size of the iframe according to the size of @divJ
-		setRectangle: (rectangle, update)->
+		setRectangle: (rectangle, update=true)->
 			super(rectangle, update)
 			width = @divJ.width()
 			height = @divJ.height()
@@ -104,8 +104,8 @@ define ['Div', 'oembed'], (Div) ->
 		# overload {RDiv#setParameter}
 		# update = false when called by parameter.onChange from websocket
 		# toggle fit image if required
-		setParameter: (controller, value)->
-			super(controller, value)
+		setParameter: (name, value)->
+			super(name, value)
 			switch controller.name
 				when 'fitImage'
 					@toggleFitImage()

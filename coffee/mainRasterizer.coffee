@@ -130,7 +130,7 @@ define ['utils'], (utils) ->
 				R.unload()
 				R.city = areaObject.city
 
-			area = Utils.P.Rectangle.expandRectangleToInteger(R.rectangleFromBox(areaObject))
+			area = Utils.Rectangle.expandRectangleToInteger(R.rectangleFromBox(areaObject))
 			R.areaToRasterize = area
 			# P.view.viewSize = P.Size.min(area.size, new P.Size(1000, 1000))
 

@@ -62,7 +62,7 @@ define [ 'tinycolor', 'gui', 'colorpickersliders' ], (tinycolor, GUI) ->
 			default: 100
 			permanent: true
 			onChange: (value)->
-				R.P.project.P.view.zoom = value/100.0
+				P.project.P.view.zoom = value/100.0
 				Grid.updateGrid()
 				R.rasterizer.move()
 				for div in R.divs
@@ -864,6 +864,16 @@ define [ 'tinycolor', 'gui', 'colorpickersliders' ], (tinycolor, GUI) ->
 
 			if @parameter.step? then @datController.step(@parameter.step)
 
+			return
+
+		listen: (command)->
+			$(command).on('do', @itemChanged)
+			$(command).on('undo', @itemChanged)
+			return
+
+		itemChanged: ()->
+			item = R.selectedItems[0]
+			@setValue(item.data[@name])
 			return
 
 		onChange: (value) =>

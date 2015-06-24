@@ -258,98 +258,6 @@
       R.grid.name = 'grid group';
       P.view.zoom = 1;
       R.previousViewPosition = P.view.center;
-      P.Point.prototype.toJSON = function() {
-        return {
-          x: this.x,
-          y: this.y
-        };
-      };
-      P.Point.prototype.exportJSON = function() {
-        return JSON.stringify(this.toJSON());
-      };
-      P.Rectangle.prototype.toJSON = function() {
-        return {
-          x: this.x,
-          y: this.y,
-          width: this.width,
-          height: this.height
-        };
-      };
-      P.Rectangle.prototype.exportJSON = function() {
-        return JSON.stringify(this.toJSON());
-      };
-      P.Rectangle.prototype.translate = function(point) {
-        return new P.Rectangle(this.x + point.x, this.y + point.y, this.width, this.height);
-      };
-      P.Rectangle.prototype.moveSide = function(sideName, destination) {
-        switch (sideName) {
-          case 'left':
-            this.x = destination;
-            break;
-          case 'right':
-            this.x = destination - this.width;
-            break;
-          case 'top':
-            this.y = destination;
-            break;
-          case 'bottom':
-            this.y = destination - this.height;
-        }
-      };
-      P.Rectangle.prototype.moveCorner = function(cornerName, destination) {
-        switch (cornerName) {
-          case 'topLeft':
-            this.x = destination.x;
-            this.y = destination.y;
-            break;
-          case 'topRight':
-            this.x = destination.x - this.width;
-            this.y = destination.y;
-            break;
-          case 'bottomRight':
-            this.x = destination.x - this.width;
-            this.y = destination.y - this.height;
-            break;
-          case 'bottomLeft':
-            this.x = destination.x;
-            this.y = destination.y - this.height;
-        }
-      };
-      P.Rectangle.prototype.moveCenter = function(destination) {
-        this.x = destination.x - this.width * 0.5;
-        this.y = destination.y - this.height * 0.5;
-      };
-      Event.prototype.toJSON = function() {
-        var event;
-        event = {
-          modifiers: this.modifiers,
-          event: {
-            which: this.event.which
-          },
-          point: this.point,
-          downPoint: this.downPoint,
-          delta: this.delta,
-          middlePoint: this.middlePoint,
-          type: this.type,
-          count: this.count
-        };
-        return event;
-      };
-      Event.prototype.fromJSON = function(event) {
-        if (event.point != null) {
-          event.point = new P.Point(event.point);
-        }
-        if (event.downPoint != null) {
-          event.downPoint = new P.Point(event.downPoint);
-        }
-        if (event.delta != null) {
-          event.delta = new P.Point(event.delta);
-        }
-        if (event.middlePoint != null) {
-          event.middlePoint = new P.Point(event.middlePoint);
-        }
-        return event;
-      };
       R.sidebarHandleJ = R.sidebarJ.find(".sidebar-handle");
       R.sidebarHandleJ.click(function() {
         R.toggleSidebar();
@@ -587,3 +495,4 @@
 }).call(this);
 
 //# sourceMappingURL=Main.map
+ 

@@ -2,11 +2,10 @@ define [ 'utils' ], () ->
 
 	class Command
 
-		@needValidPosition = false
-
 		constructor: (@name)->
 			@liJ = $("<li>").text(@name)
 			@liJ.click(@click)
+			@id = Math.random()
 			return
 
 		# item: ()->
@@ -24,10 +23,12 @@ define [ 'utils' ], () ->
 
 		do: ()->
 			@superDo()
+			$(@).triggerHandler('do')
 			return
 
 		undo: ()->
 			@superUndo()
+			$(@).triggerHandler('undo')
 			return
 
 		click: ()=>
@@ -50,6 +51,127 @@ define [ 'utils' ], () ->
 
 	R.Command = Command
 
+	class Command.Items extends Command
+
+		constructor: (name, items)->
+			super(name)
+			@items = mapItems(items)
+			return
+
+		mapItems: (items)->
+			map = {}
+			for item in items
+				map[item.getPk()] = item
+			return map
+
+		apply: (method, args)->
+			for pk, item of @items
+				item[method].apply(item, args)
+			return
+
+		call: (method, args...)->
+			@apply(method, args)
+			return
+
+		update: ()->
+			return
+
+		end: ()->
+			if @positionIsValid()
+				super()
+			else
+				@undo()
+			return
+
+		positionIsValid: ()->
+			if @constructor.disablePositionCheck then return true
+			for pk, item of @items
+				if not Lock.validatePosition(item) then return false
+			return true
+
+		unloadItem: (item)->
+			@items[item.pk] = null
+			return
+
+		loadItem: (item)->
+			@items[item.pk] = item
+			return
+
+		resurrectItem: (pk, item)->
+			@items[pk] = item
+			return
+
+		delete: ()->
+			for pk, item of @items
+				_.remove(R.commandManager.itemToCommands[pk], @)
+			super()
+			return
+
+	class Command.Item extends Command.Items
+
+		constructor: (name, items)->
+			items = if Utils.Array.isArray(items) then items else [items]
+			@item = items[0]
+			super(name, items)
+			return
+
+		unloadItem: (item)->
+			@item = {pk: item.pk}
+			super(item)
+			return
+
+		loadItem: (item)->
+			@item = item
+			super(item)
+			return
+
+		resurrectItem: (pk, item)->
+			@item = item
+			super(pk, item)
+			return
+
+	class Command.Deferred extends Command.Item
+
+		@initialize: (method)->
+			@method = method
+			@Method = Utils.capitalizeFirstLetter(method)
+			@beginMethod = 'begin' + @Method
+			@updateMethod = 'update' + @Method
+			@endMethod = 'end' + @Method
+			return
+
+		constructor: (name, items)->
+			super(name, items)
+			return
+
+		update: ()->
+			return
+
+		end: ()->
+			super()
+			if not @commandChanged() then return
+
+			@apply(@constructor.endMethod, [])
+
+			R.commandManager.add(@)
+			@updateItems()
+			return
+
+		commandChanged: ()->
+			return
+
+		updateItems: (type)->
+			args = []
+			for pk, item of @items
+				item.addUpdateFunctionAndArguments(args, type)
+			Dajaxice.draw.multipleCalls( @updateCallback, functionsAndArguments: args)
+			return
+
+		updateCallback: (results)->
+			for result in results
+				R.loader.checkError(result)
+			return
+
 	# class DuplicateCommand extends Command
 	# 	constructor: (@item)->
 	# 		super("Duplicate item")
@@ -65,250 +187,169 @@ define [ 'utils' ], () ->
 	# 		super()
 	# 		return
 
-	# @DuplicateCommand = DuplicateCommand
+	class Command.SelectionRectangle extends Command.Deferred
 
-	class ResizeCommand extends Command
-
-		@needValidPosition = true
-
-		constructor: (@item, @newRectangle)->
-			super("Resize item", @item)
-			@previousRectangle = @item.rectangle
+		constructor: (items)->
+			super(@Method + ' items', items)
 			return
 
-		do: ()->
-			@item.setRectangle(@newRectangle, true)
-			super()
-			return
-
-		undo: ()->
-			@item.setRectangle(@previousRectangle, true)
-			super()
+		begin: (event)->
+			Tool.Select.selectionRectangle[@constructor.beginMethod](event)
 			return
 
 		update: (event)->
-			@item.updateSetRectangle(event)
+			Tool.Select.selectionRectangle[@constructor.updateMethod](event)
+			super(event)
 			return
 
-		end: (valid)->
-			@newRectangle = @item.rectangle
-			if @newRectangle == @previousRectangle then return false
-			if not valid then return false
-			@item.endSetRectangle()
-			super()
-			return true
-
-	R.ResizeCommand = ResizeCommand
-
-	class RotationCommand extends Command
-
-		@needValidPosition = true
-
-		constructor: (@item, @newRotation)->
-			super("Rotate item")
-			@previousRotation = @item.rotation
+		end: (event)->
+			@args = Tool.Select.selectionRectangle[@constructor.endMethod](event)
+			super(event)
 			return
 
 		do: ()->
-			@item.setRotation(@newRotation, true)
+			@apply(@constructor.method, @args)
 			super()
 			return
 
 		undo: ()->
-			@item.setRotation(@previousRotation, true)
+			@apply(@constructor.method, @negate(@args))
 			super()
 			return
 
-		update: (event)->
-			@item.updateSetRotation(event)
+		negate: (args)->
+			args[0].multiply(-1)
+			return args
+
+		commandChanged: ()->
+			delta = args[0]
+			return delta.x != 0 and delta.y != 0
+
+	class Command.Scale extends Command.SelectionRectangle
+
+		@initialize('scale')
+
+	class Command.Rotation extends Command.SelectionRectangle
+
+		@initialize('rotate')
+
+		negate: (args)->
+			args[0] *= -1
+			return args
+
+		commandChanged: ()->
+			return args[0] != 0
+
+	class Command.Translate extends Command.SelectionRectangle
+
+		@initialize('translate')
+
+	class Command.BeforeAfter extends Command.Deferred
+
+		@initialize: (method, @name)->
+			super(method)
 			return
 
-		end: (valid)->
-			@newRotation = @item.rotation
-			if @newRotation == @previousRotation then return false
-			if not valid then return false
-			@item.endSetRotation()
-			super()
+		constructor: (name, item)->
+			super(name or @constructor.name, item)
+			@beforeArgs = @getState()
+			return
+
+		getState: ()->
+			return
+
+		update: ()->
+			@apply(@constructor.updateMethod, arguments)
+			return
+
+		commandChanged: ()->
+			for beforeArg, i in @beforeArgs
+				if beforeArg != @afterArgs[i] then return false
 			return true
 
-	R.RotationCommand = RotationCommand
-
-	class MoveCommand extends Command
-
-		@needValidPosition = true
-
-		constructor: (@item, @newPosition)->
-			super("Move item")
-			@previousPosition = @item.rectangle.center
-			@items = R.selectedItems.slice()
-			return
-
 		do: ()->
-			# areas = []
-			for item in @items
-				# area = item.getDrawingBounds()
-				# if area.area < R.rasterizer.maxArea() then areas.push(area)
-				item.moveBy(@newPosition.subtract(@previousPosition), true)
-			# R.rasterizer.rasterize(@items, false, areas)
+			@apply(@constructor.method, @afterArgs)
 			super()
 			return
 
 		undo: ()->
-			# areas = []
-			for item in @items
-				# area = item.getDrawingBounds()
-				# if area.area < R.rasterizer.maxArea() then areas.push(area)
-				item.moveBy(@previousPosition.subtract(@newPosition), true)
-			# R.rasterizer.rasterize(@items, false, areas)
+			@afterArgs = @getState()
+			@apply(@constructor.method, @beforeArgs)
 			super()
 			return
 
-		update: (event)->
-			item.updateMove(event) for item in @items
-			return
+	class Command.ModifyPoint extends Command
 
-		end: (valid)->
-			@newPosition = @item.rectangle.center
-			if @newPosition.equals(@previousPosition) then return false
-			if not valid then return false
-			# item.endMoveBy() for item in @items
-			if @items.length==1
-				@items[0].endMove(true)
-			else
-				args = []
-				for item in @items
-					item.endMove(false)
-					if Lock.prototype.isPrototypeOf(item)
-						item.update('position')
-					else
-						args.push( function: item.getUpdateFunction(), arguments: item.getUpdateArguments('position') )
-				Dajaxice.draw.multipleCalls( @updateCallback, functionsAndArguments: args)
-			# R.rasterizer.rasterize(@items)
-			super()
+		@initialize('modifiyPoint', 'Modify point')
+
+		getState: ()->
+			segment = @item.selectionState.segment
+			return [segment.point.clone(), segment.handleIn.clone(), segment.handleOut.clone()]
+
+
+	class Command.ModifySpeed extends Command
+
+		@disablePositionCheck = true
+
+		@initialize('modifiySpeed', 'Modify speed')
+
+		getState: ()->
+			return [@item.speeds.slice()]
+
+		commandChanged: ()->
 			return true
 
-		updateCallback: (results)->
-			for result in results
-				R.loader.checkError(result)
+	class Command.SetParameter extends Command
+
+		@initialize('modifiyParameter')
+
+		constructor: (item, controller)->
+			controller.listen(@)
+			@name = controller.name
+			super('Change item parameter "' + @name + '"', item)
 			return
 
-	R.MoveCommand = MoveCommand
+		getState: ()->
+			return [@name, @item.data[@name]]
 
-	class ModifyPointCommand extends Command
 
-		@needValidPosition = true
+		# constructor: (@item, args)->
+		# 	@controller = args[0]
+		# 	@previousValue = @item.data[@controller.name]
+		# 	super('Change item parameter "' + @controller.name + '"')
+		# 	return
 
-		constructor: (@item)->
-			@segment = @item.selectionState.segment
-			@previousPosition = new P.Point(@segment.point)
-			@previousHandleIn = new P.Point(@segment.handleIn)
-			@previousHandleOut = new P.Point(@segment.handleOut)
-			super('Modify point')
-			return
+		# do: ()->
+		# 	@item.setParameter(@controller, @value, true)
+		# 	super()
+		# 	return
 
-		do: ()->
-			@item.modifyPoint(@segment, @position, @handleIn, @handleOut)
-			super()
-			return
+		# undo: ()->
+		# 	@item.setParameter(@controller, @previousValue, true)
+		# 	super()
+		# 	return
 
-		undo: ()->
-			@item.modifyPoint(@segment, @previousPosition, @previousHandleIn, @previousHandleOut)
-			super()
-			return
+		# update: (controller, value)->
+		# 	@item.setParameter(controller, value)
+		# 	return
 
-		update: (event)->
-			@item.updateModifyPoint(event)
-			return
-
-		end: (valid)->
-			@position = @segment.point.clone()
-			@handleIn = @segment.handleIn.clone()
-			@handleOut = @segment.handleOut.clone()
-			if not valid then return
-			positionNotChanged = @position.equals(@previousPosition)
-			handleInNotChanged = @previousHandleIn.equals(@handleIn)
-			handleOutNotChanged = @previousHandleOut.equals(@handleOut)
-			if positionNotChanged and handleInNotChanged and handleOutNotChanged then return false
-			@item.endModifyPoint()
-			super()
-			return true
-
-	R.ModifyPointCommand = ModifyPointCommand
-
-	class ModifySpeedCommand extends Command
-
-		constructor: (@item)->
-			@previousSpeeds = @item.speeds.slice()
-			super('Change speed')
-			return
-
-		do: ()->
-			@item.modifySpeed(@speeds, true)
-			super()
-			return
-
-		undo: ()->
-			@speeds = @item.speeds.slice()
-			@item.modifySpeed(@previousSpeeds, true)
-			super()
-			return
-
-		update: (event)->
-			@item.updateModifySpeed(event)
-			return
-
-		end: (valid)->
-			if not valid then return
-			# @speeds = speeds.splice()
-			@item.endModifySpeed()
-			super()
-			return true
-
-	R.ModifySpeedCommand = ModifySpeedCommand
-
-	class SetParameterCommand extends Command
-
-		constructor: (@item, args)->
-			@controller = args[0]
-			@previousValue = @item.data[@controller.name]
-			super('Change item parameter "' + @controller.name + '"')
-			return
-
-		do: ()->
-			@item.setParameter(@controller, @value, true)
-			super()
-			return
-
-		undo: ()->
-			@item.setParameter(@controller, @previousValue, true)
-			super()
-			return
-
-		update: (controller, value)->
-			@item.setParameter(controller, value)
-			return
-
-		end: (valid)->
-			@value = @item.data[@controller.name]
-			if @value == @previousValue then return false
-			if not valid then return
-			@item.update(@controller.name)
-			super()
-			return true
-
-	R.SetParameterCommand = SetParameterCommand
+		# end: (valid)->
+		# 	@value = @item.data[@controller.name]
+		# 	if @value == @previousValue then return false
+		# 	if not valid then return
+		# 	@item.update(@controller.name)
+		# 	super()
+		# 	return true
 
 	# ---- # # ---- # # ---- # # ---- #
 	# ---- # # ---- # # ---- # # ---- #
 	# ---- # # ---- # # ---- # # ---- #
 	# ---- # # ---- # # ---- # # ---- #
 
-	class AddPointCommand extends Command
+	class Command.AddPoint extends Command.Item
 
-		@needValidPosition = true
-
-		constructor: (@item, @location, name=null)->
-			super(if not name? then 'Add point on item' else name)
+		constructor: (item, @location, name=null)->
+			super(if not name? then 'Add point on item' else name, [item])
 			return
 
 		addPoint: (update=true)->
@@ -329,13 +370,9 @@ define [ 'utils' ], () ->
 			super()
 			return
 
-	R.AddPointCommand = AddPointCommand
+	class Command.DeletePoint extends Command.AddPoint
 
-	class DeletePointCommand extends AddPointCommand
-
-		@needValidPosition = true
-
-		constructor: (@item, @segment)-> super(@item, @segment, 'Delete point on item')
+		constructor: (item, @segment)-> super(item, @segment, 'Delete point on item')
 
 		do: ()->
 			@previousPosition = new P.Point(@segment.point)
@@ -351,18 +388,14 @@ define [ 'utils' ], () ->
 			@superUndo()
 			return
 
-	R.DeletePointCommand = DeletePointCommand
+	class Command.ModifyPointType extends Command.Item
 
-	class ModifyPointTypeCommand extends Command
-
-		@needValidPosition = true
-
-		constructor: (@item, @segment, @rtype)->
+		constructor: (item, @segment, @rtype)->
 			@previousRType = @segment.rtype
 			@previousPosition = new P.Point(@segment.point)
 			@previousHandleIn = new P.Point(@segment.handleIn)
 			@previousHandleOut = new P.Point(@segment.handleOut)
-			super('Change point type on item')
+			super('Change point type on item', [item])
 			return
 
 		do: ()->
@@ -376,16 +409,12 @@ define [ 'utils' ], () ->
 			super()
 			return
 
-	R.ModifyPointTypeCommand = ModifyPointTypeCommand
-
 	### --- Custom command for all kinds of command which modifiy the path --- ###
 
-	class ModifyControlPathCommand extends Command
+	class Command.ModifyControlPath extends Command.Item
 
-		@needValidPosition = true
-
-		constructor: (@item, @previousPointsAndPlanet, @newPointsAndPlanet)->
-			super('Modify path')
+		constructor: (item, @previousPointsAndPlanet, @newPointsAndPlanet)->
+			super('Modify path', [item])
 			@superDo()
 			return
 
@@ -399,9 +428,7 @@ define [ 'utils' ], () ->
 			super()
 			return
 
-	R.ModifyControlPathCommand = ModifyControlPathCommand
-
-	class MoveViewCommand extends Command
+	class Command.MoveView extends Command
 		constructor: (@previousPosition, @newPosition)->
 			super("Move view")
 			@superDo()
@@ -434,8 +461,6 @@ define [ 'utils' ], () ->
 			super()
 			return somethingToLoad
 
-	R.MoveViewCommand = MoveViewCommand
-
 	# class MoveCommand extends Command
 	# 	constructor: (@item, @newPosition=null)->
 	# 		super("Move item", @newPosition?)
@@ -458,19 +483,20 @@ define [ 'utils' ], () ->
 
 	# @MoveCommand = MoveCommand
 
-	class SelectCommand extends Command
-		constructor: (@items, name)->
+	class Command.Select extends Command
+		constructor: (items, name)->
+			@items = @mapItems(items)
 			super(name or "Select items")
 			return
 
 		selectItems: ()->
-			for item in @items
+			for pk, item of @items
 				item.select()
 			R.controllerManager.updateParametersForSelectedItems()
 			return
 
 		deselectItems: ()->
-			for item in @items
+			for pk, item of @items
 				item.deselect()
 			R.controllerManager.updateParametersForSelectedItems()
 			return
@@ -485,9 +511,7 @@ define [ 'utils' ], () ->
 			super()
 			return
 
-	R.SelectCommand = SelectCommand
-
-	class DeselectCommand extends SelectCommand
+	class Command.Deselect extends Command.Select
 
 		constructor: (items)->
 			super(items or R.selectedItems.slice(), 'Deselect items')
@@ -502,8 +526,6 @@ define [ 'utils' ], () ->
 			@selectItems()
 			@superUndo()
 			return
-
-	R.DeselectCommand = DeselectCommand
 
 	# class SelectCommand extends Command
 	# 	constructor: (@items, @updateParameters, name)->
@@ -565,44 +587,42 @@ define [ 'utils' ], () ->
 
 	# @DeselectCommand = DeselectCommand
 
-	class CreateItemCommand extends Command
+	class Command.CreateItem extends Command.Item
 
-		@needValidPosition = true
-
-		constructor: (@item, name=null)->
-			name ?= 'Create item'
-			@itemConstructor = @item.constructor
-			super(name)
+		constructor: (item, name='Create item')->
+			@itemConstructor = item.constructor
+			super(name, item)
 			@superDo()
 			return
 
-		setDuplicatedItemToCommands: ()->
-			for command in R.commandManager.history
-				if command == @ then continue
-				if command.item? and command.item == @itemPk then command.item = @item
-				if command.items?
-					for item, i in command.items
-						if item == @itemPk then command.items[i] = @item
-			return
+		# setDuplicatedItemToCommands: ()->
+		# 	for command in R.commandManager.history
+		# 		if command == @ then continue
+		# 		if command.item? and command.item == @itemPk then command.item = @item
+		# 		if command.items?
+		# 			for item, i in command.items
+		# 				if item == @itemPk then command.items[i] = @item
+		# 	return
 
-		removeDeleteItemFromCommands: ()->
-			for command in R.commandManager.history
-				if command == @ then continue
-				if command.item? and command.item == @item then command.item = @item.pk or @item.id
-				if command.items?
-					for item, i in command.items
-						if item == @item then command.items[i] = @item.pk or @item.id
-			@itemPk = @item.pk or @item.id
-			return
+		# removeDeleteItemFromCommands: ()->
+		# 	for command in R.commandManager.history
+		# 		if command == @ then continue
+		# 		if command.item? and command.item == @item then command.item = @item.pk or @item.id
+		# 		if command.items?
+		# 			for item, i in command.items
+		# 				if item == @item then command.items[i] = @item.pk or @item.id
+		# 	@itemPk = @item.pk or @item.id
+		# 	return
 
 		duplicateItem: ()->
 			@item = @itemConstructor.create(@duplicateData)
-			@setDuplicatedItemToCommands()
+			R.commandManager.resurrectItem(@duplicateData.pk, @item)
+			# @setDuplicatedItemToCommands()
 			@item.select()
 			return
 
 		deleteItem: ()->
-			@removeDeleteItemFromCommands()
+			# @removeDeleteItemFromCommands()
 
 			@duplicateData = @item.getDuplicateData()
 			@item.delete()
@@ -620,9 +640,7 @@ define [ 'utils' ], () ->
 			super()
 			return
 
-	R.CreateItemCommand = CreateItemCommand
-
-	class DeleteItemCommand extends CreateItemCommand
+	class Command.DeleteItem extends Command.CreateItem
 		constructor: (item)-> super(item, 'Delete item')
 
 		do: ()->
@@ -635,19 +653,15 @@ define [ 'utils' ], () ->
 			@superUndo()
 			return
 
-	R.DeleteItemCommand = DeleteItemCommand
-
-	class DuplicateItemCommand extends CreateItemCommand
+	class Command.DuplicateItem extends Command.CreateItem
 		constructor: (item)->
 			@duplicateData = item.getDuplicateData()
 			super(item, 'Duplicate item')
 
-	R.DuplicateItemCommand = DuplicateItemCommand
+	class Command.ModifyText extends Command.Item
 
-	class ModifyTextCommand extends Command
-
-		constructor: (@item, args)->
-			super("Change text", @item)
+		constructor: (item, args)->
+			super("Change text", item)
 			@newText = args[0]
 			@previousText = @item.data.message
 			return
@@ -674,8 +688,6 @@ define [ 'utils' ], () ->
 			@item.update('text')
 			super()
 			return true
-
-	R.ModifyTextCommand = ModifyTextCommand
 
 	# class CreatePathCommand extends CreateItemCommand
 	# 	constructor: (item, name=null)->
@@ -822,6 +834,7 @@ define [ 'utils' ], () ->
 
 		constructor: ()->
 			@history = []
+			@itemToCommands = {}
 			@currentCommand = -1
 			@historyJ = $("#History ul.history")
 			return
@@ -837,6 +850,9 @@ define [ 'utils' ], () ->
 			$("#History .mCustomScrollbar").mCustomScrollbar("scrollTo","bottom")
 			@currentCommand++
 			@history.splice(@currentCommand, @history.length-@currentCommand, command)
+
+			@mapItemsToCommand(command)
+
 			if execute then command.do()
 			return
 
@@ -882,11 +898,72 @@ define [ 'utils' ], () ->
 		getCurrentCommand: ()->
 			return @history[@currentCommand]
 
+
 		clearHistory: ()->
 			@historyJ.empty()
 			@history = []
 			@currentCommand = -1
 			@add(new R.Command("Load Romanesco"), true)
+			return
+
+		# manage actions
+
+		beginAction: (command, event)->
+			if @currentCommand
+				@endAction()
+				clearTimeout(R.updateTimeout['addCurrentCommand-' + @currentCommand.id])
+			@currentCommand = command
+			@currentCommand.begin(event)
+			return
+
+		updateAction: (event)->
+			@currentCommand.update(event)
+			return
+
+		endAction: (event)=>
+			@currentCommand.end(event)
+			@currentCommand = null
+			return
+
+		deferredAction: (ActionCommand, items, args...)->
+			if not ActionCommand.prototype.isPrototypeOf(@currentCommand)
+				@beginAction(new ActionCommand(items, args))
+			@updateAction.apply(args)
+			Utils.deferredExecution(@endAction, 'addCurrentCommand-' + @currentCommand.id )
+			return
+
+		# manage items
+
+		mapItemsToCommand: (command)->
+			for item in command.items
+				@itemToCommands[item.getPk()] ?= []
+				@itemToCommands[item.getPk()].push(command)
+			return
+
+		setItemPk: (id, pk)->
+			@itemToCommands[pk] = @itemToCommands[id]
+			delete @itemToCommands[id]
+			return
+
+		unloadItem: (item)->
+			commands = @itemToCommands[item.getPk()]
+			if commands?
+				for command in commands
+					command.unloadItem(item)
+			return
+
+		loadItem: (item)->
+			commands = @itemToCommands[item.getPk()]
+			if commands?
+				for command in commands
+					command.loadItem(item)
+			return
+
+		resurrectItem: (pk, item)->
+			commands = @itemToCommands[pk]
+			if commands?
+				for command in commands
+					command.resurrectItem(pk, item)
 			return
 
 	return CommandManager

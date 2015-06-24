@@ -315,8 +315,8 @@ define [ 'utils' ], () ->
 		splitAreaToRasterize: ()->
 			maxSize = P.view.size.multiply(2)
 
-			areaToRasterizeInteger = Utils.P.Rectangle.expandRectangleToInteger(@areaToRasterize)
-			area = Utils.P.Rectangle.expandRectangleToInteger(new P.Rectangle(@areaToRasterize.topLeft, P.Size.min(maxSize, @areaToRasterize.size)))
+			areaToRasterizeInteger = Utils.Rectangle.expandRectangleToInteger(@areaToRasterize)
+			area = Utils.Rectangle.expandRectangleToInteger(new P.Rectangle(@areaToRasterize.topLeft, P.Size.min(maxSize, @areaToRasterize.size)))
 			areas = [area.clone()]
 
 			while area.right < @areaToRasterize.right or area.bottom < @areaToRasterize.bottom

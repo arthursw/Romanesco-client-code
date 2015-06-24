@@ -148,8 +148,11 @@
         this.rasterize();
       };
 
-      Path.prototype.setRectangle = function(event, update) {
-        Path.__super__.setRectangle.call(this, event, update);
+      Path.prototype.setRectangle = function(rectangle, update) {
+        if (update == null) {
+          update = true;
+        }
+        Path.__super__.setRectangle.call(this, rectangle, update);
         this.draw(update);
       };
 

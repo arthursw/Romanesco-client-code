@@ -3,15 +3,133 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Item'], function(Item) {
-    var SelectionRectangle;
-    SelectionRectangle = (function(_super) {
-      __extends(SelectionRectangle, _super);
+  define([], function() {
+    var ScreenshotRectangle, SelectionRectangle;
+    SelectionRectangle = (function() {
+      SelectionRectangle.indexToName = {
+        0: 'bottomLeft',
+        1: 'left',
+        2: 'topLeft',
+        3: 'top',
+        4: 'topRight',
+        5: 'right',
+        6: 'bottomRight',
+        7: 'bottom'
+      };
 
-      function SelectionRectangle(rectangle, extractImage) {
+      SelectionRectangle.oppositeName = {
+        'top': 'bottom',
+        'bottom': 'top',
+        'left': 'right',
+        'right': 'left',
+        'topLeft': 'bottomRight',
+        'topRight': 'bottomLeft',
+        'bottomRight': 'topLeft',
+        'bottomLeft': 'topRight'
+      };
+
+      SelectionRectangle.cornersNames = ['topLeft', 'topRight', 'bottomRight', 'bottomLeft'];
+
+      SelectionRectangle.sidesNames = ['left', 'right', 'top', 'bottom'];
+
+      SelectionRectangle.valueFromName = function(point, name) {
+        switch (name) {
+          case 'left':
+          case 'right':
+            return point.x;
+          case 'top':
+          case 'bottom':
+            return point.y;
+          default:
+            return point;
+        }
+      };
+
+      SelectionRectangle.hitOptions = {
+        segments: true,
+        stroke: true,
+        fill: true,
+        selected: true,
+        tolerance: 5
+      };
+
+      function SelectionRectangle(rectangle) {
+        this.rectangle = rectangle;
+        this.selectionState = null;
+        this.group = new P.Group();
+        this.group.name = "selection rectangle group";
+        this.path = new P.Path.Rectangle(this.rectangle);
+        this.path.name = "selection rectangle path";
+        this.path.pivot = this.rectangle.center;
+        this.path.strokeColor = R.selectionBlue;
+        this.path.strokeWidth = 1;
+        this.path.selected = true;
+        this.path.controller = this;
+        this.addHandle(this.rectangle);
+        this.group.addChild(this.path);
+        return;
+      }
+
+      SelectionRectangle.prototype.hitTest = function(point) {
+        return this.path.hitTest(point, this.constructor.hitOptions);
+      };
+
+      SelectionRectangle.prototype.getClosestCorner = function(point) {
+        var closestCorner, cornerName, distance, minDistance, _i, _len, _ref;
+        minDistance = Infinity;
+        closestCorner = '';
+        _ref = this.constructor.cornersNames;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          cornerName = _ref[_i];
+          distance = this.rectangle[cornerName].getDistance(point, true);
+          if (distance < minDistance) {
+            closestCorner = cornerName;
+            minDistance = distance;
+          }
+        }
+        return closestCorner;
+      };
+
+      SelectionRectangle.prototype.beginSelect = function(event) {
+        var hitResult;
+        hitResult = this.hitTest(event.point);
+        if (hitResult == null) {
+          return;
+        }
+        switch (hitResult.type) {
+          case 'stroke':
+            this.selectionState = {
+              move: this.getClosestCorner(hitResult.point)
+            };
+            break;
+          case 'segment':
+            this.selectionState = {
+              resize: {
+                index: hitResult.segment.index
+              }
+            };
+            break;
+          default:
+            this.selectionState = {
+              move: true
+            };
+        }
+      };
+
+      SelectionRectangle.prototype.updateSelect = function(event) {};
+
+      SelectionRectangle.prototype.endSelect = function(event) {};
+
+      return SelectionRectangle;
+
+    })();
+    ScreenshotRectangle = (function(_super) {
+      __extends(ScreenshotRectangle, _super);
+
+      function ScreenshotRectangle(rectangle, extractImage) {
         var separatorJ;
         this.rectangle = rectangle;
-        SelectionRectangle.__super__.constructor.call(this);
+        ScreenshotRectangle.__super__.constructor.call(this);
         this.drawing = new P.Path.Rectangle(this.rectangle);
         this.drawing.name = 'selection rectangle background';
         this.drawing.strokeWidth = 1;
@@ -31,15 +149,15 @@
         return;
       }
 
-      SelectionRectangle.prototype.remove = function() {
+      ScreenshotRectangle.prototype.remove = function() {
         this.removing = true;
-        SelectionRectangle.__super__.remove.call(this);
+        ScreenshotRectangle.__super__.remove.call(this);
         this.buttonJ.remove();
         R.tools['Screenshot'].selectionRectangle = null;
       };
 
-      SelectionRectangle.prototype.deselect = function() {
-        if (!SelectionRectangle.__super__.deselect.call(this)) {
+      ScreenshotRectangle.prototype.deselect = function() {
+        if (!ScreenshotRectangle.__super__.deselect.call(this)) {
           return false;
         }
         if (!this.removing) {
@@ -48,18 +166,21 @@
         return true;
       };
 
-      SelectionRectangle.prototype.setRectangle = function(rectangle, update) {
-        SelectionRectangle.__super__.setRectangle.call(this, rectangle, update);
-        Utils.P.Rectangle.updatePathRectangle(this.drawing, rectangle);
+      ScreenshotRectangle.prototype.setRectangle = function(rectangle, update) {
+        if (update == null) {
+          update = true;
+        }
+        ScreenshotRectangle.__super__.setRectangle.call(this, rectangle, update);
+        Utils.Rectangle.updatePathRectangle(this.drawing, rectangle);
         this.updateTransform();
       };
 
-      SelectionRectangle.prototype.moveTo = function(position, update) {
-        SelectionRectangle.__super__.moveTo.call(this, position, update);
+      ScreenshotRectangle.prototype.moveTo = function(position, update) {
+        ScreenshotRectangle.__super__.moveTo.call(this, position, update);
         this.updateTransform();
       };
 
-      SelectionRectangle.prototype.updateTransform = function() {
+      ScreenshotRectangle.prototype.updateTransform = function() {
         var transfrom, viewPos;
         viewPos = P.view.projectToView(this.rectangle.center);
         transfrom = 'translate(' + viewPos.x + 'px,' + viewPos.y + 'px)';
@@ -74,11 +195,11 @@
         });
       };
 
-      SelectionRectangle.prototype.update = function() {};
+      ScreenshotRectangle.prototype.update = function() {};
 
-      return SelectionRectangle;
+      return ScreenshotRectangle;
 
-    })(Item);
+    })(SelectionRectangle);
     return SelectionRectangle;
   });
 

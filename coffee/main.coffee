@@ -485,65 +485,7 @@ define [
 		P.view.zoom = 1 # 0.01
 		R.previousViewPosition = P.view.center
 
-		# add custom methods to export Paper P.Point and P.Rectangle to JSON
-		P.Point.prototype.toJSON = ()->
-			return { x: this.x, y: this.y }
-		P.Point.prototype.exportJSON = ()->
-			return JSON.stringify(this.toJSON())
-		P.Rectangle.prototype.toJSON = ()->
-			return { x: this.x, y: this.y, width: this.width, height: this.height }
-		P.Rectangle.prototype.exportJSON = ()->
-			return JSON.stringify(this.toJSON())
-		P.Rectangle.prototype.translate = (point)->
-			return new P.Rectangle(this.x + point.x, this.y + point.y, this.width, this.height)
-		P.Rectangle.prototype.moveSide = (sideName, destination)->
-			switch sideName
-				when 'left'
-					this.x = destination
-				when 'right'
-					this.x = destination - this.width
-				when 'top'
-					this.y = destination
-				when 'bottom'
-					this.y = destination - this.height
-			return
-		P.Rectangle.prototype.moveCorner = (cornerName, destination)->
-			switch cornerName
-				when 'topLeft'
-					this.x = destination.x
-					this.y = destination.y
-				when 'topRight'
-					this.x = destination.x - this.width
-					this.y = destination.y
-				when 'bottomRight'
-					this.x = destination.x - this.width
-					this.y = destination.y - this.height
-				when 'bottomLeft'
-					this.x = destination.x
-					this.y = destination.y - this.height
-			return
-		P.Rectangle.prototype.moveCenter = (destination)->
-			this.x = destination.x - this.width * 0.5
-			this.y = destination.y - this.height * 0.5
-			return
 
-		Event.prototype.toJSON = ()->
-			event =
-				modifiers: this.modifiers
-				event: which: this.event.which
-				point: this.point
-				downPoint: this.downPoint
-				delta: this.delta
-				middlePoint: this.middlePoint
-				type: this.type
-				count: this.count
-			return event
-		Event.prototype.fromJSON = (event)->
-			if event.point? then event.point = new P.Point(event.point)
-			if event.downPoint? then event.downPoint = new P.Point(event.downPoint)
-			if event.delta? then event.delta = new P.Point(event.delta)
-			if event.middlePoint? then event.middlePoint = new P.Point(event.middlePoint)
-			return event
 
 
 		# initialize sidebar handle

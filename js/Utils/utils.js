@@ -224,14 +224,14 @@
     Utils.roundPointToMultiple = function(point, m) {
       return new P.Point(Utils.roundToMultiple(point.x, m), Utils.roundToMultiple(point.y, m));
     };
-    Utils.P.Rectangle = {};
-    Utils.P.Rectangle.updatePathRectangle = function(path, rectangle) {
+    Utils.Rectangle = {};
+    Utils.Rectangle.updatePathRectangle = function(path, rectangle) {
       path.segments[0].point = rectangle.bottomLeft;
       path.segments[1].point = rectangle.topLeft;
       path.segments[2].point = rectangle.topRight;
       path.segments[3].point = rectangle.bottomRight;
     };
-    Utils.P.Rectangle.getRotatedBounds = function(rectangle, rotation) {
+    Utils.Rectangle.getRotatedBounds = function(rectangle, rotation) {
       var bottomLeft, bottomRight, bounds, topLeft, topRight;
       if (rotation == null) {
         rotation = 0;
@@ -249,17 +249,109 @@
       bounds = bounds.include(rectangle.center.add(topRight));
       return bounds;
     };
-    Utils.P.Rectangle.shrinkRectangleToInteger = function(rectangle) {
+    Utils.Rectangle.shrinkRectangleToInteger = function(rectangle) {
       return new P.Rectangle(rectangle.topLeft.ceil(), rectangle.bottomRight.floor());
     };
-    Utils.P.Rectangle.expandRectangleToInteger = function(rectangle) {
+    Utils.Rectangle.expandRectangleToInteger = function(rectangle) {
       return new P.Rectangle(rectangle.topLeft.floor(), rectangle.bottomRight.ceil());
     };
-    Utils.P.Rectangle.expandRectangleToMultiple = function(rectangle, multiple) {
+    Utils.Rectangle.expandRectangleToMultiple = function(rectangle, multiple) {
       return new P.Rectangle(Utils.floorPointToMultiple(rectangle.topLeft, multiple), Utils.ceilPointToMultiple(rectangle.bottomRight, multiple));
     };
-    Utils.P.Rectangle.roundRectangle = function(rectangle) {
+    Utils.Rectangle.roundRectangle = function(rectangle) {
       return new P.Rectangle(rectangle.topLeft.round(), rectangle.bottomRight.round());
+    };
+    P.Point.prototype.toJSON = function() {
+      return {
+        x: this.x,
+        y: this.y
+      };
+    };
+    P.Point.prototype.exportJSON = function() {
+      return JSON.stringify(this.toJSON());
+    };
+    P.Rectangle.prototype.toJSON = function() {
+      return {
+        x: this.x,
+        y: this.y,
+        width: this.width,
+        height: this.height
+      };
+    };
+    P.Rectangle.prototype.exportJSON = function() {
+      return JSON.stringify(this.toJSON());
+    };
+    P.Rectangle.prototype.translate = function(point) {
+      return new P.Rectangle(this.x + point.x, this.y + point.y, this.width, this.height);
+    };
+    P.Rectangle.prototype.moveSide = function(sideName, destination) {
+      switch (sideName) {
+        case 'left':
+          this.x = destination;
+          break;
+        case 'right':
+          this.x = destination - this.width;
+          break;
+        case 'top':
+          this.y = destination;
+          break;
+        case 'bottom':
+          this.y = destination - this.height;
+      }
+    };
+    P.Rectangle.prototype.moveCorner = function(cornerName, destination) {
+      switch (cornerName) {
+        case 'topLeft':
+          this.x = destination.x;
+          this.y = destination.y;
+          break;
+        case 'topRight':
+          this.x = destination.x - this.width;
+          this.y = destination.y;
+          break;
+        case 'bottomRight':
+          this.x = destination.x - this.width;
+          this.y = destination.y - this.height;
+          break;
+        case 'bottomLeft':
+          this.x = destination.x;
+          this.y = destination.y - this.height;
+      }
+    };
+    P.Rectangle.prototype.moveCenter = function(destination) {
+      this.x = destination.x - this.width * 0.5;
+      this.y = destination.y - this.height * 0.5;
+    };
+    Event.prototype.toJSON = function() {
+      var event;
+      event = {
+        modifiers: this.modifiers,
+        event: {
+          which: this.event.which
+        },
+        point: this.point,
+        downPoint: this.downPoint,
+        delta: this.delta,
+        middlePoint: this.middlePoint,
+        type: this.type,
+        count: this.count
+      };
+      return event;
+    };
+    Event.prototype.fromJSON = function(event) {
+      if (event.point != null) {
+        event.point = new P.Point(event.point);
+      }
+      if (event.downPoint != null) {
+        event.downPoint = new P.Point(event.downPoint);
+      }
+      if (event.delta != null) {
+        event.delta = new P.Point(event.delta);
+      }
+      if (event.middlePoint != null) {
+        event.middlePoint = new P.Point(event.middlePoint);
+      }
+      return event;
     };
   });
 

@@ -164,12 +164,12 @@ define [ 'Content' ], (Content) ->
 			@updateTransform()
 			return
 
-		setRectangle: (rectangle, update)->
+		setRectangle: (rectangle, update=true)->
 			super(rectangle, update)
 			@updateTransform()
 			return
 
-		setRotation: (rotation, update)->
+		setRotation: (rotation, update=true)->
 			super(rotation, update)
 			@updateTransform()
 			return
@@ -244,9 +244,9 @@ define [ 'Content' ], (Content) ->
 		# - from user action (parameter.onChange)
 		# @param name [String] the name of the value to change
 		# @param value [Anything] the new value
-		setParameter: (controller, value)->
-			super(controller, value)
-			switch controller.name
+		setParameter: (name, value)->
+			super(name, value)
+			switch name
 				when 'strokeWidth', 'strokeColor', 'fillColor'
 					@setCss()
 			return

@@ -192,6 +192,9 @@ define ['underscore', 'jquery', 'paper'], (_) ->
 				return false
 		return true
 
+	Utils.capitalizeFirstLetter = (string)->
+    	return string.charAt(0).toUpperCase() + string.slice(1)
+
 	# returns a linear interpolation of *v1* and *v2* according to *f*
 	# @param v1 [Number] the first value
 	# @param v2 [Number] the second value
@@ -231,9 +234,9 @@ define ['underscore', 'jquery', 'paper'], (_) ->
 	Utils.roundPointToMultiple = (point, m)->
 		return new P.Point(Utils.roundToMultiple(point.x, m), Utils.roundToMultiple(point.y, m))
 
-	Utils.P.Rectangle = {}
+	Utils.Rectangle = {}
 
-	Utils.P.Rectangle.updatePathRectangle = (path, rectangle)->
+	Utils.Rectangle.updatePathRectangle = (path, rectangle)->
 		path.segments[0].point = rectangle.bottomLeft
 		path.segments[1].point = rectangle.topLeft
 		path.segments[2].point = rectangle.topRight
@@ -241,7 +244,7 @@ define ['underscore', 'jquery', 'paper'], (_) ->
 		return
 
 	# @return [Paper P.Rectangle] the bounding box of *rectangle* (smallest rectangle containing *rectangle*) when it is rotated by *rotation*
-	Utils.P.Rectangle.getRotatedBounds = (rectangle, rotation=0)->
+	Utils.Rectangle.getRotatedBounds = (rectangle, rotation=0)->
 		topLeft = rectangle.topLeft.subtract(rectangle.center)
 		topLeft.angle += rotation
 		bottomRight = rectangle.bottomRight.subtract(rectangle.center)
@@ -258,31 +261,94 @@ define ['underscore', 'jquery', 'paper'], (_) ->
 	# return a rectangle with integer coordinates and dimensions: left and top positions will be ceiled, right and bottom position will be floored
 	# @param rectangle [Paper P.Rectangle] the rectangle to round
 	# @return [Paper P.Rectangle] the resulting shrinked rectangle
-	Utils.P.Rectangle.shrinkRectangleToInteger = (rectangle)->
+	Utils.Rectangle.shrinkRectangleToInteger = (rectangle)->
 		# return new P.Rectangle(new P.Point(Math.ceil(rectangle.left), Math.ceil(rectangle.top)), new P.Point(Math.floor(rectangle.right), Math.floor(rectangle.bottom)))
 		return new P.Rectangle(rectangle.topLeft.ceil(), rectangle.bottomRight.floor())
 
 	# return a rectangle with integer coordinates and dimensions: left and top positions will be floored, right and bottom position will be ceiled
 	# @param rectangle [Paper P.Rectangle] the rectangle to round
 	# @return [Paper P.Rectangle] the resulting expanded rectangle
-	Utils.P.Rectangle.expandRectangleToInteger = (rectangle)->
+	Utils.Rectangle.expandRectangleToInteger = (rectangle)->
 		# return new P.Rectangle(new P.Point(Math.floor(rectangle.left), Math.floor(rectangle.top)), new P.Point(Math.ceil(rectangle.right), Math.ceil(rectangle.bottom)))
 		return new P.Rectangle(rectangle.topLeft.floor(), rectangle.bottomRight.ceil())
 
 	# return a rectangle with coordinates and dimensions expanded to greater multiple
 	# @param rectangle [Paper P.Rectangle] the rectangle to round
 	# @return [Paper P.Rectangle] the resulting expanded rectangle
-	Utils.P.Rectangle.expandRectangleToMultiple = (rectangle, multiple)->
+	Utils.Rectangle.expandRectangleToMultiple = (rectangle, multiple)->
 		# return new P.Rectangle(new P.Point(Math.floor(rectangle.left), Math.floor(rectangle.top)), new P.Point(Math.ceil(rectangle.right), Math.ceil(rectangle.bottom)))
 		return new P.Rectangle(Utils.floorPointToMultiple(rectangle.topLeft, multiple), Utils.ceilPointToMultiple(rectangle.bottomRight, multiple))
 
 	# return a rounded rectangle with integer coordinates and dimensions
 	# @param rectangle [Paper P.Rectangle] the rectangle to round
 	# @return [Paper P.Rectangle] the resulting rounded rectangle
-	Utils.P.Rectangle.roundRectangle = (rectangle)->
+	Utils.Rectangle.roundRectangle = (rectangle)->
 		return new P.Rectangle(rectangle.topLeft.round(), rectangle.bottomRight.round())
 
+	# add custom methods to export Paper P.Point and P.Rectangle to JSON
+	P.Point.prototype.toJSON = ()->
+		return { x: this.x, y: this.y }
+	P.Point.prototype.exportJSON = ()->
+		return JSON.stringify(this.toJSON())
+	P.Rectangle.prototype.toJSON = ()->
+		return { x: this.x, y: this.y, width: this.width, height: this.height }
+	P.Rectangle.prototype.exportJSON = ()->
+		return JSON.stringify(this.toJSON())
+	P.Rectangle.prototype.translate = (point)->
+		return new P.Rectangle(this.x + point.x, this.y + point.y, this.width, this.height)
+	P.Rectangle.prototype.scaleFromCenter = (scale, center)->
+		delta = this.topLeft.subtract(center)
+		delta = delta.multiply(scale.x, scale.y)
+		topLeft = center.add(delta)
+		return new P.Rectangle(topLeft, new Size(this.width * scale.x, this.height * scale.y))
+	P.Rectangle.prototype.moveSide = (sideName, destination)->
+		switch sideName
+			when 'left'
+				this.x = destination
+			when 'right'
+				this.x = destination - this.width
+			when 'top'
+				this.y = destination
+			when 'bottom'
+				this.y = destination - this.height
+		return
+	P.Rectangle.prototype.moveCorner = (cornerName, destination)->
+		switch cornerName
+			when 'topLeft'
+				this.x = destination.x
+				this.y = destination.y
+			when 'topRight'
+				this.x = destination.x - this.width
+				this.y = destination.y
+			when 'bottomRight'
+				this.x = destination.x - this.width
+				this.y = destination.y - this.height
+			when 'bottomLeft'
+				this.x = destination.x
+				this.y = destination.y - this.height
+		return
+	P.Rectangle.prototype.moveCenter = (destination)->
+		this.x = destination.x - this.width * 0.5
+		this.y = destination.y - this.height * 0.5
+		return
 
+	Event.prototype.toJSON = ()->
+		event =
+			modifiers: this.modifiers
+			event: which: this.event.which
+			point: this.point
+			downPoint: this.downPoint
+			delta: this.delta
+			middlePoint: this.middlePoint
+			type: this.type
+			count: this.count
+		return event
+	Event.prototype.fromJSON = (event)->
+		if event.point? then event.point = new P.Point(event.point)
+		if event.downPoint? then event.downPoint = new P.Point(event.downPoint)
+		if event.delta? then event.delta = new P.Point(event.delta)
+		if event.middlePoint? then event.middlePoint = new P.Point(event.middlePoint)
+		return event
 
 	# R.ajax = (url, callback, type="GET")->
 	# 	xmlhttp = new RXMLHttpRequest()

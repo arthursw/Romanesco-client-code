@@ -155,9 +155,12 @@
         Shape.__super__.endCreate.call(this);
       };
 
-      Shape.prototype.setRectangle = function(event, update) {
-        Utils.P.Rectangle.updatePathRectangle(this.controlPath, this.rectangle);
-        Shape.__super__.setRectangle.call(this, event, update);
+      Shape.prototype.setRectangle = function(rectangle, update) {
+        if (update == null) {
+          update = true;
+        }
+        Utils.Rectangle.updatePathRectangle(this.controlPath, this.rectangle);
+        Shape.__super__.setRectangle.call(this, rectangle, update);
       };
 
       Shape.prototype.getData = function() {

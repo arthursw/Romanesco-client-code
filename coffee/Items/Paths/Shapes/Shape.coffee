@@ -146,12 +146,12 @@ define [ 'Path' ], (Path) ->
 			super()
 			return
 
-		setRectangle: (event, update)->
-			Utils.P.Rectangle.updatePathRectangle(@controlPath, @rectangle)
-			super(event, update)
+		setRectangle: (rectangle, update=true)->
+			Utils.Rectangle.updatePathRectangle(@controlPath, @rectangle)
+			super(rectangle, update)
 			return
 
-		# setRotation: (rotation, update)->
+		# setRotation: (rotation, update=true)->
 		# 	super(rotation, update)
 		# 	@drawing.rotation = rotation
 		# 	return
