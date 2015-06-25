@@ -1,7 +1,7 @@
-define [ 'Tool' ], (Tool) ->
+define [ 'Tools/Tool' ], (Tool) ->
 
 	# Enables to select RItems
-	class Tool.Select extends Tool
+	class SelectTool extends Tool
 
 		@label = 'Select'
 		@description = ''
@@ -38,7 +38,7 @@ define [ 'Tool' ], (Tool) ->
 			return
 
 		select: (deselectItems=false, updateParameters=true)->
-			# R.rasterizer.drawItems() 		# must not draw all items here since user can just wish to use an RMedia
+			# R.rasterizer.drawItems() 		# must not draw all items here since user can just wish to use an Media
 			super(false, updateParameters)
 			return
 
@@ -187,18 +187,18 @@ define [ 'Tool' ], (Tool) ->
 			# 			if R.selectedItems.indexOf(hitResult.item?.controller)<0
 			# 				R.commandManager.add(new R.DeselectCommand(), true)
 			# 		# else
-			# 		# 	if R.selectedDivs.length>0 then Tool.Select.deselectAll()
+			# 		# 	if R.selectedDivs.length>0 then SelectTool.deselectAll()
 			# 	else
 			# 		R.tools['Screenshot'].checkRemoveScreenshotRectangle(hitResult.item.controller)
 
 			# 	hitResult.item.controller.beginSelect?(event)
 			# else 												# otherwise: remove selection group and create selection rectangle
-			# 	Tool.Select.deselectAll()
+			# 	SelectTool.deselectAll()
 			# 	@createSelectionRectangle(event)
 
 			# R.logElapsedTime()
 
-			return
+			# return
 
 		# Update selection:
 		# - update selected RItems if there is no selection rectangle
@@ -236,89 +236,89 @@ define [ 'Tool' ], (Tool) ->
 
 			return
 
-			if not R.currentPaths[R.me] 		# end selection action on selected RItems if there is no selection rectangle
-				# selectedItems = R.selectedItems
-				# if selectedItems.length == 1
-				@selectedItem.endSelect(event)
-				@selectedItem = null
-			else 								# create selection group is there is a selection rectangle
+			# if not R.currentPaths[R.me] 		# end selection action on selected RItems if there is no selection rectangle
+			# 	# selectedItems = R.selectedItems
+			# 	# if selectedItems.length == 1
+			# 	@selectedItem.endSelect(event)
+			# 	@selectedItem = null
+			# else 								# create selection group is there is a selection rectangle
 
-				rectangle = new P.Rectangle(event.downPoint, event.point)
+			# 	rectangle = new P.Rectangle(event.downPoint, event.point)
 
-				itemsToSelect = []
-				locksToSelect = []
+			# 	itemsToSelect = []
+			# 	locksToSelect = []
 
-				# Add all items which have bounds intersecting with the selection rectangle (1st version)
-				for name, item of R.items
-					if item.getBounds().intersects(rectangle)
-						if Lock.prototype.isPrototypeOf(item)
-							locksToSelect.push(item)
-						else
-							itemsToSelect.push(item)
+			# 	# Add all items which have bounds intersecting with the selection rectangle (1st version)
+			# 	for name, item of R.items
+			# 		if item.getBounds().intersects(rectangle)
+			# 			if Lock.prototype.isPrototypeOf(item)
+			# 				locksToSelect.push(item)
+			# 			else
+			# 				itemsToSelect.push(item)
 
-				if itemsToSelect.length == 0
-					itemsToSelect = locksToSelect
+			# 	if itemsToSelect.length == 0
+			# 		itemsToSelect = locksToSelect
 
-				if itemsToSelect.length > 0
+			# 	if itemsToSelect.length > 0
 
-					# check if items all have the same parent
-					itemsAreSiblings = true
-					parent = itemsToSelect[0].group.parent
-					for item in itemsToSelect
-						if item.group.parent != parent
-							itemsAreSiblings = false
-							break
+			# 		# check if items all have the same parent
+			# 		itemsAreSiblings = true
+			# 		parent = itemsToSelect[0].group.parent
+			# 		for item in itemsToSelect
+			# 			if item.group.parent != parent
+			# 				itemsAreSiblings = false
+			# 				break
 
-					# if items have different parents, remove children from itemsToSelect and add locks
-					if not itemsAreSiblings
-						# remove all lock children from itemsToSelect
-						for lock in locksToSelect
-							for child in lock.children()
-								Utils.Array.remove(itemsToSelect, child)
+			# 		# if items have different parents, remove children from itemsToSelect and add locks
+			# 		if not itemsAreSiblings
+			# 			# remove all lock children from itemsToSelect
+			# 			for lock in locksToSelect
+			# 				for child in lock.children()
+			# 					Utils.Array.remove(itemsToSelect, child)
 
-						# add locks to itemsToSelect
-						itemsToSelect = itemsToSelect.concat(locksToSelect)
+			# 			# add locks to itemsToSelect
+			# 			itemsToSelect = itemsToSelect.concat(locksToSelect)
 
-					# if the user just clicked (not dragged a selection rectangle): just select the first item
-					if rectangle.area == 0 then itemsToSelect = [itemsToSelect[0]]
+			# 		# if the user just clicked (not dragged a selection rectangle): just select the first item
+			# 		if rectangle.area == 0 then itemsToSelect = [itemsToSelect[0]]
 
-					R.commandManager.add(new R.SelectCommand(itemsToSelect), true)
+			# 		R.commandManager.add(new R.SelectCommand(itemsToSelect), true)
 
-					i = itemsToSelect.length-1
-					while i>=0
-						item = itemsToSelect[i]
-						if not item.isSelected()
-							Utils.Array.remove(itemsToSelect, item)
-						i--
+			# 		i = itemsToSelect.length-1
+			# 		while i>=0
+			# 			item = itemsToSelect[i]
+			# 			if not item.isSelected()
+			# 				Utils.Array.remove(itemsToSelect, item)
+			# 			i--
 
-				# Add all items which intersect with the selection rectangle (2nd version)
+			# 	# Add all items which intersect with the selection rectangle (2nd version)
 
-				# for item in P.project.activeLayer.children
-				# 	bounds = item.bounds
-				# 	if item.controller? and (rectangle.contains(bounds) or ( rectangle.intersects(bounds) and item.controller.controlPath?.getIntersections(R.currentPaths[R.me]).length>0 ))
-				# 	# if item.controller? and rectangle.intersects(bounds)
-				# 		Utils.Array.pushIfAbsent(itemsToSelect, item.controller)
+			# 	# for item in P.project.activeLayer.children
+			# 	# 	bounds = item.bounds
+			# 	# 	if item.controller? and (rectangle.contains(bounds) or ( rectangle.intersects(bounds) and item.controller.controlPath?.getIntersections(R.currentPaths[R.me]).length>0 ))
+			# 	# 	# if item.controller? and rectangle.intersects(bounds)
+			# 	# 		Utils.Array.pushIfAbsent(itemsToSelect, item.controller)
 
-				# for item in itemsToSelect
-				# 	item.select(false)
+			# 	# for item in itemsToSelect
+			# 	# 	item.select(false)
 
-				# # update parameters
-				# itemsToSelect = itemsToSelect.map( (item)-> return { tool: item.constructor, item: item } )
-				# R.updateParameters(itemsToSelect)
+			# 	# # update parameters
+			# 	# itemsToSelect = itemsToSelect.map( (item)-> return { tool: item.constructor, item: item } )
+			# 	# R.updateParameters(itemsToSelect)
 
-				# for div in R.divs
-				# 	if div.getBounds().intersects(rectangle)
-				# 		div.select()
+			# 	# for div in R.divs
+			# 	# 	if div.getBounds().intersects(rectangle)
+			# 	# 		div.select()
 
-				# remove selection rectangle
-				R.currentPaths[R.me].remove()
-				delete R.currentPaths[R.me]
-				for name, item of R.items
-					item.unhighlight()
+			# 	# remove selection rectangle
+			# 	R.currentPaths[R.me].remove()
+			# 	delete R.currentPaths[R.me]
+			# 	for name, item of R.items
+			# 		item.unhighlight()
 
-			console.log 'end select'
-			R.logElapsedTime()
-			return
+			# console.log 'end select'
+			# R.logElapsedTime()
+			# return
 
 		# Double click handler: send event to selected RItems
 		doubleClick: (event) ->
@@ -331,7 +331,7 @@ define [ 'Tool' ], (Tool) ->
 			return R.currentPaths[R.me]?
 
 		keyUp: (event)->
-			# - move selected RItem by delta if an arrow key was pressed (delta is function of special keys press)
+			# - move selected Item by delta if an arrow key was pressed (delta is function of special keys press)
 			# - finish current path (if in polygon mode) if 'enter' or 'escape' was pressed
 			# - select previous tool on space key up
 			# - select 'Select' tool if key == 'v'
@@ -348,7 +348,7 @@ define [ 'Tool' ], (Tool) ->
 				when 'down'
 					item.moveBy(new P.Point(0,delta), true) for item in R.selectedItems
 				when 'escape'
-					Tool.Select.deselectAll()
+					SelectTool.deselectAll()
 				when 'delete', 'backspace'
 					selectedItems = R.selectedItems.slice()
 					for item in selectedItems
@@ -359,5 +359,5 @@ define [ 'Tool' ], (Tool) ->
 
 			return
 
-	new Tool.Select()
-	return Tool.Select
+	Tool.Select = SelectTool
+	return SelectTool

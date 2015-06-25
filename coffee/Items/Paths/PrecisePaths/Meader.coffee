@@ -1,4 +1,4 @@
-define [ 'PrecisePath' ], (PrecisePath) ->
+define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 
 
 	# Meander makes use of both the tangent and the normal of the control path to draw a spiral at each step
@@ -6,7 +6,7 @@ define [ 'PrecisePath' ], (PrecisePath) ->
 	# http://www.dreamstime.com/photos-images/meander-wave-ancient-greek-ornament.html )
 	class Meander extends PrecisePath
 		@label = 'Meander'
-		@rdescription = """As Karl Kerenyi pointed out, "the meander is the figure of a labyrinth in linear form".
+		@description = """As Karl Kerenyi pointed out, "the meander is the figure of a labyrinth in linear form".
 		A meander or meandros (Greek: Μαίανδρος) is a decorative border constructed from a continuous line, shaped into a repeated motif.
 		Such a design is also called the Greek fret or Greek key design, although these are modern designations.
 		(source: http://en.wikipedia.org/wiki/Meander_(art))"""

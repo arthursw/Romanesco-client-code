@@ -3,21 +3,22 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tool'], function(Tool) {
-    Tool.Media = (function(_super) {
-      __extends(Media, _super);
+  define(['Tools/Tool'], function(Tool) {
+    var MediaTool;
+    MediaTool = (function(_super) {
+      __extends(MediaTool, _super);
 
-      Media.label = 'Media';
+      MediaTool.label = 'Media';
 
-      Media.description = '';
+      MediaTool.description = '';
 
-      Media.iconURL = 'image.png';
+      MediaTool.iconURL = 'image.png';
 
-      Media.favorite = true;
+      MediaTool.favorite = true;
 
-      Media.category = '';
+      MediaTool.category = '';
 
-      Media.cursor = {
+      MediaTool.cursor = {
         position: {
           x: 0,
           y: 0
@@ -26,26 +27,26 @@
         icon: 'image'
       };
 
-      function Media() {
-        Media.__super__.constructor.call(this, R.RMedia);
+      function MediaTool() {
+        MediaTool.__super__.constructor.call(this, R.Media);
         return;
       }
 
-      Media.prototype.end = function(event, from) {
+      MediaTool.prototype.end = function(event, from) {
         if (from == null) {
           from = R.me;
         }
-        if (Media.__super__.end.call(this, event, from)) {
-          R.RMedia.initialize(R.currentPaths[from].bounds);
+        if (MediaTool.__super__.end.call(this, event, from)) {
+          R.Media.initialize(R.currentPaths[from].bounds);
           delete R.currentPaths[from];
         }
       };
 
-      return Media;
+      return MediaTool;
 
     })(Tool.Item);
-    new Tool.Media();
-    return Tool.Media;
+    Tool.Media = MediaTool;
+    return MediaTool;
   });
 
 }).call(this);

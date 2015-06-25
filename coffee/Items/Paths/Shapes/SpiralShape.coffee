@@ -1,4 +1,4 @@
-define [ 'Shape' ], (Shape) ->
+define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 
 	# The spiral shape can have an intern radius, and a custom number of sides
 	# A smooth spiral could be drawn with less points and with handles, that could be more efficient
@@ -6,7 +6,7 @@ define [ 'Shape' ], (Shape) ->
 		@Shape = P.Path.Ellipse
 		@category = 'Shape/Animated/Spiral'
 		@label = 'Spiral'
-		@rdescription = "The spiral shape can have an intern radius, and a custom number of sides."
+		@description = "The spiral shape can have an intern radius, and a custom number of sides."
 		@iconURL = 'static/images/icons/inverted/spiral.png'
 		@iconAlt = 'spiral'
 

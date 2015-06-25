@@ -1,7 +1,7 @@
-define [ 'Tool' ], (Tool) ->
+define [ 'Tools/Tool' ], (Tool) ->
 
-	# RLock creation tool
-	class Tool.Lock extends Tool.Item
+	# Lock creation tool
+	class LockTool extends Tool.Item
 
 		@label = 'Lock'
 		@description = ''
@@ -38,8 +38,8 @@ define [ 'Tool' ], (Tool) ->
 			return
 
 		# End lock action:
-		# - remove lock cost and init RLock modal if it is valid (does not overlap two planets, and does not intersects with an RLock)
-		# the RLock modal window will ask the user some information about the lock he wants to create, the RLock will be saved once the user submits and created on server response
+		# - remove lock cost and init Lock modal if it is valid (does not overlap two planets, and does not intersects with an Lock)
+		# the Lock modal window will ask the user some information about the lock he wants to create, the Lock will be saved once the user submits and created on server response
 		# @param [Paper event or REvent] (usually) mouse up event
 		# @param [String] author (username) of the event
 		end: (event, from=R.me) ->
@@ -49,5 +49,5 @@ define [ 'Tool' ], (Tool) ->
 				delete R.currentPaths[from]
 			return
 
-	new Tool.Lock()
-	return Tool.Lock
+	Tool.Lock = LockTool
+	return LockTool

@@ -5,7 +5,7 @@
 	# 	@label = 'Face generator'
 	# 	# @iconURL = 'static/images/icons/inverted/spiral.png'
 	# 	# @iconAlt = 'spiral'
-	# 	@rdescription = "Face generator, inspired by weird faces study by Matthias Dörfelt aka mokafolio."
+	# 	@description = "Face generator, inspired by weird faces study by Matthias Dörfelt aka mokafolio."
 
 	# 	parameters: ()->
 	# 		parameters = super()

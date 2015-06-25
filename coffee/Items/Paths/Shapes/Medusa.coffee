@@ -1,9 +1,9 @@
-define [ 'Shape' ], (Shape) ->
+define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 
 	class Medusa extends Shape
 		@Shape = paper.P.Path.Rectangle
 		@label = 'Medusa'
-		@rdescription = "Creates a bunch of aniamted Medusa."
+		@description = "Creates a bunch of aniamted Medusa."
 		@squareByDefault = true
 
 		@initializeParameters: ()->

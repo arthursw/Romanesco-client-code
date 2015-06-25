@@ -3,17 +3,18 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tool'], function(Tool) {
-    Tool.Select = (function(_super) {
-      __extends(Select, _super);
+  define(['Tools/Tool'], function(Tool) {
+    var SelectTool;
+    SelectTool = (function(_super) {
+      __extends(SelectTool, _super);
 
-      Select.label = 'Select';
+      SelectTool.label = 'Select';
 
-      Select.description = '';
+      SelectTool.description = '';
 
-      Select.iconURL = 'cursor.png';
+      SelectTool.iconURL = 'cursor.png';
 
-      Select.cursor = {
+      SelectTool.cursor = {
         position: {
           x: 0,
           y: 0
@@ -22,9 +23,9 @@
         icon: 'cursor'
       };
 
-      Select.drawItems = false;
+      SelectTool.drawItems = false;
 
-      Select.hitOptions = {
+      SelectTool.hitOptions = {
         stroke: true,
         fill: true,
         handles: true,
@@ -34,47 +35,37 @@
         tolerance: 5
       };
 
-      Select.deselectAll = function() {
+      SelectTool.selectionRectangle = null;
+
+      SelectTool.deselectAll = function() {
         if (R.selectedItems.length > 0) {
           R.commandManager.add(new R.DeselectCommand(), true);
         }
         P.project.activeLayer.selected = false;
       };
 
-      function Select() {
-        Select.__super__.constructor.call(this, true);
+      function SelectTool() {
+        SelectTool.__super__.constructor.call(this, true);
         this.selectedItem = null;
         return;
       }
 
-      Select.prototype.select = function(deselectItems, updateParameters) {
+      SelectTool.prototype.select = function(deselectItems, updateParameters) {
         if (deselectItems == null) {
           deselectItems = false;
         }
         if (updateParameters == null) {
           updateParameters = true;
         }
-        Select.__super__.select.call(this, false, updateParameters);
+        SelectTool.__super__.select.call(this, false, updateParameters);
       };
 
-      Select.prototype.updateParameters = function() {
+      SelectTool.prototype.updateParameters = function() {
         R.controllerManager.updateParametersForSelectedItems();
       };
 
-      Select.prototype.createSelectionRectangle = function(event) {
-        var bounds, item, itemsToHighlight, name, rectangle, rectanglePath, _ref;
-        rectangle = new P.Rectangle(event.downPoint, event.point);
-        if (R.currentPaths[R.me] != null) {
-          Utils.Rectangle.updatePathRectangle(R.currentPaths[R.me], rectangle);
-        } else {
-          rectanglePath = new P.Path.Rectangle(rectangle);
-          rectanglePath.name = 'select tool selection rectangle';
-          rectanglePath.strokeColor = R.selectionBlue;
-          rectanglePath.strokeScaling = false;
-          rectanglePath.dashArray = [10, 4];
-          R.selectionLayer.addChild(rectanglePath);
-          R.currentPaths[R.me] = rectanglePath;
-        }
+      SelectTool.prototype.highlightItemsUnderRectangle = function(rectangle) {
+        var bounds, item, itemsToHighlight, name, _ref;
         itemsToHighlight = [];
         _ref = R.items;
         for (name in _ref) {
@@ -83,7 +74,6 @@
           bounds = item.getBounds();
           if (bounds.intersects(rectangle)) {
             item.highlight();
-            console.log(item.highlightRectangle.index);
           }
           if (rectangle.area === 0) {
             break;
@@ -91,123 +81,152 @@
         }
       };
 
-      Select.prototype.begin = function(event) {
-        var hitResult, name, path, _base, _ref, _ref1, _ref2;
+      SelectTool.prototype.unhighlightItems = function() {
+        var item, name, _ref;
+        _ref = R.items;
+        for (name in _ref) {
+          item = _ref[name];
+          item.unhighlight();
+        }
+      };
+
+      SelectTool.prototype.createSelectionHighlight = function(event) {
+        var highlightPath, rectangle;
+        rectangle = new P.Rectangle(event.downPoint, event.point);
+        highlightPath = new P.Path.Rectangle(rectangle);
+        highlightPath.name = 'select tool selection rectangle';
+        highlightPath.strokeColor = R.selectionBlue;
+        highlightPath.strokeScaling = false;
+        highlightPath.dashArray = [10, 4];
+        R.selectionLayer.addChild(highlightPath);
+        R.currentPaths[R.me] = highlightPath;
+        this.highlightItemsUnderRectangle(rectangle);
+      };
+
+      SelectTool.prototype.updateSelectionHighlight = function() {
+        var rectangle;
+        rectangle = new P.Rectangle(event.downPoint, event.point);
+        Utils.Rectangle.updatePathRectangle(R.currentPaths[R.me], rectangle);
+        this.highlightItemsUnderRectangle(rectangle);
+      };
+
+      SelectTool.prototype.createCurrentCommand = function(hitResult, event) {
+        g.commandManager.beginAction(new Command[this.transformState.type](R.selectedItems), event);
+      };
+
+      SelectTool.prototype.populateItemsToSelect = function(itemsToSelect, locksToSelect, rectangle) {
+        var item, name, _ref;
+        _ref = R.items;
+        for (name in _ref) {
+          item = _ref[name];
+          if (item.getBounds().intersects(rectangle)) {
+            if (Lock.prototype.isPrototypeOf(item)) {
+              locksToSelect.push(item);
+            } else {
+              itemsToSelect.push(item);
+            }
+          }
+        }
+      };
+
+      SelectTool.prototype.itemsAreSiblings = function(itemsToSelect) {
+        var item, itemsAreSiblings, parent, _i, _len;
+        itemsAreSiblings = true;
+        parent = itemsToSelect[0].group.parent;
+        for (_i = 0, _len = itemsToSelect.length; _i < _len; _i++) {
+          item = itemsToSelect[_i];
+          if (item.group.parent !== parent) {
+            itemsAreSiblings = false;
+            break;
+          }
+        }
+        return itemsAreSiblings;
+      };
+
+      SelectTool.prototype.removeLocksChildren = function(itemsToSelect, locksToSelect) {
+        var child, lock, _i, _j, _len, _len1, _ref;
+        for (_i = 0, _len = locksToSelect.length; _i < _len; _i++) {
+          lock = locksToSelect[_i];
+          _ref = lock.children();
+          for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+            child = _ref[_j];
+            Utils.Array.remove(itemsToSelect, child);
+          }
+        }
+      };
+
+      SelectTool.prototype.selectItems = function(event) {
+        var itemsToSelect, locksToSelect, rectangle;
+        rectangle = new P.Rectangle(event.downPoint, event.point);
+        itemsToSelect = [];
+        locksToSelect = [];
+        this.populateItemsToSelect(itemsToSelect, locksToSelect, rectangle);
+        if (itemsToSelect.length === 0) {
+          itemsToSelect = locksToSelect;
+        }
+        if (itemsToSelect.length > 0) {
+          if (!this.itemsAreSiblings(itemsToSelect)) {
+            this.removeLocksChildren(itemsToSelect, locksToSelect);
+            itemsToSelect = itemsToSelect.concat(locksToSelect);
+          }
+          if (rectangle.area === 0) {
+            itemsToSelect = [itemsToSelect[0]];
+          }
+          R.commandManager.add(new R.SelectCommand(itemsToSelect), true);
+          this.constructor.selectionRectangle = new SelectionRectangle(itemsToSelect);
+        }
+      };
+
+      SelectTool.prototype.begin = function(event) {
+        var hitResult, name, path, _ref, _ref1;
         if (event.event.which === 2) {
           return;
         }
-        console.log('begin select');
-        R.logElapsedTime();
-        _ref = R.paths;
-        for (name in _ref) {
-          path = _ref[name];
-          path.prepareHitTest();
+        hitResult = null;
+        if (this.constructor.selectionRectangle != null) {
+          hitResult = this.constructor.selectionRectangle.hitTest();
         }
-        hitResult = P.project.hitTest(event.point, this.constructor.hitOptions);
-        _ref1 = R.paths;
-        for (name in _ref1) {
-          path = _ref1[name];
-          path.finishHitTest();
+        if (hitResult == null) {
+          _ref = R.paths;
+          for (name in _ref) {
+            path = _ref[name];
+            path.prepareHitTest();
+          }
+          hitResult = P.project.hitTest(event.point, this.constructor.hitOptions);
+          _ref1 = R.paths;
+          for (name in _ref1) {
+            path = _ref1[name];
+            path.finishHitTest();
+          }
         }
         if (hitResult && (hitResult.item.controller != null)) {
-          this.selectedItem = hitResult.item.controller;
-          if (!event.modifiers.shift) {
-            if (R.selectedItems.length > 0) {
-              if (R.selectedItems.indexOf((_ref2 = hitResult.item) != null ? _ref2.controller : void 0) < 0) {
-                R.commandManager.add(new R.DeselectCommand(), true);
-              }
-            }
-          } else {
-            R.tools['Screenshot'].checkRemoveScreenshotRectangle(hitResult.item.controller);
-          }
-          if (typeof (_base = hitResult.item.controller).beginSelect === "function") {
-            _base.beginSelect(event);
-          }
+          this.createCurrentCommand(hitResult, event);
         } else {
-          Tool.Select.deselectAll();
-          this.createSelectionRectangle(event);
-        }
-        R.logElapsedTime();
-      };
-
-      Select.prototype.update = function(event) {
-        if (!R.currentPaths[R.me] && (this.selectedItem != null)) {
-          this.selectedItem.updateSelect(event);
-        } else {
-          this.createSelectionRectangle(event);
+          this.constructor.deselectAll();
+          this.createSelectionHighlight(event);
         }
       };
 
-      Select.prototype.end = function(event) {
-        var child, i, item, itemsAreSiblings, itemsToSelect, lock, locksToSelect, name, parent, rectangle, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
-        if (!R.currentPaths[R.me]) {
-          this.selectedItem.endSelect(event);
-          this.selectedItem = null;
-        } else {
-          rectangle = new P.Rectangle(event.downPoint, event.point);
-          itemsToSelect = [];
-          locksToSelect = [];
-          _ref = R.items;
-          for (name in _ref) {
-            item = _ref[name];
-            if (item.getBounds().intersects(rectangle)) {
-              if (Lock.prototype.isPrototypeOf(item)) {
-                locksToSelect.push(item);
-              } else {
-                itemsToSelect.push(item);
-              }
-            }
-          }
-          if (itemsToSelect.length === 0) {
-            itemsToSelect = locksToSelect;
-          }
-          if (itemsToSelect.length > 0) {
-            itemsAreSiblings = true;
-            parent = itemsToSelect[0].group.parent;
-            for (_i = 0, _len = itemsToSelect.length; _i < _len; _i++) {
-              item = itemsToSelect[_i];
-              if (item.group.parent !== parent) {
-                itemsAreSiblings = false;
-                break;
-              }
-            }
-            if (!itemsAreSiblings) {
-              for (_j = 0, _len1 = locksToSelect.length; _j < _len1; _j++) {
-                lock = locksToSelect[_j];
-                _ref1 = lock.children();
-                for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
-                  child = _ref1[_k];
-                  Utils.Array.remove(itemsToSelect, child);
-                }
-              }
-              itemsToSelect = itemsToSelect.concat(locksToSelect);
-            }
-            if (rectangle.area === 0) {
-              itemsToSelect = [itemsToSelect[0]];
-            }
-            R.commandManager.add(new R.SelectCommand(itemsToSelect), true);
-            i = itemsToSelect.length - 1;
-            while (i >= 0) {
-              item = itemsToSelect[i];
-              if (!item.isSelected()) {
-                Utils.Array.remove(itemsToSelect, item);
-              }
-              i--;
-            }
-          }
+      SelectTool.prototype.update = function(event) {
+        if (this.constructor.selectionRectangle != null) {
+          R.commandManager.updateAction(event);
+        } else if (R.currentPaths[R.me] != null) {
+          this.updateSelectionHighlight(event);
+        }
+      };
+
+      SelectTool.prototype.end = function(event) {
+        if (this.constructor.selectionRectangle != null) {
+          R.commandManager.endAction(event);
+        } else if (R.currentPaths[R.me] != null) {
+          this.selectItems(event);
           R.currentPaths[R.me].remove();
           delete R.currentPaths[R.me];
-          _ref2 = R.items;
-          for (name in _ref2) {
-            item = _ref2[name];
-            item.unhighlight();
-          }
+          this.unhighlightItems();
         }
-        console.log('end select');
-        R.logElapsedTime();
       };
 
-      Select.prototype.doubleClick = function(event) {
+      SelectTool.prototype.doubleClick = function(event) {
         var item, _i, _len, _ref;
         _ref = R.selectedItems;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -218,11 +237,11 @@
         }
       };
 
-      Select.prototype.disableSnap = function() {
+      SelectTool.prototype.disableSnap = function() {
         return R.currentPaths[R.me] != null;
       };
 
-      Select.prototype.keyUp = function(event) {
+      SelectTool.prototype.keyUp = function(event) {
         var delta, item, selectedItems, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
         if ((_ref = event.key) === 'left' || _ref === 'right' || _ref === 'up' || _ref === 'down') {
           delta = event.modifiers.shift ? 50 : event.modifiers.option ? 5 : 1;
@@ -257,7 +276,7 @@
             }
             break;
           case 'escape':
-            Tool.Select.deselectAll();
+            SelectTool.deselectAll();
             break;
           case 'delete':
           case 'backspace':
@@ -273,11 +292,11 @@
         }
       };
 
-      return Select;
+      return SelectTool;
 
     })(Tool);
-    new Tool.Select();
-    return Tool.Select;
+    Tool.Select = SelectTool;
+    return SelectTool;
   });
 
 }).call(this);

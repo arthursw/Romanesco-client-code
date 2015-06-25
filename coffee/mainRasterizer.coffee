@@ -1,6 +1,8 @@
-define ['utils'], (utils) ->
+define [ ], () ->
 
 	if not window.rasterizerMode then return
+
+	R.areasToRasterize = []
 
 	R.initializeRasterizerMode = ()->
 
@@ -56,7 +58,7 @@ define ['utils'], (utils) ->
 				type = ''
 				if Lock.prototype.isPrototypeOf(item)
 					type = 'Box'
-				else if R.RDiv.prototype.isPrototypeOf(item)
+				else if R.Div.prototype.isPrototypeOf(item)
 					type = 'Div'
 				else if R.RPath.prototype.isPrototypeOf(item)
 					type = 'P.Path'
@@ -130,19 +132,19 @@ define ['utils'], (utils) ->
 				R.unload()
 				R.city = areaObject.city
 
-			area = Utils.Rectangle.expandRectangleToInteger(R.rectangleFromBox(areaObject))
+			area = Utils.Rectangle.expandRectangleToInteger(Utils.CS.rectangleFromBox(areaObject))
 			R.areaToRasterize = area
 			# P.view.viewSize = P.Size.min(area.size, new P.Size(1000, 1000))
 
 			# move the view
 			delta = area.center.subtract(P.view.center)
-			P.project.P.view.scrollBy(delta)
+			P.view.scrollBy(delta)
 			for div in R.divs
 				div.updateTransform()
 
 			console.log "call load"
 
-			R.load(area)
+			R.loader.load(area)
 
 			return
 

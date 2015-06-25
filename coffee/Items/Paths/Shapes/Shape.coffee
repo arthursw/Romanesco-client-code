@@ -1,11 +1,11 @@
-define [ 'Path' ], (Path) ->
+define [ 'Items/Paths/Path' ], (Path) ->
 
 	# An RShape is defined by a rectangle in which the drawing should be included
 	# during the creation, the user draw the rectangle with the mouse
 	class Shape extends Path
 		@Shape = P.Path.Rectangle
 		@label = 'Shape'
-		@rdescription = "Base shape class"
+		@description = "Base shape class"
 		@squareByDefault = true 				# whether the shape will be square by default (user must press the shift key to make it rectangle) or not
 		@centerByDefault = false 				# whether the shape will be centered on the first point by default
 												# (user must press the special key - command on a mac, control otherwise -
@@ -55,22 +55,24 @@ define [ 'Path' ], (Path) ->
 			@shape = @addPath(new @constructor.Shape(@rectangle))
 			return
 
+		process: ()->
+			@initializeDrawing()
+			@createShape()
+			@drawing.rotation = @rotation
+			return
+
 		# redefine {RPath#draw}
 		# initialize the drawing and draw the shape
 		draw: (simplified=false)->
 			@drawn = false
 			if not R.rasterizer.requestDraw(@, simplified) then return
 			# if R.rasterizer.disableDrawing then return
-			process = ()=>
-				@initializeDrawing()
-				@createShape()
-				@drawing.rotation = @rotation
-				return
+
 			if not R.catchErrors
-				process()
+				@process()
 			else
 				try 							# catch errors to log them in console (if the user has code editor open)
-					process()
+					@process()
 				catch error
 					console.error error.stack
 					console.error error

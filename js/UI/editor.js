@@ -172,7 +172,7 @@
         this.editor.setTheme("ace/theme/monokai");
         this.editor.getSession().setUseSoftTabs(false);
         this.editor.getSession().setMode("ace/mode/coffee");
-        this.editor.getSession().setValue("class NewPath extends R.PrecisePath\n  @label = 'NewPath'\n  @rdescription = \"A fancy path.\"\n\n  drawBegin: ()->\n\n    @initializeDrawing(false)\n\n    @path = @addPath()\n    return\n\n  drawUpdateStep: (length)->\n\n    point = @controlPath.getPointAt(length)\n    @path.add(point)\n    return\n\n  drawEnd: ()->\n    return\n", 1);
+        this.editor.getSession().setValue("class NewPath extends R.PrecisePath\n  @label = 'NewPath'\n  @description = \"A fancy path.\"\n\n  drawBegin: ()->\n\n    @initializeDrawing(false)\n\n    @path = @addPath()\n    return\n\n  drawUpdateStep: (length)->\n\n    point = @controlPath.getPointAt(length)\n    @path.add(point)\n    return\n\n  drawEnd: ()->\n    return\n", 1);
         this.editor.commands.addCommand({
           name: 'execute',
           bindKey: {

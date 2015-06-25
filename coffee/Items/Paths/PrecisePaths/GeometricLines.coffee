@@ -1,4 +1,4 @@
-define [ 'PrecisePath' ], (PrecisePath) ->
+define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 
 	# The geometric lines path draws a line between all pair of points which are close enough
 	# This means that hundreds of lines will be drawn at each update.
@@ -8,7 +8,7 @@ define [ 'PrecisePath' ], (PrecisePath) ->
 	# (and use the native html5 canvas drawing functions, unless we load an external library)
 	class GeometricLines extends PrecisePath
 		@label = 'Geometric lines'
-		@rdescription = "Draws a line between pair of points which are close enough."
+		@description = "Draws a line between pair of points which are close enough."
 		@iconURL = 'static/images/icons/inverted/links.png'
 		@iconAlt = 'links'
 

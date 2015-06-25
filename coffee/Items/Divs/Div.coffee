@@ -1,21 +1,23 @@
-define [ 'Content' ], (Content) ->
+define [ 'Items/Content' ], (Content) ->
 
 	# todo: change ownership through websocket?
 	# todo: change lock/link popover to romanesco alert?
 
-	# RDiv is a div on top of the canvas (i.e. on top of the paper.js project) which can be resized, unless it is locked
+	# Div is a div on top of the canvas (i.e. on top of the paper.js project) which can be resized, unless it is locked
 	# it is lock if it is owned by another user
 	#
 	# There are different RDivs, with different content:
 	#     they define areas which can only be modified by a single user (the one who created the); all RItems in the area is the property of this user
-	# - RText: a textarea to write some text. The text can have any google font, any effect, but the whole text has the same formating.
-	# - RMedia: an image, video or any content inside an iframe (can be a [shadertoy](https://www.shadertoy.com/))
+	# - Text: a textarea to write some text. The text can have any google font, any effect, but the whole text has the same formating.
+	# - Media: an image, video or any content inside an iframe (can be a [shadertoy](https://www.shadertoy.com/))
 	# - RSelectionRectangle: a special div just to defined a selection rectangle, user by {ScreenshotTool}
 	#
 	class Div extends Content
 
 		@zIndexMin = 1
 		@zIndexMax = 100000
+
+		@hiddenDivs = []
 
 		# parameters are defined as in {RTool}
 		@initializeParameters: ()->
@@ -35,17 +37,17 @@ define [ 'Content' ], (Content) ->
 		@createTool(@)
 
 		@updateHiddenDivs: (event)->
-			if R.hiddenDivs.length > 0
+			if @hiddenDivs.length > 0
 				point = new P.Point(event.pageX, event.pageY)
 				projectPoint = P.view.viewToProject(point)
-				for div in R.hiddenDivs
+				for div in @hiddenDivs
 					if not div.getBounds().contains(projectPoint)
 						div.show()
 			return
 
 		@showDivs: ()->
-			while R.hiddenDivs.length > 0
-				R.hiddenDivs[0].show()
+			while @hiddenDivs.length > 0
+				@hiddenDivs[0].show()
 			return
 
 		@updateZIndex: (sortedDivs)->
@@ -118,12 +120,12 @@ define [ 'Content' ], (Content) ->
 
 		hide: ()->
 			@divJ.css( opacity: 0.5, 'pointer-events': 'none' )
-			R.hiddenDivs.push(@)
+			@constructor.hiddenDivs.push(@)
 			return
 
 		show: ()->
 			@divJ.css( opacity: 1, 'pointer-events': 'auto' )
-			Utils.Array.remove(R.hiddenDivs, @)
+			Utils.Array.remove(@constructor.hiddenDivs, @)
 			return
 
 		save: (addCreateCommand=true) ->
@@ -137,7 +139,7 @@ define [ 'Content' ], (Content) ->
 
 			args =
 				city: R.city
-				box: R.boxFromRectangle(@getBounds())
+				box: Utils.CS.boxFromRectangle(@getBounds())
 				object_type: @object_type
 				date: Date.now()
 				data: @getStringifiedData()
@@ -174,7 +176,7 @@ define [ 'Content' ], (Content) ->
 			@updateTransform()
 			return
 
-		# update the scale and position of the RDiv (depending on its position and scale, and the view position and scale)
+		# update the scale and position of the Div (depending on its position and scale, and the view position and scale)
 		# if zoom equals 1, do no use css translate() property to avoid blurry text
 		updateTransform: ()->
 			# the css of the div in styles.less: transform-origin: 0% 0% 0
@@ -203,7 +205,7 @@ define [ 'Content' ], (Content) ->
 			return
 
 		# insert above given *div*
-		# @param div [RDiv] div on which to insert this
+		# @param div [Div] div on which to insert this
 		# @param index [Number] the index at which to add the div in R.sortedDivs
 		insertAbove: (div, index=null, update=false)->
 			super(div, index, update)
@@ -211,7 +213,7 @@ define [ 'Content' ], (Content) ->
 			return
 
 		# insert below given *div*
-		# @param div [RDiv] div under which to insert this
+		# @param div [Div] div under which to insert this
 		# @param index [Number] the index at which to add the div in R.sortedDivs
 		insertBelow: (div, index=null, update=false)->
 			super(div, index, update)
@@ -228,13 +230,13 @@ define [ 'Content' ], (Content) ->
 			R.currentDiv = null
 			return
 
-		# mouse interaction must be disabled when user has the move tool (a click on an RDiv must not start a resize action)
+		# mouse interaction must be disabled when user has the move tool (a click on an Div must not start a resize action)
 		# disable user interaction on this div by putting a transparent mask (div) on top of the div
 		disableInteraction: () ->
 			@maskJ.show()
 			return
 
-		# see {RDiv#disableInteraction}
+		# see {Div#disableInteraction}
 		# enable user interaction on this div by hiding the mask (div)
 		enableInteraction: () ->
 			@maskJ.hide()
@@ -261,11 +263,11 @@ define [ 'Content' ], (Content) ->
 				else
 					args =
 						pk: @pk
-						box: R.boxFromRectangle(@getBounds())
+						box: Utils.CS.boxFromRectangle(@getBounds())
 						data: @getStringifiedData()
 			return args
 
-		# update the RDiv in the database
+		# update the Div in the database
 		update: (type) =>
 			if not @pk?
 				@updateAfterSave = type
@@ -288,7 +290,7 @@ define [ 'Content' ], (Content) ->
 
 		select: (updateOptions, updateSelectionRectangle=true) =>
 			if not super(updateOptions, updateSelectionRectangle) or @divJ.hasClass("selected") then return false
-			if R.selectedTool != R.tools['Select'] then R.tools['Select'].select()
+			if R.selectedTool != Tool.select then Tool.select.select()
 			@divJ.addClass("selected")
 			return true
 
@@ -330,7 +332,7 @@ define [ 'Content' ], (Content) ->
 			@deselect()
 			@divJ.remove()
 			Utils.Array.remove(R.divs, @)
-			if @data.loadEntireArea then Utils.Array.remove(R.entireAreas, @)
+			if @data.loadEntireArea then Utils.Array.remove(R.view.entireAreas, @)
 			if R.divToUpdate==@ then delete R.divToUpdate
 			super()
 			return

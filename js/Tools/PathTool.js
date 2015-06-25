@@ -3,17 +3,18 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tool'], function(Tool) {
-    Tool.Path = (function(_super) {
-      __extends(Path, _super);
+  define(['Tools/Tool', 'UI/Button'], function(Tool, Button) {
+    var PathTool;
+    PathTool = (function(_super) {
+      __extends(PathTool, _super);
 
-      Path.label = '';
+      PathTool.label = '';
 
-      Path.description = '';
+      PathTool.description = '';
 
-      Path.iconURL = '';
+      PathTool.iconURL = '';
 
-      Path.cursor = {
+      PathTool.cursor = {
         position: {
           x: 0,
           y: 0
@@ -21,9 +22,9 @@
         name: 'crosshair'
       };
 
-      Path.drawItems = true;
+      PathTool.drawItems = true;
 
-      function Path(RPath, justCreated) {
+      function PathTool(RPath, justCreated) {
         var favorite, _ref;
         this.RPath = RPath;
         if (justCreated == null) {
@@ -42,7 +43,7 @@
         this.btnJ = R.allToolsJ.find('li[data-name="' + this.name + '"]');
         if (this.btnJ.length === 0) {
           favorite = justCreated || ((_ref = R.favoriteTools) != null ? _ref.indexOf(this.name) : void 0) >= 0;
-          this.btnJ = new Sidebar.Button(this.name, this.RPath.iconURL, favorite, this.RPath.category);
+          this.btnJ = new Button(this.name, this.RPath.iconURL, favorite, this.RPath.category);
         } else {
           this.btnJ.off("click");
         }
@@ -50,18 +51,18 @@
           this.RPath.iconURL = null;
         }
         this.cursor = this.RPath.cursor;
-        Path.__super__.constructor.call(this, this.RPath.label, false);
+        PathTool.__super__.constructor.call(this, this.RPath.label, false);
         if (justCreated) {
           this.select();
         }
         return;
       }
 
-      Path.prototype.remove = function() {
+      PathTool.prototype.remove = function() {
         this.btnJ.remove();
       };
 
-      Path.prototype.select = function(deselectItems, updateParameters) {
+      PathTool.prototype.select = function(deselectItems, updateParameters) {
         if (deselectItems == null) {
           deselectItems = true;
         }
@@ -69,21 +70,21 @@
           updateParameters = true;
         }
         R.rasterizer.drawItems();
-        Path.__super__.select.apply(this, arguments);
+        PathTool.__super__.select.apply(this, arguments);
         R.tool.onMouseMove = this.move;
       };
 
-      Path.prototype.updateParameters = function() {
+      PathTool.prototype.updateParameters = function() {
         R.controllerManager.setSelectedTool(this.RPath);
       };
 
-      Path.prototype.deselect = function() {
-        Path.__super__.deselect.call(this);
+      PathTool.prototype.deselect = function() {
+        PathTool.__super__.deselect.call(this);
         this.finish();
         R.tool.onMouseMove = null;
       };
 
-      Path.prototype.begin = function(event, from, data) {
+      PathTool.prototype.begin = function(event, from, data) {
         var _ref;
         if (from == null) {
           from = R.me;
@@ -114,7 +115,7 @@
         }
       };
 
-      Path.prototype.update = function(event, from) {
+      PathTool.prototype.update = function(event, from) {
         if (from == null) {
           from = R.me;
         }
@@ -128,7 +129,7 @@
         }
       };
 
-      Path.prototype.move = function(event) {
+      PathTool.prototype.move = function(event) {
         var _base, _ref, _ref1;
         if ((_ref = R.currentPaths[R.me]) != null ? (_ref1 = _ref.data) != null ? _ref1.polygonMode : void 0 : void 0) {
           if (typeof (_base = R.currentPaths[R.me]).createMove === "function") {
@@ -137,7 +138,7 @@
         }
       };
 
-      Path.prototype.createPath = function(event, from) {
+      PathTool.prototype.createPath = function(event, from) {
         var path;
         path = R.currentPaths[from];
         if (!path.group) {
@@ -159,7 +160,7 @@
         delete R.currentPaths[from];
       };
 
-      Path.prototype.end = function(event, from) {
+      PathTool.prototype.end = function(event, from) {
         var path, _ref;
         if (from == null) {
           from = R.me;
@@ -171,7 +172,7 @@
         }
       };
 
-      Path.prototype.finish = function(from) {
+      PathTool.prototype.finish = function(from) {
         var _ref, _ref1;
         if (from == null) {
           from = R.me;
@@ -184,7 +185,7 @@
         return true;
       };
 
-      Path.prototype.keyUp = function(event) {
+      PathTool.prototype.keyUp = function(event) {
         var finishingPath;
         switch (event.key) {
           case 'enter':
@@ -200,10 +201,11 @@
         }
       };
 
-      return Path;
+      return PathTool;
 
     })(Tool);
-    return Tool.Path;
+    Tool.Path = PathTool;
+    return PathTool;
   });
 
 }).call(this);

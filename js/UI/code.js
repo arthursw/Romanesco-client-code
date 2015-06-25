@@ -3,11 +3,11 @@
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   define(['jqtree'], function() {
-    var FileManager;
+    var FileManager, ModuleCreator;
     FileManager = (function() {
       function FileManager() {
         this.onFileMoved = __bind(this.onFileMoved, this);
-        this.loadFile = __bind(this.loadFile, this);
+        this.loadAndOpenFile = __bind(this.loadAndOpenFile, this);
         this.readTree = __bind(this.readTree, this);
         this.loadTree = __bind(this.loadTree, this);
         this.fileBrowserJ = $('#Code').find('.files');
@@ -108,15 +108,15 @@
             return target_node.type === 'tree' || position !== 'inside';
           }
         });
-        this.fileBrowserJ.bind('tree.select', this.loadFile);
+        this.fileBrowserJ.bind('tree.select', this.loadAndOpenFile);
         this.fileBrowserJ.bind('tree.move', this.onFileMoved);
       };
 
-      FileManager.prototype.loadFile = function(event) {
+      FileManager.prototype.loadAndOpenFile = function(event) {
         if (event.node.type === 'tree') {
           return;
         }
-        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/coffee/' + event.node.path, this.openFile);
+        this.loadFile(event.node.path, this.openFile);
       };
 
       FileManager.prototype.openFile = function(content) {
@@ -130,10 +130,78 @@
         console.log('previous_parent', event.move_info.previous_parent);
       };
 
+      FileManager.prototype.loadFile = function(path, callback) {
+        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/coffee/' + path, callback);
+      };
+
       return FileManager;
 
     })();
-    R.FileManager = FileManager;
+    ModuleCreator = (function() {
+      function ModuleCreator() {
+        this.registerModuleInModuleLoader = __bind(this.registerModuleInModuleLoader, this);
+        return;
+      }
+
+      ModuleCreator.prototype.createButton = function(content) {
+        var description, descriptionResult, iconResult, iconURL, label, labelResult, source;
+        source = atob(content.content);
+        iconResult = /@iconURL = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source);
+        if ((iconResult != null) && iconResult.length >= 2) {
+          iconURL = iconResult[2];
+        }
+        descriptionResult = /@description = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source);
+        if ((descriptionResult != null) && descriptionResult.length >= 2) {
+          description = descriptionResult[2];
+        }
+        labelResult = /@label = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source);
+        if ((labelResult != null) && labelResult.length >= 2) {
+          label = labelResult[2];
+        }
+        console.log('{ label: ' + label + ', description: ' + description + ', iconURL: ' + iconURL + ', file: ' + content.name + ' }');
+      };
+
+      ModuleCreator.prototype.createButtons = function(pathDirectory) {
+        var name, node, _ref;
+        _ref = pathDirectory.children;
+        for (name in _ref) {
+          node = _ref[name];
+          if (node.type !== 'tree') {
+            this.loadFile(node.path, this.createButton);
+          } else {
+            this.createButtons(node);
+          }
+        }
+      };
+
+      ModuleCreator.prototype.loadButtons = function() {
+        this.createButtons(this.tree.children['Items'].children['Paths']);
+      };
+
+      ModuleCreator.prototype.registerModule = function(module) {
+        this.module = module;
+        this.loadFile(this.tree.children['ModuleLoader'].path, this.registerModuleInModuleLoader);
+      };
+
+      ModuleCreator.prototype.insertModule = function(source, module, position) {
+        var line;
+        line = JSON.stringify(module);
+        source.insert(line, position);
+      };
+
+      ModuleCreator.prototype.registerModuleInModuleLoader = function(content) {
+        var buttonsResult, source;
+        source = atob(content.content);
+        buttonsResult = /buttons = \[/.exec(source);
+        if ((buttonsResult != null) && buttonsResult.length > 1) {
+          this.insertModule(source, this.module, buttonsResult[1]);
+        }
+      };
+
+      return ModuleCreator;
+
+    })();
+    return FileManager;
   });
 
 }).call(this);

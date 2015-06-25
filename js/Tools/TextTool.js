@@ -3,17 +3,18 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tool'], function(Tool) {
-    Tool.Text = (function(_super) {
-      __extends(Text, _super);
+  define(['Tools/Tool'], function(Tool) {
+    var TextTool;
+    TextTool = (function(_super) {
+      __extends(TextTool, _super);
 
-      Text.label = 'Text';
+      TextTool.label = 'Text';
 
-      Text.description = '';
+      TextTool.description = '';
 
-      Text.iconURL = 'text.png';
+      TextTool.iconURL = 'text.png';
 
-      Text.cursor = {
+      TextTool.cursor = {
         position: {
           x: 0,
           y: 0
@@ -21,18 +22,18 @@
         name: 'crosshair'
       };
 
-      function Text() {
-        Text.__super__.constructor.call(this, Text);
+      function TextTool() {
+        TextTool.__super__.constructor.call(this, Text);
         return;
       }
 
-      Text.prototype.end = function(event, from) {
+      TextTool.prototype.end = function(event, from) {
         var text;
         if (from == null) {
           from = R.me;
         }
-        if (Text.__super__.end.call(this, event, from)) {
-          text = new R.RText(R.currentPaths[from].bounds);
+        if (TextTool.__super__.end.call(this, event, from)) {
+          text = new R.Text(R.currentPaths[from].bounds);
           text.finish();
           if (!text.group) {
             return;
@@ -43,11 +44,11 @@
         }
       };
 
-      return Text;
+      return TextTool;
 
     })(Tool.Item);
-    new Tool.Text();
-    return Tool.Text;
+    Tool.Text = TextTool;
+    return TextTool;
   });
 
 }).call(this);

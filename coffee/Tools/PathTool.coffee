@@ -1,4 +1,4 @@
-define [ 'Tool' ], (Tool) ->
+define [ 'Tools/Tool', 'UI/Button' ], (Tool, Button) ->
 
 	# PathTool: the mother class of all drawing tools
 	# doctodo: P.Path are created with three steps:
@@ -6,9 +6,9 @@ define [ 'Tool' ], (Tool) ->
 	# - update: update the drawing
 	# - end: finish the drawing and finish RPath initialization
 	# doctodo: explain polygon mode
-	# begin, update, and end handlers are called by onMouseDown handler (then from == R.me, data == null) and by socket.on "begin" signal (then from == author of the signal, data == RItem initial data)
+	# begin, update, and end handlers are called by onMouseDown handler (then from == R.me, data == null) and by socket.on "begin" signal (then from == author of the signal, data == Item initial data)
 	# begin, update, and end handlers emit the events to websocket
-	class Tool.Path extends Tool
+	class PathTool extends Tool
 
 		@label = ''
 		@description = ''
@@ -42,7 +42,7 @@ define [ 'Tool' ], (Tool) ->
 
 			if @btnJ.length==0
 				favorite = justCreated or R.favoriteTools?.indexOf(@name)>=0
-				@btnJ = new Sidebar.Button(@name, @RPath.iconURL, favorite, @RPath.category)
+				@btnJ = new Button(@name, @RPath.iconURL, favorite, @RPath.category)
 			else
 				@btnJ.off("click")
 
@@ -89,8 +89,8 @@ define [ 'Tool' ], (Tool) ->
 		# - emit event on websocket (if user is the author of the event)
 		# @param [Paper event or REvent] (usually) mouse down event
 		# @param [String] author (username) of the event
-		# @param [Object] RItem initial data (strokeWidth, strokeColor, etc.)
-		# begin, update, and end handlers are called by onMouseDown handler (then from == R.me, data == null) and by socket.on "begin" signal (then from == author of the signal, data == RItem initial data)
+		# @param [Object] Item initial data (strokeWidth, strokeColor, etc.)
+		# begin, update, and end handlers are called by onMouseDown handler (then from == R.me, data == null) and by socket.on "begin" signal (then from == author of the signal, data == Item initial data)
 		begin: (event, from=R.me, data=null) ->
 			if event.event.which == 2 then return 			# if middle mouse button (wheel) pressed: return
 
@@ -205,4 +205,5 @@ define [ 'Tool' ], (Tool) ->
 						Tool.Select.deselectAll()
 			return
 
-	return Tool.Path
+	Tool.Path = PathTool
+	return PathTool

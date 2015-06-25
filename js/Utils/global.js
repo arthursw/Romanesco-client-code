@@ -2,7 +2,7 @@
 (function() {
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
-  define(['utils', 'bootstrap', 'tween', 'mousewheel', 'scrollbar'], function() {
+  define(['Items/Items', 'bootstrap', 'tween', 'mousewheel', 'scrollbar'], function(Item) {
 
     /*
     	 * Global functions #
@@ -205,11 +205,11 @@
     R.fakeGeoJsonBox = function(rectangle) {
       var box, planet;
       box = {};
-      planet = R.pointToObj(R.projectToPlanet(rectangle.topLeft));
+      planet = Utils.CS.pointToObj(Utils.CS.projectToPlanet(rectangle.topLeft));
       box.planetX = planet.x;
       box.planetY = planet.y;
       box.box = {
-        coordinates: [[R.pointToArray(R.projectToPosOnPlanet(rectangle.topLeft, planet)), R.pointToArray(R.projectToPosOnPlanet(rectangle.topRight, planet)), R.pointToArray(R.projectToPosOnPlanet(rectangle.bottomRight, planet)), R.pointToArray(R.projectToPosOnPlanet(rectangle.bottomLeft, planet))]]
+        coordinates: [[Utils.CS.pointToArray(Utils.CS.projectToPosOnPlanet(rectangle.topLeft, planet)), Utils.CS.pointToArray(Utils.CS.projectToPosOnPlanet(rectangle.topRight, planet)), Utils.CS.pointToArray(Utils.CS.projectToPosOnPlanet(rectangle.bottomRight, planet)), Utils.CS.pointToArray(Utils.CS.projectToPosOnPlanet(rectangle.bottomLeft, planet))]]
       };
       return JSON.stringify(box);
     };

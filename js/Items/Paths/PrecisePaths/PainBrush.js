@@ -3,7 +3,7 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['PrecisePath'], function(PrecisePath) {
+  define(['Items/Paths/PrecisePaths/PrecisePath'], function(PrecisePath) {
     var PaintBrush;
     PaintBrush = (function(_super) {
       __extends(PaintBrush, _super);
@@ -14,7 +14,7 @@
 
       PaintBrush.label = 'Paint brush';
 
-      PaintBrush.rdescription = "Paints a thick stroke with customable blur effects.";
+      PaintBrush.description = "Paints a thick stroke with customable blur effects.";
 
       PaintBrush.iconURL = 'static/images/icons/inverted/brush.png';
 

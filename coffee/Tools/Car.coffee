@@ -1,7 +1,7 @@
-define [ 'Tool' ], (Tool) ->
+define [ 'Tools/Tool' ], (Tool) ->
 
 	# CarTool gives a car to travel in the world with arrow key (and play video games)
-	class Tool.Car extends Tool
+	class CarTool extends Tool
 
 		@label = 'Car'
 		@description = ''
@@ -30,14 +30,15 @@ define [ 'Tool' ], (Tool) ->
 						max: 10
 						onChange: (value)-> 		# set volume of the car, stop the sound if volume==0 and restart otherwise
 							if R.selectedTool.constructor.name == "CarTool"
-								if value>0
-									if not R.sound.isPlaying
-										R.sound.play()
-										R.sound.setLoopStart(3.26)
-										R.sound.setLoopEnd(5.22)
-									R.sound.setVolume(0.1*value)
+								sound = Tool.car.sound
+								if sound? and value>0
+									if not sound.isPlaying
+										sound.play()
+										sound.setLoopStart(3.26)
+										sound.setLoopEnd(5.22)
+									sound.setVolume(0.1*value)
 								else
-									R.sound.stop()
+									sound.stop()
 							return
 			return parameters
 
@@ -45,6 +46,7 @@ define [ 'Tool' ], (Tool) ->
 
 		constructor: () ->
 			super(true) 		# no cursor when car is selected (might change)
+			@constructor.car = @
 			return
 
 		# Select car tool
@@ -53,7 +55,7 @@ define [ 'Tool' ], (Tool) ->
 			super
 
 			# create Paper raster and initialize car parameters
-			@car = new Raster("/static/images/car.png")
+			@car = new P.Raster("/static/images/car.png")
 			R.carLayer.addChild(@car)
 			@car.position = P.view.center
 			@car.speed = 0
@@ -65,10 +67,12 @@ define [ 'Tool' ], (Tool) ->
 			@car.previousSpeed = 0
 
 			# initialize sound
-			R.sound.setVolume(0.1)
-			R.sound.play(0)
-			R.sound.setLoopStart(3.26)
-			R.sound.setLoopEnd(5.22)
+			@sound = new Sound(['/static/sounds/viper.ogg']) 			# load car sound
+
+			@sound.setVolume(0.1)
+			@sound.play(0)
+			@sound.setLoopStart(3.26)
+			@sound.setLoopEnd(5.22)
 
 			@lastUpdate = Date.now()
 
@@ -79,7 +83,7 @@ define [ 'Tool' ], (Tool) ->
 			super()
 			@car.remove()
 			@car = null
-			R.sound.stop()
+			@sound.stop()
 			return
 
 		# on frame event:
@@ -110,7 +114,7 @@ define [ 'Tool' ], (Tool) ->
 			maxRate = 3
 			rate = minRate+Math.abs(@car.speed)/maxSpeed*(maxRate-minRate)
 			# console.log rate
-			R.sound.setRate(rate)
+			@sound.setRate(rate)
 
 			# acc = @speed-@previousSpeed
 
@@ -155,15 +159,15 @@ define [ 'Tool' ], (Tool) ->
 				if R.me? then R.chatSocket.emit "car move", R.me, @car.position, @car.rotation, @car.speed
 				@lastUpdate = Date.now()
 
-			#P.project.P.view.center = @car.position
+			#P.view.center = @car.position
 			return
 
 		keyUp: (event)->
 			switch event.key
 				when 'escape'
-					R.tools['Move'].select()
+					Tool.move.select()
 
 			return
 
-	new Tool.Car()
-	return Tool.Car
+	Tool.Car = CarTool
+	return CarTool

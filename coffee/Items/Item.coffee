@@ -1,4 +1,5 @@
-define [ 'Command'], (Command) ->
+define [ 'Commands/Command' ], (Command) ->
+	console.log 'Item'
 
 	class Item
 
@@ -64,19 +65,19 @@ define [ 'Command'], (Command) ->
 		@addItemTo: (item, lock=null)->
 			wasSelected = item.isSelected()
 			if wasSelected then item.deselect()
-			group = if lock then lock.group else R.mainLayer
+			group = if lock then lock.group else R.view.mainLayer
 			group.addChild(item.group)
 			item.lock = lock
 			Utils.Array.remove(item.sortedItems, item)
 			parent = lock or R
-			if R.RDiv.prototype.isPrototypeOf(item)
+			if R.Div.prototype.isPrototypeOf(item)
 				item.sortedItems = parent.sortedDivs
 				parent.itemListsJ.find(".rDiv-list").append(item.liJ)
 			else if R.RPath.prototype.isPrototypeOf(item)
 				item.sortedItems = parent.sortedPaths
 				parent.itemListsJ.find(".rPath-list").append(item.liJ)
 			else
-				console.error "Error: the item is neither an RDiv nor an RPath"
+				console.error "Error: the item is neither an Div nor an RPath"
 			item.updateZIndex()
 			if wasSelected then item.select()
 			return
@@ -143,7 +144,7 @@ define [ 'Command'], (Command) ->
 		# 	return
 
 		@initializeParameters: ()->
-
+			console.log 'Item.initializeParameters'
 			parameters =
 				'Items':
 					align: R.parameters.align
@@ -520,7 +521,7 @@ define [ 'Command'], (Command) ->
 		getDrawingBounds: ()->
 			return @rectangle.expand(@data.strokeWidth)
 
-		# highlight this RItem by drawing a blue rectangle around it
+		# highlight this Item by drawing a blue rectangle around it
 		highlight: ()->
 			if @highlightRectangle?
 				Utils.Rectangle.updatePathRectangle(@highlightRectangle, @getBounds())
@@ -550,11 +551,11 @@ define [ 'Command'], (Command) ->
 			if not loading and not @socketAction then R.chatSocket.emit "bounce", itemPk: @id, function: "setPK", arguments: [@pk]
 			return
 
-		# @return true if RItem is selected
+		# @return true if Item is selected
 		isSelected: ()->
 			return @selectionRectangle?
 
-		# select the RItem: (only if it has no selection rectangle i.e. not already selected)
+		# select the Item: (only if it has no selection rectangle i.e. not already selected)
 		# - update the selection rectangle,
 		# - (optionally) update controller in the gui accordingly
 		# @return whether the ritem was selected or not
@@ -593,11 +594,11 @@ define [ 'Command'], (Command) ->
 				R.rasterizer.deselectItem(@)
 
 				if not @lock
-					@group = R.mainLayer.insertChild(@zindex, @group)
+					@group = R.view.mainLayer.insertChild(@zindex, @group)
 				else
 					@group = @lock.group.insertChild(@zindex, @group)
 
-			R.RDiv.showDivs()
+			R.Div.showDivs()
 
 			return true
 
@@ -674,4 +675,4 @@ define [ 'Command'], (Command) ->
 			@removeDrawing()
 			return
 
-	return RItem
+	return Item

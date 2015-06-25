@@ -1,8 +1,8 @@
-define ['SpeedPath'], (SpeedPath) ->
+define ['Items/Paths/PrecisePaths/SpeedPaths/SpeedPath'], (SpeedPath) ->
 
 	class PaintGun extends SpeedPath
 		@label = 'Paint gun'
-		@rdescription = "The stroke width is function of the drawing speed: the faster the wider."
+		@description = "The stroke width is function of the drawing speed: the faster the wider."
 		# "http://thenounproject.com/term/spray-bottle/7835/"
 		# "http://thenounproject.com/term/spray-bottle/93690/"
 		# "http://thenounproject.com/term/spray-paint/3533/"

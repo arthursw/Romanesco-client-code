@@ -1,9 +1,9 @@
-define ['SpeedPath'], (SpeedPath) ->
+define ['Items/Paths/PrecisePaths/SpeedPaths/SpeedPath'], (SpeedPath) ->
 
 	# The shape path draw a rectangle or an ellipse along the control path
 	class ShapePath extends SpeedPath
 		@label = 'Shape path'
-		@rdescription = "Draws rectangles or ellipses along the path. The size of the shapes is function of the drawing speed."
+		@description = "Draws rectangles or ellipses along the path. The size of the shapes is function of the drawing speed."
 
 		@initializeParameters: ()->
 			parameters = super()
@@ -65,23 +65,9 @@ define ['SpeedPath'], (SpeedPath) ->
 
 			speed = @speedAt(offset)
 
-			# add a shape at 'offset'
-			addShape = (offset, height, speed)=>
-				point = @controlPath.getPointAt(offset)
-				normal = @controlPath.getNormalAt(offset)
-
-				width = @data.minWidth + (@data.maxWidth - @data.minWidth) * speed / @constructor.maxSpeed
-				rectangle = new P.Rectangle(point.subtract(new P.Point(width/2, height/2)), new P.Size(width, height))
-				if not @data.ellipse
-					shape = @addPath(new P.Path.Rectangle(rectangle))
-				else
-					shape = @addPath(new P.Path.Ellipse(rectangle))
-				shape.rotation = normal.angle
-				return
-
 			# if @data.speedForLength: the drawing is not updated at each step, but the step length is function of the speed
 			if not @data.speedForLength
-				addShape(offset, @data.step, speed)
+				@addShape(offset, @data.step, speed)
 			else 	# @data.speedForLength
 
 				# map 'speed' to the interval [@data.minSpeed, @data.maxSpeed]
@@ -91,12 +77,26 @@ define ['SpeedPath'], (SpeedPath) ->
 				stepOffset = offset-@lastOffset
 				if stepOffset>speed
 					midOffset = (offset+@lastOffset)/2
-					addShape(midOffset, stepOffset, speed)
+					@addShape(midOffset, stepOffset, speed)
 					@lastOffset = offset
 
 			return
 
 		endDraw: ()->
+			return
+
+		# add a shape at 'offset'
+		addShape: (offset, height, speed)->
+			point = @controlPath.getPointAt(offset)
+			normal = @controlPath.getNormalAt(offset)
+
+			width = @data.minWidth + (@data.maxWidth - @data.minWidth) * speed / @constructor.maxSpeed
+			rectangle = new P.Rectangle(point.subtract(new P.Point(width/2, height/2)), new P.Size(width, height))
+			if not @data.ellipse
+				shape = @addPath(new P.Path.Rectangle(rectangle))
+			else
+				shape = @addPath(new P.Path.Ellipse(rectangle))
+			shape.rotation = normal.angle
 			return
 
 	return ShapePath

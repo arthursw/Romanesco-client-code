@@ -4,17 +4,18 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tool', 'zeroClipboard'], function(Tool, ZeroClipboard) {
-    Tool.Screenshot = (function(_super) {
-      __extends(Screenshot, _super);
+  define(['Tools/Tool', 'zeroClipboard'], function(Tool, ZeroClipboard) {
+    var ScreenshotTool;
+    ScreenshotTool = (function(_super) {
+      __extends(ScreenshotTool, _super);
 
-      Screenshot.label = 'Screenshot';
+      ScreenshotTool.label = 'Screenshot';
 
-      Screenshot.description = '';
+      ScreenshotTool.description = '';
 
-      Screenshot.iconURL = 'screenshot.png';
+      ScreenshotTool.iconURL = 'screenshot.png';
 
-      Screenshot.cursor = {
+      ScreenshotTool.cursor = {
         position: {
           x: 0,
           y: 0
@@ -23,9 +24,9 @@
         icon: 'screenshot'
       };
 
-      Screenshot.drawItems = false;
+      ScreenshotTool.drawItems = false;
 
-      function Screenshot() {
+      function ScreenshotTool() {
         this.downloadSVG = __bind(this.downloadSVG, this);
         this.downloadPNG = __bind(this.downloadPNG, this);
         this.publishOnPinterestCallback = __bind(this.publishOnPinterestCallback, this);
@@ -35,7 +36,7 @@
         this.publishOnFacebookCallback = __bind(this.publishOnFacebookCallback, this);
         this.publishOnFacebook = __bind(this.publishOnFacebook, this);
         this.extractImage = __bind(this.extractImage, this);
-        Screenshot.__super__.constructor.call(this, true);
+        ScreenshotTool.__super__.constructor.call(this, true);
         this.modalJ = $("#screenshotModal");
         this.modalJ.find('button[name="publish-on-facebook"]').click((function(_this) {
           return function() {
@@ -75,7 +76,7 @@
         return;
       }
 
-      Screenshot.prototype.getDescription = function() {
+      ScreenshotTool.prototype.getDescription = function() {
         if (this.descriptionJ.val().length > 0) {
           return this.descriptionJ.val();
         } else {
@@ -83,13 +84,13 @@
         }
       };
 
-      Screenshot.prototype.checkRemoveScreenshotRectangle = function(item) {
+      ScreenshotTool.prototype.checkRemoveScreenshotRectangle = function(item) {
         if ((this.selectionRectangle != null) && item !== this.selectionRectangle) {
           this.selectionRectangle.remove();
         }
       };
 
-      Screenshot.prototype.begin = function(event) {
+      ScreenshotTool.prototype.begin = function(event) {
         var from;
         from = R.me;
         R.currentPaths[from] = new P.Path.Rectangle(event.point, event.point);
@@ -100,7 +101,7 @@
         R.selectionLayer.addChild(R.currentPaths[from]);
       };
 
-      Screenshot.prototype.update = function(event) {
+      ScreenshotTool.prototype.update = function(event) {
         var from;
         from = R.me;
         R.currentPaths[from].lastSegment.point = event.point;
@@ -108,7 +109,7 @@
         R.currentPaths[from].lastSegment.previous.point.x = event.point.x;
       };
 
-      Screenshot.prototype.end = function(event) {
+      ScreenshotTool.prototype.end = function(event) {
         var from, r;
         from = R.me;
         R.currentPaths[from].remove();
@@ -120,7 +121,7 @@
         this.selectionRectangle = new R.RSelectionRectangle(new P.Rectangle(event.downPoint, event.point), this.extractImage);
       };
 
-      Screenshot.prototype.extractImage = function(redraw) {
+      ScreenshotTool.prototype.extractImage = function(redraw) {
         var copyDataBtnJ, imgJ, maxHeight, twitterLinkJ, twitterScriptJ;
         this.rectangle = this.selectionRectangle.getBounds();
         this.selectionRectangle.remove();
@@ -155,18 +156,18 @@
         });
       };
 
-      Screenshot.prototype.saveImage = function(callback) {
+      ScreenshotTool.prototype.saveImage = function(callback) {
         Dajaxice.draw.saveImage(callback, {
           'image': this.dataURL
         });
         R.alertManager.alert("Your image is being uploaded...", "info");
       };
 
-      Screenshot.prototype.publishOnFacebook = function() {
+      ScreenshotTool.prototype.publishOnFacebook = function() {
         this.saveImage(this.publishOnFacebookCallback);
       };
 
-      Screenshot.prototype.publishOnFacebookCallback = function(result) {
+      ScreenshotTool.prototype.publishOnFacebookCallback = function(result) {
         var caption;
         R.alertManager.alert("Your image was successfully uploaded to Romanesco, posting to Facebook...", "info");
         caption = this.getDescription();
@@ -186,7 +187,7 @@
         });
       };
 
-      Screenshot.prototype.publishOnFacebookAsPhoto = function() {
+      ScreenshotTool.prototype.publishOnFacebookAsPhoto = function() {
         if (!R.loggedIntoFacebook) {
           FB.login((function(_this) {
             return function(response) {
@@ -202,7 +203,7 @@
         }
       };
 
-      Screenshot.prototype.publishOnFacebookAsPhotoCallback = function(result) {
+      ScreenshotTool.prototype.publishOnFacebookAsPhotoCallback = function(result) {
         var caption;
         R.alertManager.alert("Your image was successfully uploaded to Romanesco, posting to Facebook...", "info");
         caption = this.getDescription();
@@ -219,11 +220,11 @@
         });
       };
 
-      Screenshot.prototype.publishOnPinterest = function() {
+      ScreenshotTool.prototype.publishOnPinterest = function() {
         this.saveImage(this.publishOnPinterestCallback);
       };
 
-      Screenshot.prototype.publishOnPinterestCallback = function(result) {
+      ScreenshotTool.prototype.publishOnPinterestCallback = function(result) {
         var buttonJ, caption, description, imageUrl, imgJ, linkJ, linkJcopy, pinterestModalJ, siteUrl, submit;
         R.alertManager.alert("Your image was successfully uploaded to Romanesco...", "info");
         pinterestModalJ = $("#customModal");
@@ -256,12 +257,12 @@
         });
       };
 
-      Screenshot.prototype.downloadPNG = function() {
+      ScreenshotTool.prototype.downloadPNG = function() {
         this.modalJ.find("a.png")[0].click();
         this.modalJ.modal('hide');
       };
 
-      Screenshot.prototype.downloadSVG = function() {
+      ScreenshotTool.prototype.downloadSVG = function() {
         var blob, bounds, canvasTemp, controlPath, fileName, item, itemsToSave, link, position, rectanglePath, svg, svgGroup, tempProject, url, _i, _j, _k, _len, _len1, _len2, _ref;
         rectanglePath = new P.Path.Rectangle(this.rectangle);
         itemsToSave = [];
@@ -313,13 +314,13 @@
         this.modalJ.modal('hide');
       };
 
-      Screenshot.prototype.copyURL = function() {};
+      ScreenshotTool.prototype.copyURL = function() {};
 
-      return Screenshot;
+      return ScreenshotTool;
 
     })(Tool);
-    new Tool.Screenshot();
-    return Tool.Screenshot;
+    Tool.Screenshot = ScreenshotTool;
+    return ScreenshotTool;
   });
 
 }).call(this);

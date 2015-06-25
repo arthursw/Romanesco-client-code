@@ -2,7 +2,7 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  define(['utils'], function() {
+  define(['Utils/Utils'], function() {
     var CityManager;
     CityManager = (function() {
       function CityManager() {
@@ -76,7 +76,7 @@
           name: name,
           site: null
         };
-        R.load();
+        R.loader.load();
         View.updateHash();
       };
 

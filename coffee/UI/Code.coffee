@@ -78,13 +78,13 @@ define [ 'jqtree' ], () ->
 				dragAndDrop: true
 				onCanMoveTo: (moved_node, target_node, position)-> return target_node.type == 'tree' or position != 'inside'
 			)
-			@fileBrowserJ.bind('tree.select', @loadFile)
+			@fileBrowserJ.bind('tree.select', @loadAndOpenFile)
 			@fileBrowserJ.bind('tree.move', @onFileMoved)
 			return
 
-		loadFile: (event)=>
+		loadAndOpenFile: (event)=>
 			if event.node.type == 'tree' then return
-			@request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/coffee/'+event.node.path, @openFile)
+			@loadFile(event.node.path, @openFile)
 			return
 
 		openFile: (content)->
@@ -96,6 +96,10 @@ define [ 'jqtree' ], () ->
 			console.log('target_node', event.move_info.target_node)
 			console.log('position', event.move_info.position)
 			console.log('previous_parent', event.move_info.previous_parent)
+			return
+
+		loadFile: (path, callback)->
+			@request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/coffee/'+path, callback)
 			return
 
 		# loadFiles: (content)=>
@@ -124,6 +128,60 @@ define [ 'jqtree' ], () ->
 
 		# 	return
 
-	R.FileManager = FileManager
+	class ModuleCreator
 
-	return
+		constructor: ()->
+			return
+
+		createButton: (content)->
+			source = atob(content.content)
+
+			iconResult = /@iconURL = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source)
+
+			if iconResult? and iconResult.length>=2
+				iconURL = iconResult[2]
+
+			descriptionResult = /@description = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source)
+
+			if descriptionResult? and descriptionResult.length>=2
+				description = descriptionResult[2]
+
+			labelResult = /@label = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source)
+
+			if labelResult? and labelResult.length>=2
+				label = labelResult[2]
+
+			console.log '{ label: ' + label + ', description: ' + description + ', iconURL: ' + iconURL + ', file: ' + content.name + ' }'
+			return
+
+		createButtons: (pathDirectory)->
+			for name, node of pathDirectory.children
+				if node.type != 'tree'
+					@loadFile(node.path, @createButton)
+				else
+					@createButtons(node)
+			return
+
+		loadButtons: ()->
+			@createButtons(@tree.children['Items'].children['Paths'])
+			return
+
+		registerModule: (@module)->
+			@loadFile(@tree.children['ModuleLoader'].path, @registerModuleInModuleLoader)
+			return
+
+		insertModule: (source, module, position)->
+			line = JSON.stringify(module)
+			source.insert(line, position)
+			return
+
+		registerModuleInModuleLoader: (content)=>
+			source = atob(content.content)
+			buttonsResult = /buttons = \[/.exec(source)
+
+			if buttonsResult? and buttonsResult.length>1
+				@insertModule(source, @module, buttonsResult[1])
+
+			return
+
+	return FileManager

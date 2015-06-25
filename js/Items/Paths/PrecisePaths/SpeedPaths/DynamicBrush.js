@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['SpeedPath'], function(SpeedPath) {
+  define(['Items/Paths/PrecisePaths/SpeedPaths/SpeedPath'], function(SpeedPath) {
     var DynamicBrush;
     DynamicBrush = (function(_super) {
       __extends(DynamicBrush, _super);
@@ -16,7 +16,7 @@
 
       DynamicBrush.label = 'Dynamic brush';
 
-      DynamicBrush.rdescription = "The stroke width is function of the drawing speed: the faster the wider.";
+      DynamicBrush.description = "The stroke width is function of the drawing speed: the faster the wider.";
 
       DynamicBrush.polygonMode = false;
 

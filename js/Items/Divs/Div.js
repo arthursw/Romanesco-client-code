@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Content'], function(Content) {
+  define(['Items/Content'], function(Content) {
     var Div;
     Div = (function(_super) {
       __extends(Div, _super);
@@ -12,6 +12,8 @@
       Div.zIndexMin = 1;
 
       Div.zIndexMax = 100000;
+
+      Div.hiddenDivs = [];
 
       Div.initializeParameters = function() {
         var parameters, strokeColor, strokeWidth;
@@ -31,10 +33,10 @@
 
       Div.updateHiddenDivs = function(event) {
         var div, point, projectPoint, _i, _len, _ref;
-        if (R.hiddenDivs.length > 0) {
+        if (this.hiddenDivs.length > 0) {
           point = new P.Point(event.pageX, event.pageY);
           projectPoint = P.view.viewToProject(point);
-          _ref = R.hiddenDivs;
+          _ref = this.hiddenDivs;
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             div = _ref[_i];
             if (!div.getBounds().contains(projectPoint)) {
@@ -45,8 +47,8 @@
       };
 
       Div.showDivs = function() {
-        while (R.hiddenDivs.length > 0) {
-          R.hiddenDivs[0].show();
+        while (this.hiddenDivs.length > 0) {
+          this.hiddenDivs[0].show();
         }
       };
 
@@ -134,7 +136,7 @@
           opacity: 0.5,
           'pointer-events': 'none'
         });
-        R.hiddenDivs.push(this);
+        this.constructor.hiddenDivs.push(this);
       };
 
       Div.prototype.show = function() {
@@ -142,7 +144,7 @@
           opacity: 1,
           'pointer-events': 'auto'
         });
-        Utils.Array.remove(R.hiddenDivs, this);
+        Utils.Array.remove(this.constructor.hiddenDivs, this);
       };
 
       Div.prototype.save = function(addCreateCommand) {
@@ -160,7 +162,7 @@
         }
         args = {
           city: R.city,
-          box: R.boxFromRectangle(this.getBounds()),
+          box: Utils.CS.boxFromRectangle(this.getBounds()),
           object_type: this.object_type,
           date: Date.now(),
           data: this.getStringifiedData()
@@ -281,9 +283,9 @@
         this.maskJ.hide();
       };
 
-      Div.prototype.setParameter = function(controller, value) {
-        Div.__super__.setParameter.call(this, controller, value);
-        switch (controller.name) {
+      Div.prototype.setParameter = function(name, value) {
+        Div.__super__.setParameter.call(this, name, value);
+        switch (name) {
           case 'strokeWidth':
           case 'strokeColor':
           case 'fillColor':
@@ -307,7 +309,7 @@
           default:
             args = {
               pk: this.pk,
-              box: R.boxFromRectangle(this.getBounds()),
+              box: Utils.CS.boxFromRectangle(this.getBounds()),
               data: this.getStringifiedData()
             };
         }
@@ -339,8 +341,8 @@
         if (!Div.__super__.select.call(this, updateOptions, updateSelectionRectangle) || this.divJ.hasClass("selected")) {
           return false;
         }
-        if (R.selectedTool !== R.tools['Select']) {
-          R.tools['Select'].select();
+        if (R.selectedTool !== Tool.select) {
+          Tool.select.select();
         }
         this.divJ.addClass("selected");
         return true;
@@ -398,7 +400,7 @@
         this.divJ.remove();
         Utils.Array.remove(R.divs, this);
         if (this.data.loadEntireArea) {
-          Utils.Array.remove(R.entireAreas, this);
+          Utils.Array.remove(R.view.entireAreas, this);
         }
         if (R.divToUpdate === this) {
           delete R.divToUpdate;

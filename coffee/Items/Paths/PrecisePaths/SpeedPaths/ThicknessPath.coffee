@@ -1,10 +1,10 @@
-define ['SpeedPath'], (SpeedPath) ->
+define ['Items/Paths/PrecisePaths/SpeedPaths/SpeedPath'], (SpeedPath) ->
 
 	# The thickness pass demonstrates a simple use of the speed path: it draws a stroke which is thick where the user draws quickly, and thin elsewhere
 	# The stroke width can be changed with the speed handles at any time
 	class ThicknessPath extends SpeedPath
 		@label = 'Thickness path'
-		@rdescription = "The stroke width is function of the drawing speed: the faster the wider."
+		@description = "The stroke width is function of the drawing speed: the faster the wider."
 		@iconURL = 'static/images/icons/inverted/rollerBrush.png'
 		@iconAlt = 'roller brush'
 

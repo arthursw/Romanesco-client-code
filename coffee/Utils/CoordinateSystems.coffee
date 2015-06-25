@@ -1,5 +1,6 @@
-define [ 'utils' ], () ->
+define [], () ->
 
+	CS = {}
 	# Romansco relies on different coordinate systems:
 	# - the paper view: corresponds to the canvas on the html document, top left corner of canvas is [0,0] and bottom left is [P.view.size.width, P.view.size.height]
 	# - the paper project: the infinite space, 0,0 is the origin of the infinite space, from [-inf,-inf] to [inf,inf]
@@ -14,7 +15,7 @@ define [ 'utils' ], () ->
 	#
 	# @param [P.Point] point to convert
 	# @return [P.Point object] the planet on which *point* lies
-	R.projectToPlanet = (point)->
+	CS.projectToPlanet = (point)->
 		planet = {}
 		# if not point.x? and not point.y? then point = arrayToPoint(point)
 
@@ -31,8 +32,8 @@ define [ 'utils' ], () ->
 	# @param point [P.Point] point to convert
 	# @param planet [P.Point] planet to convert
 	# @return [P.Point object] the position of *point* on the planet
-	R.projectToPosOnPlanet = (point, planet)->
-		planet ?= R.projectToPlanet(point)
+	CS.projectToPosOnPlanet = (point, planet)->
+		planet ?= CS.projectToPlanet(point)
 		# if not point.x? and not point.y? then point = arrayToPoint(point)
 
 		pos = {}
@@ -46,9 +47,9 @@ define [ 'utils' ], () ->
 	#
 	# @param point [P.Point] point to convert
 	# @return [{ pos: P.Point, planet: Planet }] the planet on which *point* lies and the position of *point* on the planet
-	R.projectToPlanetJson = (point)->
-		planet = R.projectToPlanet(point)
-		pos = R.projectToPosOnPlanet(point, planet)
+	CS.projectToPlanetJson = (point)->
+		planet = CS.projectToPlanet(point)
+		pos = CS.projectToPosOnPlanet(point, planet)
 		return { pos: pos, planet: planet }
 
 	# Get the position in project coordinate system of *point* on *planet*
@@ -57,8 +58,8 @@ define [ 'utils' ], () ->
 	# @param [P.Point] point to convert
 	# @param [P.Point] planet to convert
 	# @return [Paper point] the position of *point* on *planet*
-	R.posOnPlanetToProject = (point, planet)->
-		if not point.x? and not point.y? then point = R.arrayToPoint(point)
+	CS.posOnPlanetToProject = (point, planet)->
+		if not point.x? and not point.y? then point = CS.arrayToPoint(point)
 		x = planet.x*360+point.x
 		y = planet.y*180+point.y
 		x *= R.scale
@@ -66,75 +67,71 @@ define [ 'utils' ], () ->
 		return new P.Point(x,y)
 
 	# @return [Paper point] point extracted from *array*
-	R.arrayToPoint = (array) ->
+	CS.arrayToPoint = (array) ->
 		return new P.Point(array)
 
 	# @return [Array of Number] array extracted from *point*
-	R.pointToArray = (point) ->
+	CS.pointToArray = (point) ->
 		return [point.x, point.y]
 
 	# @return [P.Point] object converted from paper point
-	R.pointToObj = (point) ->
+	CS.pointToObj = (point) ->
 		return { x: point.x, y: point.y }
 
-	# @return [String] a string corresponding to the view position on a grid of R.scale wide cells
-	R.getChatRoom = ()->
-		return 'x: ' + Math.round(P.view.center.x / R.scale) + ', y: ' + Math.round(P.view.center.y / R.scale)
-
 	# @return [Paper point] the top left corner of the view [0,0] in project coordinates
-	R.getTopLeftCorner = ()->
+	CS.getTopLeftCorner = ()->
 		return P.view.viewToProject(new P.Point(0,0))
 
 	# @return [Paper point] the point between *p1* and *p2*
-	R.midPoint = (p1, p2) ->
+	CS.midPoint = (p1, p2) ->
 		return new P.Point( (p1.x+p2.x)*0.5, (p1.y+p2.y)*0.5 )
 
 	# @return [P.Rectangle] *rectangle* in project coordinates
-	R.viewToProjectRectangle = (rectangle)->
+	CS.viewToProjectRectangle = (rectangle)->
 		return new P.Rectangle(P.view.viewToProject(rectangle.topLeft), P.view.viewToProject(rectangle.bottomRight))
 
 	# @return [P.Rectangle] *rectangle* in view coordinates
-	R.projectToViewRectangle = (rectangle)->
+	CS.projectToViewRectangle = (rectangle)->
 		return new P.Rectangle(P.view.projectToView(rectangle.topLeft), P.view.projectToView(rectangle.bottomRight))
 
 	# @return [Paper point] topLeft point of the bottom right planet in project coordinates (this will be the origin of the limits)
-	R.getLimit = ()->
-		planet = R.projectToPlanet(R.getTopLeftCorner())
-		return R.posOnPlanetToProject( new P.Point(-180,-90), new P.Point(planet.x+1, planet.y+1) )
+	CS.getLimit = ()->
+		planet = CS.projectToPlanet(CS.getTopLeftCorner())
+		return CS.posOnPlanetToProject( new P.Point(-180,-90), new P.Point(planet.x+1, planet.y+1) )
 
 	# get a GeoJson valid box in planet coordinates from *rectangle*
 	# @param rectangle [Paper P.Rectangle] the rectangle to convert
 	# @return [{ points:Array<Array<2 Numbers>>, planet: Object, tl: P.Point, br: P.Point }] the resulting object
-	R.boxFromRectangle = (rectangle)->
+	CS.boxFromRectangle = (rectangle)->
 		# remove margin to ignore intersections of paths which are close to the edges
 
-		planet = R.pointToObj( R.projectToPlanet(rectangle.topLeft) )
+		planet = CS.pointToObj( CS.projectToPlanet(rectangle.topLeft) )
 
-		tlOnPlanet = R.projectToPosOnPlanet(rectangle.topLeft, planet)
-		brOnPlanet = R.projectToPosOnPlanet(rectangle.bottomRight, planet)
+		tlOnPlanet = CS.projectToPosOnPlanet(rectangle.topLeft, planet)
+		brOnPlanet = CS.projectToPosOnPlanet(rectangle.bottomRight, planet)
 
 		points = []
-		points.push(R.pointToArray(tlOnPlanet))
-		points.push(R.pointToArray(R.projectToPosOnPlanet(rectangle.topRight, planet)))
-		points.push(R.pointToArray(brOnPlanet))
-		points.push(R.pointToArray(R.projectToPosOnPlanet(rectangle.bottomLeft, planet)))
-		points.push(R.pointToArray(tlOnPlanet))
+		points.push(CS.pointToArray(tlOnPlanet))
+		points.push(CS.pointToArray(CS.projectToPosOnPlanet(rectangle.topRight, planet)))
+		points.push(CS.pointToArray(brOnPlanet))
+		points.push(CS.pointToArray(CS.projectToPosOnPlanet(rectangle.bottomLeft, planet)))
+		points.push(CS.pointToArray(tlOnPlanet))
 
-		return { points:points, planet: R.pointToObj(planet), tl: tlOnPlanet, br: brOnPlanet }
+		return { points:points, planet: CS.pointToObj(planet), tl: tlOnPlanet, br: brOnPlanet }
 
 	# WARNING: not used, not tested
 	# get a rectangle from a GeoJson valid box in planet coordinates
 	# @param box [{ points:Array<Array<2 Numbers>>, planet: Object, tl: P.Point, br: P.Point }] the box to convert
 	# @return [P.Rectangle] the resulting rectangle
-	R.rectangleFromBox = (box)->
+	CS.rectangleFromBox = (box)->
 		planet = new P.Point(box.planetX, box.planetY)
 
-		tl = R.posOnPlanetToProject(box.box.coordinates[0][0], planet)
-		br = R.posOnPlanetToProject(box.box.coordinates[0][2], planet)
+		tl = CS.posOnPlanetToProject(box.box.coordinates[0][0], planet)
+		br = CS.posOnPlanetToProject(box.box.coordinates[0][2], planet)
 
 		return new P.Rectangle(tl, br)
 
-	R.quantizeZoom = (zoom)->
+	CS.quantizeZoom = (zoom)->
 		if zoom < 5
 			zoom = 1
 		else if zoom < 25
@@ -143,4 +140,4 @@ define [ 'utils' ], () ->
 			zoom = 25
 		return zoom
 
-	return
+	return CS

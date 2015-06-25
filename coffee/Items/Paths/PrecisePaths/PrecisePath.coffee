@@ -1,4 +1,4 @@
-define ['Path'], (Path) ->
+define ['Items/Paths/Path'], (Path) ->
 
 	# PrecisePath extends R.RPath to add precise editing functionalities
 	# PrecisePath adds control handles to the control path (which can be hidden):
@@ -48,7 +48,7 @@ define ['Path'], (Path) ->
 
 	class PrecisePath extends Path
 		@label = 'Precise path'
-		@rdescription = "This path offers precise controls, one can modify points along with their handles and their type."
+		@description = "This path offers precise controls, one can modify points along with their handles and their type."
 		@iconURL = 'static/images/icons/inverted/editCurve.png'
 		@iconAlt = 'edit curve'
 
@@ -119,7 +119,7 @@ define ['Path'], (Path) ->
 
 		setControlPath: (points, planet)->
 			for point, i in points by 4
-				@controlPath.add(R.posOnPlanetToProject(point, planet))
+				@controlPath.add(Utils.CS.posOnPlanetToProject(point, planet))
 				@controlPath.lastSegment.handleIn = new P.Point(points[i+1])
 				@controlPath.lastSegment.handleOut = new P.Point(points[i+2])
 				@controlPath.lastSegment.rtype = points[i+3]
@@ -257,7 +257,7 @@ define ['Path'], (Path) ->
 		# redefine {RPath#updateCreate}
 		# update create action:
 		# in normal mode:
-		# - check if path is not in an RLock
+		# - check if path is not in an Lock
 		# - add point
 		# - @checkUpdateDrawing() (i.e. continue the draw steps to fit the control path)
 		# in polygon mode:
@@ -369,6 +369,32 @@ define ['Path'], (Path) ->
 						delete @previousData[name]
 			return
 
+		simpleProcess: (redrawing)->
+			@beginDraw()
+			@updateDraw()
+			@endDraw()
+			return
+
+		process: (redrawing)->
+			@beginDraw(redrawing)
+
+			# # update drawing (@updateDraw()) every *step* along the control path
+			# # n=0
+			# while offset<controlPathLength
+
+			# 	@updateDraw(offset)
+			# 	offset += step
+
+			# 	# if n%10==0 then R.updateLoadingBar(offset/controlPathLength)
+			# 	# n++
+
+			for segment, i in @controlPath.segments
+				if i==0 then continue
+				@checkUpdateDrawing(segment, redrawing)
+
+			@endDraw(redrawing)
+			return
+
 		# update the appearance of the path (the drawing group)
 		# called anytime the path is modified:
 		# by beginCreate/Update/End, updateSelect/End, parameterChanged, deletePoint, changePoint etc. and loadPath
@@ -400,41 +426,17 @@ define ['Path'], (Path) ->
 
 			@drawingOffset = 0
 
-			if @constructor.renderType == 'simple'
-				process = ()=>
-					@beginDraw()
-					@updateDraw()
-					@endDraw()
-			else
-				process = ()=>
-					@beginDraw(redrawing)
-
-					# # update drawing (@updateDraw()) every *step* along the control path
-					# # n=0
-					# while offset<controlPathLength
-
-					# 	@updateDraw(offset)
-					# 	offset += step
-
-					# 	# if n%10==0 then R.updateLoadingBar(offset/controlPathLength)
-					# 	# n++
-
-					for segment, i in @controlPath.segments
-						if i==0 then continue
-						@checkUpdateDrawing(segment, redrawing)
-
-					@endDraw(redrawing)
-					return
+			process = if @constructor.renderType == 'simple' then @simpleProcess else @process
 
 			if not R.catchErrors
 				# R.rasterizer.hideOthers(@)
 				# R.startTimer()
-				process()
+				process(redrawing)
 				# R.stopTimer("Time to draw")
 				# R.rasterizer.showItems()
 			else
 				try 	# catch errors to log them in the code editor console (if user is making a script)
-					process()
+					process(redrawing)
 				catch error
 					console.error error.stack
 					console.error error
@@ -457,9 +459,9 @@ define ['Path'], (Path) ->
 		getPoints: ()->
 			points = []
 			for segment in @controlPath.segments
-				points.push(R.projectToPosOnPlanet(segment.point))
-				points.push(R.pointToObj(segment.handleIn))
-				points.push(R.pointToObj(segment.handleOut))
+				points.push(Utils.CS.projectToPosOnPlanet(segment.point))
+				points.push(Utils.CS.pointToObj(segment.handleIn))
+				points.push(Utils.CS.pointToObj(segment.handleOut))
 				points.push(segment.rtype)
 			return points
 

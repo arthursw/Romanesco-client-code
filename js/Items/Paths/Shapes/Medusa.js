@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Shape'], function(Shape) {
+  define(['Items/Paths/Shapes/Shape'], function(Shape) {
     var Medusa;
     Medusa = (function(_super) {
       __extends(Medusa, _super);
@@ -18,7 +18,7 @@
 
       Medusa.label = 'Medusa';
 
-      Medusa.rdescription = "Creates a bunch of aniamted Medusa.";
+      Medusa.description = "Creates a bunch of aniamted Medusa.";
 
       Medusa.squareByDefault = true;
 

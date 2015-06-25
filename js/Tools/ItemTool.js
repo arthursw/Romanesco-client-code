@@ -3,17 +3,18 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tool'], function(Tool) {
-    Tool.Item = (function(_super) {
-      __extends(Item, _super);
+  define(['Tools/Tool'], function(Tool) {
+    var ItemTool;
+    ItemTool = (function(_super) {
+      __extends(ItemTool, _super);
 
-      function Item(RItem) {
-        this.RItem = RItem;
-        Item.__super__.constructor.call(this, true);
+      function ItemTool(Item) {
+        this.Item = Item;
+        ItemTool.__super__.constructor.call(this, true);
         return;
       }
 
-      Item.prototype.select = function(deselectItems, updateParameters) {
+      ItemTool.prototype.select = function(deselectItems, updateParameters) {
         if (deselectItems == null) {
           deselectItems = true;
         }
@@ -21,10 +22,10 @@
           updateParameters = true;
         }
         R.rasterizer.drawItems();
-        Item.__super__.select.apply(this, arguments);
+        ItemTool.__super__.select.apply(this, arguments);
       };
 
-      Item.prototype.begin = function(event, from) {
+      ItemTool.prototype.begin = function(event, from) {
         var point;
         if (from == null) {
           from = R.me;
@@ -45,7 +46,7 @@
         }
       };
 
-      Item.prototype.update = function(event, from) {
+      ItemTool.prototype.update = function(event, from) {
         var bounds, lock, locks, point, _i, _len;
         if (from == null) {
           from = R.me;
@@ -75,7 +76,7 @@
         }
       };
 
-      Item.prototype.end = function(event, from) {
+      ItemTool.prototype.end = function(event, from) {
         var bounds, lock, locks, point, _i, _len;
         if (from == null) {
           from = R.me;
@@ -114,10 +115,11 @@
         return true;
       };
 
-      return Item;
+      return ItemTool;
 
     })(Tool);
-    return Tool.Item;
+    Tool.Item = ItemTool;
+    return ItemTool;
   });
 
 }).call(this);

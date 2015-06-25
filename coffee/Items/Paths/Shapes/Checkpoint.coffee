@@ -1,11 +1,11 @@
-define [ 'Shape' ], (Shape) ->
+define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 
 	# Checkpoint is a video game element:
 	# if placed on a video game area, it will be registered in it
 	class Checkpoint extends Shape
 		@Shape = paper.P.Path.Rectangle
 		@label = 'Checkpoint'
-		@rdescription = """Draw checkpoints on a lock with a Racer to create a race
+		@description = """Draw checkpoints on a lock with a Racer to create a race
 		(the players must go through each checkpoint as fast as possible, with the car tool)."""
 
 		@category = 'Video game/Racer'

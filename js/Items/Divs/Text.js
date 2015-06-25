@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Div'], function(Div) {
+  define(['Items/Divs/Div'], function(Div) {
     var Text;
     Text = (function(_super) {
       __extends(Text, _super);
@@ -460,8 +460,8 @@
         this.setFontColor(this.data.fontColor, update);
       };
 
-      Text.prototype.setParameter = function(controller, value) {
-        Text.__super__.setParameter.call(this, controller, value);
+      Text.prototype.setParameter = function(name, value) {
+        Text.__super__.setParameter.call(this, name, value);
         switch (controller.name) {
           case 'fontStyle':
           case 'fontFamily':

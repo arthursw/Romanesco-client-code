@@ -1,4 +1,4 @@
-define [ 'utils' ], () ->
+define [ ], () ->
 
 	class AlertManager
 

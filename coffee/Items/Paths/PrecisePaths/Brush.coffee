@@ -1,7 +1,7 @@
 
 	# class Brush extends PrecisePath
 	# 	@label = 'new P.Path'
-	# 	@rdescription = "New tool description."
+	# 	@description = "New tool description."
 
 	# 	parameters: ()->
 	# 		parameters = super()

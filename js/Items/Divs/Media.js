@@ -5,7 +5,7 @@
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
-  define(['Div', 'oembed'], function(Div) {
+  define(['Items/Divs/Div', 'oembed'], function(Div) {
     var Media;
     Media = (function(_super) {
       __extends(Media, _super);
@@ -22,7 +22,7 @@
         var submit;
         submit = function(data) {
           var div;
-          div = new R.RMedia(rectangle, data);
+          div = new R.Media(rectangle, data);
           div.finish();
           if (!div.group) {
             return;
@@ -151,8 +151,8 @@
         }
       };
 
-      Media.prototype.setParameter = function(controller, value) {
-        Media.__super__.setParameter.call(this, controller, value);
+      Media.prototype.setParameter = function(name, value) {
+        Media.__super__.setParameter.call(this, name, value);
         switch (controller.name) {
           case 'fitImage':
             this.toggleFitImage();

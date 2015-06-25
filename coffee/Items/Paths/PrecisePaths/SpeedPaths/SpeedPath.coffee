@@ -1,4 +1,4 @@
-define [ 'PrecisePath' ], (PrecisePath) ->
+define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 
 	# SpeedPath extends R.PrecisePath to add speed functionnalities:
 	#  - the speed at which the user has drawn the path is stored and has influence on the drawing,
@@ -8,7 +8,7 @@ define [ 'PrecisePath' ], (PrecisePath) ->
 	#  - the speed group can be shown or hidden through the folder 'Edit curve' in the gui
 	class SpeedPath extends PrecisePath
 		@label = 'Speed path'
-		@rdescription = "This path offers speed."
+		@description = "This path offers speed."
 		@iconURL = null
 		@iconAlt = null
 

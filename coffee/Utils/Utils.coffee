@@ -1,8 +1,26 @@
-define ['underscore', 'jquery', 'paper'], (_) ->
+define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper', 'bootstrap'], (CS, _, $, tinycolor) ->
 
 	# window._ = _
+	window.tinycolor = tinycolor
 	paper.install(window.P)
 	Utils = {}
+	Utils.CS = CS
+
+	# Display a R.alertManager.alert message when a dajaxice error happens (problem on the server)
+	Dajaxice.setup( 'default_exception_callback': (error)->
+		console.log 'Dajaxice error!'
+		R.alertManager.alert "Connection error", "error"
+		return
+	)
+	# static
+	R.romanescoURL = 'http://localhost:8000/'
+	R.me = null 							# R.me is the username of the user (sent by the server in each ajax "load")
+
+	R.OSName = "Unknown OS" 				# user's operating system
+	if navigator.appVersion.indexOf("Win")!=-1 then R.OSName = "Windows"
+	if navigator.appVersion.indexOf("Mac")!=-1 then R.OSName = "MacOS"
+	if navigator.appVersion.indexOf("X11")!=-1 then R.OSName = "UNIX"
+	if navigator.appVersion.indexOf("Linux")!=-1 then R.OSName = "Linux"
 
 	R.templatesJ = $("#templates")
 	#\
@@ -136,6 +154,9 @@ define ['underscore', 'jquery', 'paper'], (_) ->
 	Utils.Array.pushIfAbsent = (array, item) ->
 		if array.indexOf(item)<0 then array.push(item)
 		return
+
+	R.updateTimeout = {} 					# map of id -> timeout id to clear the timeouts
+	R.requestedCallbacks = {} 				# map of id -> request id to clear the requestAnimationFrame
 
 	Utils.deferredExecutionCallbackWrapper = (callback, id, args, oThis)->
 		console.log "deferredExecutionCallbackWrapper: " + id
@@ -350,6 +371,177 @@ define ['underscore', 'jquery', 'paper'], (_) ->
 		if event.middlePoint? then event.middlePoint = new P.Point(event.middlePoint)
 		return event
 
+
+	Utils.Event = {}
+	# Convert a jQuery event to a project position
+	# @return [Paper P.Point] the project position corresponding to the event pageX, pageY
+	Utils.Event.jEventToPoint = (event)->
+		return P.view.viewToProject(new P.Point(event.pageX-R.canvasJ.offset().left, event.pageY-R.canvasJ.offset().top))
+
+	# ## Event to object conversion (to send event info through websockets)
+
+	# # Convert an event (jQuery event or Paper.js event) to an object
+	# # Only specific data is copied: modifiers (in paper.js event), position (pageX/Y or event.point), downPoint, delta, and target
+	# # convert the class name to selector to be able to find the target on the other clients [to be modified]
+	# #
+	# # @param event [jQuery or Paper.js event] event to convert
+	# Utils.Event.eventToObject = (event)->
+	# 	eo =
+	# 		modifiers: event.modifiers
+	# 		point: if not event.pageX? then event.point else Utils.Event.jEventToPoint(event)
+	# 		downPoint: event.downPoint?
+	# 		delta: event.delta
+	# 	if event.pageX? and event.pageY?
+	# 		eo.modifiers = {}
+	# 		eo.modifiers.control = event.ctrlKey
+	# 		eo.modifiers.command = event.metaKey
+	# 	if event.target?
+	# 		# convert class name to selector to be able to find the target on the other clients (websocket com)
+	# 		eo.target = "." + event.target.className.replace(" ", ".")
+	# 	return eo
+
+	# # Convert an object to an event (to receive event info through websockets)
+	# #
+	# # @param event [object event] event to convert
+	# R.objectToEvent = (event)->
+	# 	event.point = new P.Point(event.point)
+	# 	event.downPoint = new P.Point(event.downPoint)
+	# 	event.delta = new P.Point(event.delta)
+	# 	return event
+
+	# Convert a jQuery event to a Paper event
+	#
+	# @param event [jQuert event] event to convert
+	# @param previousPosition [Paper P.Point] (optional) the previous position of the mouse
+	# @param initialPosition [Paper P.Point] (optional) the initial position of the mouse
+	# @param type [String] (optional) the type of event
+	# @param count [Number] (optional) the number of times the mouse event was fired
+	# @return Paper event
+	Utils.Event.jEventToPaperEvent = (event, previousPosition=null, initialPosition=null, type=null, count=null)->
+		currentPosition = Utils.Event.jEventToPoint(event)
+		previousPosition ?= currentPosition
+		initialPosition ?= currentPosition
+		delta = currentPosition.subtract(previousPosition)
+		paperEvent =
+			modifiers:
+				shift: event.shiftKey
+				control: event.ctrlKey
+				option: event.altKey
+				command: event.metaKey
+			point: currentPosition
+			downPoint: initialPosition
+			delta: delta
+			middlePoint: previousPosition.add(delta.divide(2))
+			type: type
+			count: count
+		return paperEvent
+
+	# Returns snapped event
+	#
+	# @param event [Paper Event] event to snap
+	# @param from [String] (optional) username of the one who emitted of the event
+	# @return [Paper event] snapped event
+	Utils.Event.snap = (event, from=R.me)->
+		if from!=R.me then return event
+		if R.selectedTool.disableSnap() then return event
+		snap = R.parameters.General.snap.value
+		# snap = snap-snap%R.parameters.General.snap.step
+		if snap != 0
+			snappedEvent = jQuery.extend({}, event)
+			snappedEvent.modifiers = event.modifiers
+			snappedEvent.point = Utils.Event.snap2D(event.point, snap)
+			if event.lastPoint? then snappedEvent.lastPoint = Utils.Event.snap2D(event.lastPoint, snap)
+			if event.downPoint? then snappedEvent.downPoint = Utils.Event.snap2D(event.downPoint, snap)
+			if event.lastPoint? then snappedEvent.middlePoint = snappedEvent.point.add(snappedEvent.lastPoint).multiply(0.5)
+			if event.type != 'mouseup' and event.lastPoint?
+				snappedEvent.delta = snappedEvent.point.subtract(snappedEvent.lastPoint)
+			else if event.downPoint?
+				snappedEvent.delta = snappedEvent.point.subtract(snappedEvent.downPoint)
+			return snappedEvent
+		else
+			return event
+
+
+	# Test if the special key is pressed. Special key is command key on a mac, and control key on other systems.
+	#
+	# @param event [jQuery or Paper.js event] key event
+	# @return [Boolean] *specialKey*
+	R.specialKey = (event)->
+		if event.pageX? and event.pageY?
+			specialKey = if R.OSName == "MacOS" then event.metaKey else event.ctrlKey
+		else
+			specialKey = if R.OSName == "MacOS" then event.modifiers.command else event.modifiers.control
+		return specialKey
+
+	## Snap management
+	# The snap is applied to all emitted events (on the downPoint, point, delta and lastPoint properties)
+	# This is a poor and dirty implementation
+	# not good at all since it does not help to align elements on a grid (the offset between the initial position and the closest grid point is not cancelled)
+
+	Utils.Snap = {}
+	# Returns quantized snap
+	#
+	# @return [Number] *snap*
+	Utils.Snap.getSnap = ()->
+		# snap = R.parameters.snap.snap
+		# return snap-snap%R.parameters.snap.step
+		return R.parameters.General.snap.value
+
+	# Returns snapped value
+	#
+	# @param value [Number] value to snap
+	# @param snap [Number] optional snap, default is getSnap()
+	# @return [Number] snapped value
+	Utils.Snap.snap1D = (value, snap)->
+		snap ?= Utils.Event.getSnap()
+		if snap != 0
+			return Math.round(value/snap)*snap
+		else
+			return value
+
+	# Returns snapped point
+	#
+	# @param point [P.Point] point to snap
+	# @param snap [Number] optional snap, default is getSnap()
+	# @return [Paper point] snapped point
+	Utils.Snap.snap2D = (point, snap)->
+		snap ?= Utils.Event.getSnap()
+		if snap != 0
+			return new P.Point(Utils.Event.snap1D(point.x, snap), Utils.Event.snap1D(point.y, snap))
+		else
+			return point
+
+	# # Hide show RItems (RPath and RDivs)
+
+	# # Hide every path except *me* and set fastModeOn to true
+	# #
+	# # @param me [Item] the only item not to hide
+	# R.hideOthers = (me)->
+	# 	for name, item of R.paths
+	# 		if item != me
+	# 			item.group?.visible = false
+	# 	R.fastModeOn = true
+	# 	return
+
+	# # Show every path and set fastModeOn to false (do nothing if not in fastMode. The fastMode is when items are hidden when user modifies an Item)
+	# R.showAll = ()->
+	# 	if not R.fastModeOn then return
+	# 	for name, item of R.paths
+	# 		item.group?.visible = true
+	# 	R.fastModeOn = false
+	# 	return
+
+	Utils.Animation = {}
+	# register animation: push item to R.animatedItems
+	Utils.Animation.registerAnimation = (item)->
+		Utils.Array.pushIfAbsent(R.animatedItems, item)
+		return
+
+	# deregister animation: remove item from R.animatedItems
+	Utils.Animation.deregisterAnimation = (item)->
+		Utils.Array.remove(R.animatedItems, item)
+		return
+
 	# R.ajax = (url, callback, type="GET")->
 	# 	xmlhttp = new RXMLHttpRequest()
 	# 	xmlhttp.onreadystatechange = ()->
@@ -366,4 +558,5 @@ define ['underscore', 'jquery', 'paper'], (_) ->
 	# 		prototype = prototype.constructor.__super__
 	# 	return prototype
 
-	return
+	window.Utils = Utils
+	return Utils

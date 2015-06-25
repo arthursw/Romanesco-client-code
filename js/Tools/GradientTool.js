@@ -3,19 +3,20 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tool'], function(Tool) {
-    Tool.Gradient = (function(_super) {
-      __extends(Gradient, _super);
+  define(['Tools/Tool'], function(Tool) {
+    var GradientTool;
+    GradientTool = (function(_super) {
+      __extends(GradientTool, _super);
 
-      Gradient.label = 'Gradient';
+      GradientTool.label = 'Gradient';
 
-      Gradient.description = '';
+      GradientTool.description = '';
 
-      Gradient.favorite = true;
+      GradientTool.favorite = true;
 
-      Gradient.category = '';
+      GradientTool.category = '';
 
-      Gradient.cursor = {
+      GradientTool.cursor = {
         position: {
           x: 0,
           y: 0
@@ -23,16 +24,16 @@
         name: 'default'
       };
 
-      Gradient.handleSize = 5;
+      GradientTool.handleSize = 5;
 
-      function Gradient() {
-        Gradient.__super__.constructor.call(this, false);
+      function GradientTool() {
+        GradientTool.__super__.constructor.call(this, false);
         this.handles = [];
         this.radial = false;
         return;
       }
 
-      Gradient.prototype.getDefaultGradient = function(color) {
+      GradientTool.prototype.getDefaultGradient = function(color) {
         var bounds, firstColor, gradient, secondColor;
         if (R.selectedItems.length === 1) {
           bounds = R.selectedItems[0].getBounds();
@@ -63,7 +64,7 @@
         return gradient;
       };
 
-      Gradient.prototype.initialize = function(updateGradient, updateParameters) {
+      GradientTool.prototype.initialize = function(updateGradient, updateParameters) {
         var color, delta, destination, handle, location, origin, position, stop, value, _i, _len, _ref, _ref1, _ref2;
         if (updateGradient == null) {
           updateGradient = true;
@@ -118,7 +119,7 @@
         }
       };
 
-      Gradient.prototype.select = function(deselectItems, updateParameters) {
+      GradientTool.prototype.select = function(deselectItems, updateParameters) {
         var _ref;
         if (deselectItems == null) {
           deselectItems = true;
@@ -137,7 +138,7 @@
         this.initialize(true, updateParameters);
       };
 
-      Gradient.prototype.remove = function() {
+      GradientTool.prototype.remove = function() {
         var _ref;
         if ((_ref = this.group) != null) {
           _ref.remove();
@@ -149,11 +150,11 @@
         this.controller = null;
       };
 
-      Gradient.prototype.deselect = function() {
+      GradientTool.prototype.deselect = function() {
         this.remove();
       };
 
-      Gradient.prototype.selectHandle = function(handle) {
+      GradientTool.prototype.selectHandle = function(handle) {
         var _ref;
         if ((_ref = this.selectedHandle) != null) {
           _ref.selected = false;
@@ -163,18 +164,18 @@
         this.controller.setColor(handle.fillColor.toCSS());
       };
 
-      Gradient.prototype.colorChange = function(color) {
+      GradientTool.prototype.colorChange = function(color) {
         this.selectedHandle.fillColor = color;
         this.updateGradient();
       };
 
-      Gradient.prototype.setRadial = function(value) {
+      GradientTool.prototype.setRadial = function(value) {
         this.select();
         this.radial = value;
         this.updateGradient();
       };
 
-      Gradient.prototype.updateGradient = function(updateParameters) {
+      GradientTool.prototype.updateGradient = function(updateParameters) {
         var gradient, handle, stops, _i, _len, _ref;
         if (updateParameters == null) {
           updateParameters = true;
@@ -202,7 +203,7 @@
         }
       };
 
-      Gradient.prototype.createHandle = function(position, location, color, initialization) {
+      GradientTool.prototype.createHandle = function(position, location, color, initialization) {
         var handle;
         if (initialization == null) {
           initialization = false;
@@ -222,14 +223,14 @@
         return handle;
       };
 
-      Gradient.prototype.addHandle = function(event, hitResult) {
+      GradientTool.prototype.addHandle = function(event, hitResult) {
         var offset, point;
         offset = hitResult.location.offset;
         point = this.line.getPointAt(offset);
         this.createHandle(point, offset / this.line.length, this.controller.colorInputJ.val());
       };
 
-      Gradient.prototype.removeHandle = function(handle) {
+      GradientTool.prototype.removeHandle = function(handle) {
         if (handle === this.startHandle || handle === this.endHandle) {
           return;
         }
@@ -238,7 +239,7 @@
         this.updateGradient();
       };
 
-      Gradient.prototype.doubleClick = function(event) {
+      GradientTool.prototype.doubleClick = function(event) {
         var hitResult, point;
         point = P.view.viewToProject(new P.Point(event.pageX, event.pageY));
         hitResult = this.group.hitTest(point);
@@ -251,7 +252,7 @@
         }
       };
 
-      Gradient.prototype.begin = function(event) {
+      GradientTool.prototype.begin = function(event) {
         var hitResult;
         hitResult = this.group.hitTest(event.point);
         if (hitResult) {
@@ -262,7 +263,7 @@
         }
       };
 
-      Gradient.prototype.update = function(event) {
+      GradientTool.prototype.update = function(event) {
         var handle, lineLength, _i, _len, _ref;
         if (this.dragging) {
           if (this.selectedHandle === this.startHandle || this.selectedHandle === this.endHandle) {
@@ -284,15 +285,15 @@
         }
       };
 
-      Gradient.prototype.end = function(event) {
+      GradientTool.prototype.end = function(event) {
         this.dragging = false;
       };
 
-      return Gradient;
+      return GradientTool;
 
     })(Tool);
-    new Tool.Gradient();
-    return Tool.Gradient;
+    Tool.Gradient = GradientTool;
+    return GradientTool;
   });
 
 }).call(this);

@@ -1,9 +1,9 @@
-define [ 'Shape' ], (Shape) ->
+define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 
 	class StripeAnimation extends Shape
 		@Shape = P.Path.Rectangle
 		@label = 'Stripe animation'
-		@rdescription = "Creates a stripe animation from a set sequence of image."
+		@description = "Creates a stripe animation from a set sequence of image."
 		@squareByDefault = false
 
 		@initializeParameters: ()->
@@ -96,7 +96,7 @@ define [ 'Shape' ], (Shape) ->
 							].join('')
 							$("#stripeAnimationGallery").append(span)
 
-							stripeAnimation.rasters.push(new Raster(e.target.result))
+							stripeAnimation.rasters.push(new P.Raster(e.target.result))
 
 							stripeAnimation.nRasterLoaded++
 							if stripeAnimation.nRasterLoaded == stripeAnimation.nRasterToLoad then stripeAnimation.rasterLoaded()
@@ -129,7 +129,7 @@ define [ 'Shape' ], (Shape) ->
 		# 	@nRasterLoaded = 0
 		# 	@rasters = []
 		# 	for input in inputs
-		# 		raster = new Raster(input.value)
+		# 		raster = new P.Raster(input.value)
 		# 		raster.onLoad = @rasterOnLoad
 		# 		@rasters.push(raster)
 		# 	return
@@ -150,14 +150,14 @@ define [ 'Shape' ], (Shape) ->
 
 			size = @rasters[0].size
 
-			@result = new Raster()
+			@result = new P.Raster()
 			@result.position = @rectangle.center
 			@result.size = size
 			@result.name = 'stripe animation raster'
 			@result.controller = @
 			@drawing.addChild(@result)
 
-			@stripes = new Raster()
+			@stripes = new P.Raster()
 			@stripes.size = new P.Size(size.width*2, size.height)
 			@stripes.position = @rectangle.center
 			@stripes.name = 'stripe mask raster'

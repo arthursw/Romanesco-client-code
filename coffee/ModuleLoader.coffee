@@ -1,0 +1,10 @@
+define [ 'UI/Code' ], () ->
+
+ 	buttons = [
+ 		name: 'Geometric lines', file: 'Geometriclines', icon: 'static/images/icons/inverted/links.png', favorite: true, category: 'Paths'
+ 	]
+
+ 	for button in buttons
+ 		b = new Sidebar.Button(button)
+
+	return

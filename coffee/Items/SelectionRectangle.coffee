@@ -293,9 +293,6 @@ define [ ], () ->
 
 
 
-
-
-
 	class ScreenshotRectangle extends SelectionRectangle
 
 		constructor: (@rectangle, extractImage) ->
@@ -321,7 +318,7 @@ define [ ], () ->
 
 			@select()
 
-			R.tools['Select'].select()
+			Tool.select.select()
 
 			return
 

@@ -1,7 +1,7 @@
-define [ 'Tool' ], (Tool) ->
+define [ 'Tools/Tool' ], (Tool) ->
 
 	# MoveTool to scroll the view in the project space
-	class Tool.Move extends Tool
+	class MoveTool extends Tool
 
 		@label = 'Media'
 		@description = ''
@@ -20,7 +20,7 @@ define [ 'Tool' ], (Tool) ->
 			@dragging = false 				# a boolean to see if user is dragging mouse
 			return
 
-		# Select tool and disable RDiv interactions (to be able to scroll even when user clicks on them, for exmaple disable textarea default behaviour)
+		# Select tool and disable Div interactions (to be able to scroll even when user clicks on them, for exmaple disable textarea default behaviour)
 		select: (deselectItems=false, updateParameters=true)->
 			super(deselectItems, updateParameters)
 			R.stageJ.addClass("moveTool")
@@ -28,7 +28,7 @@ define [ 'Tool' ], (Tool) ->
 				div.disableInteraction()
 			return
 
-		# Reactivate RDiv interactions
+		# Reactivate Div interactions
 		deselect: ()->
 			super()
 			R.stageJ.removeClass("moveTool")
@@ -73,5 +73,5 @@ define [ 'Tool' ], (Tool) ->
 			@dragging = false
 			return
 
-	new Tool.Move()
-	return Tool.Move
+	Tool.Move = MoveTool
+	return MoveTool

@@ -1,4 +1,4 @@
-define [ 'Item' ], (Item) ->
+define [ 'Items/Item' ], (Item) ->
 
 	class Content extends Item
 
@@ -165,7 +165,7 @@ define [ 'Item' ], (Item) ->
 			return
 
 		# insert above given *item*
-		# @param item [RItem] item on which to insert this
+		# @param item [Item] item on which to insert this
 		# @param index [Number] the index at which to add the item in @sortedItems
 		insertAbove: (item, index=null, update=false)->
 			@group.insertAbove(item.group)
@@ -186,7 +186,7 @@ define [ 'Item' ], (Item) ->
 			return
 
 		# insert below given *item*
-		# @param item [RItem] item under which to insert this
+		# @param item [Item] item under which to insert this
 		# @param index [Number] the index at which to add the item in @sortedItems
 		insertBelow: (item, index=null, update=false)->
 			@group.insertBelow(item.group)
@@ -211,7 +211,7 @@ define [ 'Item' ], (Item) ->
 			@liJ?.attr("data-pk", @pk)
 			return
 
-		# select the RItem: (only if it has no selection rectangle i.e. not already selected)
+		# select the Item: (only if it has no selection rectangle i.e. not already selected)
 		# @return whether the ritem was selected or not
 		select: ()->
 			if not super() then return false
@@ -231,7 +231,7 @@ define [ 'Item' ], (Item) ->
 
 			# if @group?
 			# 	if not @lock
-			# 		R.mainLayer.insertChild(@zindex, @group)
+			# 		R.view.mainLayer.insertChild(@zindex, @group)
 			# 	else
 			# 		@lock.group.insertChild(@zindex, @group)
 

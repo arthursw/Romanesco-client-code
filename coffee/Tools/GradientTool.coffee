@@ -1,7 +1,6 @@
-define [ 'Tool' ], (Tool) ->
+define [ 'Tools/Tool' ], (Tool) ->
 
-
-	class Tool.Gradient extends Tool
+	class GradientTool extends Tool
 
 		@label = 'Gradient'
 		@description = ''
@@ -221,5 +220,5 @@ define [ 'Tool' ], (Tool) ->
 			@dragging = false
 			return
 
-	new Tool.Gradient()
-	return Tool.Gradient
+	Tool.Gradient = GradientTool
+	return GradientTool

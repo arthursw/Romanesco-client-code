@@ -3,21 +3,22 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tool'], function(Tool) {
-    Tool.Lock = (function(_super) {
-      __extends(Lock, _super);
+  define(['Tools/Tool'], function(Tool) {
+    var LockTool;
+    LockTool = (function(_super) {
+      __extends(LockTool, _super);
 
-      Lock.label = 'Lock';
+      LockTool.label = 'Lock';
 
-      Lock.description = '';
+      LockTool.description = '';
 
-      Lock.iconURL = 'lock.png';
+      LockTool.iconURL = 'lock.png';
 
-      Lock.favorite = true;
+      LockTool.favorite = true;
 
-      Lock.category = '';
+      LockTool.category = '';
 
-      Lock.cursor = {
+      LockTool.cursor = {
         position: {
           x: 0,
           y: 0
@@ -26,15 +27,15 @@
         icon: 'key'
       };
 
-      Lock.drawItems = false;
+      LockTool.drawItems = false;
 
-      function Lock() {
-        Lock.__super__.constructor.call(this, Lock);
+      function LockTool() {
+        LockTool.__super__.constructor.call(this, Lock);
         this.textItem = null;
         return;
       }
 
-      Lock.prototype.update = function(event, from) {
+      LockTool.prototype.update = function(event, from) {
         var cost, point, _ref;
         if (from == null) {
           from = R.me;
@@ -48,10 +49,10 @@
         this.textItem.justification = 'right';
         this.textItem.fillColor = 'black';
         this.textItem.content = '' + cost + ' romanescoins';
-        Lock.__super__.update.call(this, event, from);
+        LockTool.__super__.update.call(this, event, from);
       };
 
-      Lock.prototype.end = function(event, from) {
+      LockTool.prototype.end = function(event, from) {
         var _ref;
         if (from == null) {
           from = R.me;
@@ -59,17 +60,17 @@
         if ((_ref = this.textItem) != null) {
           _ref.remove();
         }
-        if (Lock.__super__.end.call(this, event, from)) {
+        if (LockTool.__super__.end.call(this, event, from)) {
           Lock.initialize(R.currentPaths[from].bounds);
           delete R.currentPaths[from];
         }
       };
 
-      return Lock;
+      return LockTool;
 
     })(Tool.Item);
-    new Tool.Lock();
-    return Tool.Lock;
+    Tool.Lock = LockTool;
+    return LockTool;
   });
 
 }).call(this);

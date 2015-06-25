@@ -1,4 +1,4 @@
-define [ 'utils' ], () ->
+define [ ], () ->
 
 	#  values: ['one raster per shape', 'paper.js only', 'tiled canvas', 'hide inactives', 'single canvas']
 
@@ -18,7 +18,7 @@ define [ 'utils' ], () ->
 
 			if convertToView
 				rectangle = rectangle.intersect(P.view.bounds)
-				viewRectangle = R.projectToViewRectangle(rectangle)
+				viewRectangle = Utils.CS.projectToViewRectangle(rectangle)
 			else
 				viewRectangle = rectangle
 
@@ -35,7 +35,7 @@ define [ 'utils' ], () ->
 			return dataURL
 
 		constructor: ()->
-			R.rasterizers[@constructor.TYPE] = @
+			R.rasterizerManager.rasterizers[@constructor.TYPE] = @
 			@rasterizeItems = true
 			return
 
@@ -121,9 +121,7 @@ define [ 'utils' ], () ->
 		extractImage: (rectangle, redraw)->
 			return Rasterizer.areaToImageDataUrl(rectangle)
 
-	R.Rasterizer = Rasterizer
-
-	class TileRasterizer extends R.Rasterizer
+	class Rasterizer.Tile extends Rasterizer
 
 		@TYPE = 'abstract tile'
 		@loadingBarJ = null
@@ -139,8 +137,8 @@ define [ 'utils' ], () ->
 
 		@getSortedItems: ()->
 			sortedItems = []
-			@addChildren(R.mainLayer, sortedItems)
-			@addChildren(R.lockLayer, sortedItems)
+			@addChildren(R.view.mainLayer, sortedItems)
+			@addChildren(R.view.lockLayer, sortedItems)
 			# @addChildrenToParent(R.selectionLayer, sortedItems) # the selection layer is never rasterized (should it be?)
 			return sortedItems
 
@@ -270,7 +268,7 @@ define [ 'utils' ], () ->
 			return
 
 		unload: (limit)->
-			qZoom = R.quantizeZoom(1.0 / P.view.zoom)
+			qZoom = Utils.CS.quantizeZoom(1.0 / P.view.zoom)
 
 			for x, rasterColumn of @rasters
 				x = Number(x)
@@ -300,7 +298,7 @@ define [ 'utils' ], () ->
 			return
 
 		createRasters: (rectangle)->
-			qZoom = R.quantizeZoom(1.0 / P.view.zoom)
+			qZoom = Utils.CS.quantizeZoom(1.0 / P.view.zoom)
 			scale = R.scale * qZoom
 			qBounds = @quantizeBounds(rectangle, scale)
 			for x in [qBounds.l .. qBounds.r] by scale
@@ -357,7 +355,7 @@ define [ 'utils' ], () ->
 
 		rasterizeCanvas: (canvas, rectangle, clearRasters=false, sourceRectangle=null)->
 			console.log "rasterize: " + rectangle.width + ", " + rectangle.height
-			qZoom = R.quantizeZoom(1.0 / P.view.zoom)
+			qZoom = Utils.CS.quantizeZoom(1.0 / P.view.zoom)
 			scale = R.scale * qZoom
 			qBounds = @quantizeBounds(rectangle, scale)
 			for x in [qBounds.l .. qBounds.r] by scale
@@ -382,7 +380,7 @@ define [ 'utils' ], () ->
 			viewSize = P.view.viewSize
 			viewPosition = P.view.center
 
-			P.view.zoom = 1.0 / R.quantizeZoom(1.0 / P.view.zoom)
+			P.view.zoom = 1.0 / Utils.CS.quantizeZoom(1.0 / P.view.zoom)
 
 			for area in areas
 				@rasterizeArea(area)
@@ -614,25 +612,27 @@ define [ 'utils' ], () ->
 			else
 				return Rasterizer.areaToImageDataUrl(rectangle)
 
-
-	R.TileRasterizer = TileRasterizer
-
-	class PaperTileRasterizer extends R.TileRasterizer
+	class Rasterizer.PaperTile extends Rasterizer.Tile
 
 		@TYPE = 'paper tile'
 
 		constructor:()->
 			@rasterLayer = new P.Layer()
 			@rasterLayer.name = 'raster layer'
-			@rasterLayer.moveBelow(R.mainLayer) 	# this will activate the top layer (selection layer or areasToUpdateLayer)
-			R.mainLayer.activate()
+			@rasterLayer.moveBelow(R.view.mainLayer) 	# this will activate the top layer (selection layer or areasToUpdateLayer)
+			R.view.mainLayer.activate()
 			super()
+			return
+
+		onRasterLoad: ()=>
+			raster.context = raster.canvas.getContext('2d')
+			@rasterLoaded(raster)
 			return
 
 		createRaster: (x, y, zoom)->
 			if @rasters[x]?[y]? then return
 
-			raster = new Raster()
+			raster = new P.Raster()
 			raster.name = 'raster: ' + x + ', ' + y
 			console.log raster.name
 			raster.position.x = x + 0.5 * R.scale * zoom
@@ -642,10 +642,7 @@ define [ 'utils' ], () ->
 			raster.scale(zoom)
 			raster.context = raster.canvas.getContext('2d')
 			@rasterLayer.addChild(raster)
-			raster.onLoad = ()=>
-				raster.context = raster.canvas.getContext('2d')
-				@rasterLoaded(raster)
-				return
+			raster.onLoad = @onRasterLoad
 			super(x, y, zoom, raster)
 			return
 
@@ -670,10 +667,7 @@ define [ 'utils' ], () ->
 					raster.visible = true
 			return
 
-	R.PaperTileRasterizer = PaperTileRasterizer
-
-
-	class InstantPaperTileRasterizer extends R.PaperTileRasterizer
+	class Rasterizer.InstantPaperTile extends Rasterizer.PaperTile
 
 		@TYPE = 'light'
 
@@ -734,9 +728,7 @@ define [ 'utils' ], () ->
 			@disableDrawing = true
 			return
 
-	R.InstantPaperTileRasterizer = InstantPaperTileRasterizer
-
-	class CanvasTileRasterizer extends R.TileRasterizer
+	class Rasterizer.CanvasTile extends Rasterizer.Tile
 
 		@TYPE = 'canvas tile'
 
@@ -809,121 +801,5 @@ define [ 'utils' ], () ->
 				for y, raster of rasterColumn
 					raster.canvasJ.show()
 			return
-
-	R.CanvasTileRasterizer = CanvasTileRasterizer
-
-	R.initializeRasterizers = ()->
-		R.rasterizers = {}
-		new R.Rasterizer()
-		new R.CanvasTileRasterizer()
-		new R.InstantPaperTileRasterizer()
-		R.rasterizer = new R.PaperTileRasterizer()
-
-		return
-
-	R.addRasterizerParameters = ()->
-
-		renderingModes = []
-		for type, rasterizer of R.rasterizers
-			renderingModes.push(type)
-
-		R.rasterizerFolder = new R.Folder('Rasterizer', true, R.controllerManager.folders['General'])
-
-		divJ = $('<div>')
-		divJ.addClass('loadingBar')
-		$(R.rasterizerFolder.datFolder.__ul).find('li.title').append(divJ)
-		R.TileRasterizer.loadingBarJ = divJ
-
-		parameters =
-			renderingMode:
-				default: R.rasterizer.constructor.TYPE
-				values: renderingModes
-				label: 'Render mode'
-				onFinishChange: R.setRasterizerType
-			rasterizeItems:
-				default: true
-				label: 'Rasterize items'
-				onFinishChange: (value)->
-					R.rasterizer.rasterizeItems = value
-
-					if not value
-						R.rasterizer.renderInView = true
-
-					for controller in R.rasterizerFolder.datFolder.__controllers
-						if controller.property == 'renderInView'
-							if value
-								$(controller.__li).show()
-							else
-								$(controller.__li).hide()
-					return
-			renderInView:
-				default: false
-				label: 'Render in view'
-				onFinishChange: (value)->
-					R.rasterizer.renderInView = value
-					return
-			autoRasterization:
-				default: 'deferred'
-				values: ['immediate', 'deferred', 'disabled']
-				label: 'Auto rasterization'
-				onFinishChange: (value)->
-					R.rasterizer.autoRasterization = value
-					return
-			rasterizationDelay:
-				default: 800
-				min: 0
-				max: 10000
-				lable: 'Delay'
-				onFinishChange: (value)->
-					R.rasterizer.rasterizationDelay = value
-					return
-			rasterizeImmediately:
-				default: ()->
-					R.rasterizer.rasterizeImmediately()
-					return
-				label: 'Rasterize'
-
-		for name, parameter of parameters
-			R.controllerManager.createController(name, parameter, R.rasterizerFolder)
-
-		return
-
-	R.setRasterizerType = (type)->
-		if type == R.Rasterizer.TYPE
-			for controller in R.rasterizerFolder.datFolder.__controllers
-				if controller.property in [ 'renderInView', 'autoRasterization', 'rasterizationDelay', 'rasterizeImmediately' ]
-					$(controller.__li).hide()
-		else
-			for controller in R.rasterizerFolder.datFolder.__controllers
-				$(controller.__li).show()
-
-		R.unload()
-		R.rasterizer = R.rasterizers[type]
-
-		for controller in R.rasterizerFolder.datFolder.__controllers
-			if R.rasterizer[controller.property]?
-				onFinishChange = controller.__onFinishChange
-				controller.__onFinishChange = ()->return
-				controller.setValue(R.rasterizer[controller.property])
-				controller.__onFinishChange = onFinishChange
-
-		R.load()
-		return
-
-	R.hideCanvas = ()->
-		R.canvasJ.css opacity: 0
-		return
-
-	R.showCanvas = ()->
-		R.canvasJ.css opacity: 1
-		return
-
-	R.hideRasters = ()->
-		R.rasterizer.hideRasters()
-		return
-
-	R.showRasters = ()->
-		R.rasterizer.showRasters()
-		return
 
 	return Rasterizer

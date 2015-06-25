@@ -1,17 +1,17 @@
-define [ 'Tool' ], (Tool) ->
+define [ 'Tools/Tool' ], (Tool) ->
 
-	# ItemTool: mother class of all RDiv creation tools (this will create a new div on top of the canvas, with custom content, and often resizable)
+	# ItemTool: mother class of all Div creation tools (this will create a new div on top of the canvas, with custom content, and often resizable)
 	# User will create a selection rectangle
-	# once the mouse is released, the box will be validated by RDiv.end() (check that the RDiv does not overlap two planets, and does not intersects with an RLock)
-	# children classes will use RDiv.end() to check if it is valid and:
-	# - initialize a modal to ask the user more info about the RDiv
-	# - or directly save the RDiv
-	# the RDiv will be created on server response
-	# begin, update, and end handlers are called by onMouseDown handler (then from == R.me, data == null) and by socket.on "begin" signal (then from == author of the signal, data == RItem initial data)
+	# once the mouse is released, the box will be validated by Div.end() (check that the Div does not overlap two planets, and does not intersects with an Lock)
+	# children classes will use Div.end() to check if it is valid and:
+	# - initialize a modal to ask the user more info about the Div
+	# - or directly save the Div
+	# the Div will be created on server response
+	# begin, update, and end handlers are called by onMouseDown handler (then from == R.me, data == null) and by socket.on "begin" signal (then from == author of the signal, data == Item initial data)
 	# begin, update, and end handlers emit the events to websocket
-	class Tool.Item extends Tool
+	class ItemTool extends Tool
 
-		constructor: (@RItem) ->
+		constructor: (@Item) ->
 			super(true)
 			# test: @isDiv = true
 			return
@@ -26,7 +26,7 @@ define [ 'Tool' ], (Tool) ->
 		# - emit event on websocket (if user is the author of the event)
 		# @param [Paper event or REvent] (usually) mouse down event
 		# @param [String] author (username) of the event
-		# begin, update, and end handlers are called by onMouseDown handler (then from == R.me, data == null) and by socket.on "begin" signal (then from == author of the signal, data == RItem initial data)
+		# begin, update, and end handlers are called by onMouseDown handler (then from == R.me, data == null) and by socket.on "begin" signal (then from == author of the signal, data == Item initial data)
 		begin: (event, from=R.me) ->
 			point = event.point
 
@@ -70,13 +70,13 @@ define [ 'Tool' ], (Tool) ->
 
 		# End div action:
 		# - remove selection rectangle
-		# - check if div if valid (does not overlap two planets, and does not intersects with an RLock), return false otherwise
+		# - check if div if valid (does not overlap two planets, and does not intersects with an Lock), return false otherwise
 		# - resize div to 10x10 if area if lower than 100
 		# - emit event on websocket (if user is the author of the event)
 		# @param [Paper event or REvent] (usually) mouse down event
 		# @param [String] author (username) of the event
 		end: (event, from=R.me) ->
-			if from != R.me 					# if event come from websocket (another user in the room is creating the RDiv): just remove the selection rectangle
+			if from != R.me 					# if event come from websocket (another user in the room is creating the Div): just remove the selection rectangle
 				R.currentPaths[from].remove()
 				delete R.currentPaths[from]
 				return false
@@ -92,7 +92,7 @@ define [ 'Tool' ], (Tool) ->
 					R.alertManager.alert 'Your item intersects with a locked area.', 'error'
 					return false
 
-			# check if div if valid (does not overlap two planets, and does not intersects with an RLock), return false otherwise
+			# check if div if valid (does not overlap two planets, and does not intersects with an Lock), return false otherwise
 			if Grid.rectangleOverlapsTwoPlanets(bounds)
 				R.alertManager.alert 'Your item overlaps with two planets.', 'error'
 				return false
@@ -106,4 +106,5 @@ define [ 'Tool' ], (Tool) ->
 
 			return true
 
-	return Tool.Item
+	Tool.Item = ItemTool
+	return ItemTool

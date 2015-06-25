@@ -3,21 +3,22 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tool'], function(Tool) {
-    Tool.Car = (function(_super) {
-      __extends(Car, _super);
+  define(['Tools/Tool'], function(Tool) {
+    var CarTool;
+    CarTool = (function(_super) {
+      __extends(CarTool, _super);
 
-      Car.label = 'Car';
+      CarTool.label = 'Car';
 
-      Car.description = '';
+      CarTool.description = '';
 
-      Car.iconURL = 'car.png';
+      CarTool.iconURL = 'car.png';
 
-      Car.favorite = true;
+      CarTool.favorite = true;
 
-      Car.category = '';
+      CarTool.category = '';
 
-      Car.cursor = {
+      CarTool.cursor = {
         position: {
           x: 0,
           y: 0
@@ -25,7 +26,7 @@
         name: 'default'
       };
 
-      Car.initializeParameters = function() {
+      CarTool.initializeParameters = function() {
         var parameters;
         parameters = {
           'Car': {
@@ -43,16 +44,18 @@
               min: 0,
               max: 10,
               onChange: function(value) {
+                var sound;
                 if (R.selectedTool.constructor.name === "CarTool") {
-                  if (value > 0) {
-                    if (!R.sound.isPlaying) {
-                      R.sound.play();
-                      R.sound.setLoopStart(3.26);
-                      R.sound.setLoopEnd(5.22);
+                  sound = Tool.car.sound;
+                  if ((sound != null) && value > 0) {
+                    if (!sound.isPlaying) {
+                      sound.play();
+                      sound.setLoopStart(3.26);
+                      sound.setLoopEnd(5.22);
                     }
-                    R.sound.setVolume(0.1 * value);
+                    sound.setVolume(0.1 * value);
                   } else {
-                    R.sound.stop();
+                    sound.stop();
                   }
                 }
               }
@@ -62,22 +65,23 @@
         return parameters;
       };
 
-      Car.parameters = Car.initializeParameters();
+      CarTool.parameters = CarTool.initializeParameters();
 
-      function Car() {
-        Car.__super__.constructor.call(this, true);
+      function CarTool() {
+        CarTool.__super__.constructor.call(this, true);
+        this.constructor.car = this;
         return;
       }
 
-      Car.prototype.select = function(deselectItems, updateParameters) {
+      CarTool.prototype.select = function(deselectItems, updateParameters) {
         if (deselectItems == null) {
           deselectItems = true;
         }
         if (updateParameters == null) {
           updateParameters = true;
         }
-        Car.__super__.select.apply(this, arguments);
-        this.car = new Raster("/static/images/car.png");
+        CarTool.__super__.select.apply(this, arguments);
+        this.car = new P.Raster("/static/images/car.png");
         R.carLayer.addChild(this.car);
         this.car.position = P.view.center;
         this.car.speed = 0;
@@ -86,21 +90,22 @@
           console.log('car loaded');
         };
         this.car.previousSpeed = 0;
-        R.sound.setVolume(0.1);
-        R.sound.play(0);
-        R.sound.setLoopStart(3.26);
-        R.sound.setLoopEnd(5.22);
+        this.sound = new Sound(['/static/sounds/viper.ogg']);
+        this.sound.setVolume(0.1);
+        this.sound.play(0);
+        this.sound.setLoopStart(3.26);
+        this.sound.setLoopEnd(5.22);
         this.lastUpdate = Date.now();
       };
 
-      Car.prototype.deselect = function() {
-        Car.__super__.deselect.call(this);
+      CarTool.prototype.deselect = function() {
+        CarTool.__super__.deselect.call(this);
         this.car.remove();
         this.car = null;
-        R.sound.stop();
+        this.sound.stop();
       };
 
-      Car.prototype.onFrame = function() {
+      CarTool.prototype.onFrame = function() {
         var maxRate, maxSpeed, minRate, minSpeed, rate;
         if (this.car == null) {
           return;
@@ -130,7 +135,7 @@
         minRate = 0.25;
         maxRate = 3;
         rate = minRate + Math.abs(this.car.speed) / maxSpeed * (maxRate - minRate);
-        R.sound.setRate(rate);
+        this.sound.setRate(rate);
         this.car.previousSpeed = this.car.speed;
         this.constructor.parameters['Car'].speed.controller.setValue(this.car.speed.toFixed(2), false);
         this.car.rotation = this.car.direction.angle + 90;
@@ -146,18 +151,18 @@
         }
       };
 
-      Car.prototype.keyUp = function(event) {
+      CarTool.prototype.keyUp = function(event) {
         switch (event.key) {
           case 'escape':
-            R.tools['Move'].select();
+            Tool.move.select();
         }
       };
 
-      return Car;
+      return CarTool;
 
     })(Tool);
-    new Tool.Car();
-    return Tool.Car;
+    Tool.Car = CarTool;
+    return CarTool;
   });
 
 }).call(this);

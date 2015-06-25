@@ -2,11 +2,9 @@
 (function() {
   var __hasProp = {}.hasOwnProperty;
 
-  define(['utils'], function() {
+  define([], function() {
     var Loader;
     Loader = (function() {
-      var removeDebugRectangle;
-
       function Loader() {
         this.loadedAreas = [];
         this.debug = false;
@@ -89,7 +87,7 @@
         i = this.loadedAreas.length;
         while (i--) {
           area = this.loadedAreas[i];
-          pos = R.posOnPlanetToProject(area.pos, area.planet);
+          pos = Utils.CS.posOnPlanetToProject(area.pos, area.planet);
           rectangle = new P.Rectangle(pos.x, pos.y, R.scale * area.zoom, R.scale * area.zoom);
           if (!rectangle.intersects(limit) || area.zoom !== qZoom) {
             if (this.debug) {
@@ -113,8 +111,8 @@
         areasToLoad = [];
         for (x = _i = l; scale > 0 ? _i <= r : _i >= r; x = _i += scale) {
           for (y = _j = t; scale > 0 ? _j <= b : _j >= b; y = _j += scale) {
-            planet = R.projectToPlanet(new P.Point(x, y));
-            pos = R.projectToPosOnPlanet(new P.Point(x, y));
+            planet = Utils.CS.projectToPlanet(new P.Point(x, y));
+            pos = Utils.CS.projectToPosOnPlanet(new P.Point(x, y));
             if (R.rasterizerMode) {
               area = {
                 pos: pos,
@@ -164,9 +162,9 @@
         };
         bounds = this.getLoadingBounds(area);
         unloadDist = Math.round(R.scale / P.view.zoom);
-        limit = R.entireArea || bounds.expand(unloadDist);
+        limit = R.view.entireArea || bounds.expand(unloadDist);
         R.rasterizer.unload(limit);
-        qZoom = R.quantizeZoom(1.0 / P.view.zoom);
+        qZoom = Utils.CS.quantizeZoom(1.0 / P.view.zoom);
         this.unloadAreas(area, qZoom);
         scale = R.scale * qZoom;
         t = Utils.floorToMultiple(bounds.top, scale);
@@ -274,17 +272,17 @@
               }
               lock = null;
               switch (box.object_type) {
-                case 'link':
-                  lock = new R.RLink(R.rectangleFromBox(box), data, box._id.$oid, box.owner, date, (_ref1 = box.module) != null ? _ref1.$oid : void 0);
-                  break;
                 case 'lock':
-                  lock = new Lock(R.rectangleFromBox(box), data, box._id.$oid, box.owner, date, (_ref2 = box.module) != null ? _ref2.$oid : void 0);
+                  lock = new Lock(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, (_ref1 = box.module) != null ? _ref1.$oid : void 0);
+                  break;
+                case 'link':
+                  lock = new Link(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, (_ref2 = box.module) != null ? _ref2.$oid : void 0);
                   break;
                 case 'website':
-                  lock = new R.RWebsite(R.rectangleFromBox(box), data, box._id.$oid, box.owner, date, (_ref3 = box.module) != null ? _ref3.$oid : void 0);
+                  lock = new Website(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, (_ref3 = box.module) != null ? _ref3.$oid : void 0);
                   break;
                 case 'video-game':
-                  lock = new R.RVideoGame(R.rectangleFromBox(box), data, box._id.$oid, box.owner, date, (_ref4 = box.module) != null ? _ref4.$oid : void 0);
+                  lock = new VideoGame(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, (_ref4 = box.module) != null ? _ref4.$oid : void 0);
               }
               lock.lastUpdateDate = box.lastUpdate.$date;
               break;
@@ -295,10 +293,10 @@
               }
               switch (div.object_type) {
                 case 'text':
-                  rdiv = new R.RText(R.rectangleFromBox(div), data, pk, date, lock);
+                  rdiv = new Text(Utils.CS.rectangleFromBox(div), data, pk, date, lock);
                   break;
                 case 'media':
-                  rdiv = new R.RMedia(R.rectangleFromBox(div), data, pk, date, lock);
+                  rdiv = new Media(Utils.CS.rectangleFromBox(div), data, pk, date, lock);
               }
               rdiv.lastUpdateDate = div.lastUpdate.$date;
               break;
@@ -312,7 +310,7 @@
               _ref5 = path.points.coordinates;
               for (_j = 0, _len1 = _ref5.length; _j < _len1; _j++) {
                 point = _ref5[_j];
-                points.push(R.posOnPlanetToProject(point, planet));
+                points.push(Utils.CS.posOnPlanetToProject(point, planet));
               }
               rpath = null;
               if (R.tools[path.object_type] != null) {
@@ -326,7 +324,7 @@
               }
               break;
             case 'AreaToUpdate':
-              R.rasterizer.addAreaToUpdate(R.rectangleFromBox(item));
+              R.rasterizer.addAreaToUpdate(Utils.CS.rectangleFromBox(item));
               break;
             default:
               continue;
@@ -356,7 +354,7 @@
         if ((results.rasters == null) || results.rasters.length === 0) {
           R.rasterizer.rasterizeAreasToUpdate();
         }
-        R.RDiv.updateZIndex(R.sortedDivs);
+        R.Div.updateZIndex(R.sortedDivs);
         if (!R.rasterizerMode) {
           this.hideLoadingBar();
           this.dispatchLoadFinished();
@@ -427,7 +425,7 @@
         this.removeDebugRectangle(area.rectangle);
       };
 
-      removeDebugRectangle = function(rectangle) {
+      Loader.prototype.removeDebugRectangle = function(rectangle) {
         var removeRect;
         removeRect = function() {
           return rectangle.remove();

@@ -1,12 +1,12 @@
-define [ 'Tool', 'zeroClipboard' ], (Tool, ZeroClipboard) ->
+define [ 'Tools/Tool', 'zeroClipboard' ], (Tool, ZeroClipboard) ->
 
 	# todo: ZeroClipboard.destroy()
 	# ScreenshotTool to take a screenshot and save it or publish it on different social platforms (facebook, pinterest or twitter)
 	# - the user will create a selection rectangle with the mouse
-	# - when the user release the mouse, a special (temporary) resizable RDiv (RSelectionRectangle) is created so that the user can adjust the screenshot box to fit his needs (this must be imporved, with better visibility and the possibility to better snap the box to the grid)
+	# - when the user release the mouse, a special (temporary) resizable Div (RSelectionRectangle) is created so that the user can adjust the screenshot box to fit his needs (this must be imporved, with better visibility and the possibility to better snap the box to the grid)
 	# - once the user adjusted the box, he can take the screenshot by clicking the "Take screenshot" button at the center of the RSelectionRectangle
 	# - a modal window asks the user how to exploit the newly created image (copy it, save it, or publish it on facebook, twitter or pinterest)
-	class Tool.Screenshot extends Tool
+	class ScreenshotTool extends Tool
 
 		@label = 'Screenshot'
 		@description = ''
@@ -369,5 +369,5 @@ define [ 'Tool', 'zeroClipboard' ], (Tool, ZeroClipboard) ->
 		copyURL: ()->
 			return
 
-	new Tool.Screenshot()
-	return Tool.Screenshot
+	Tool.Screenshot = ScreenshotTool
+	return ScreenshotTool

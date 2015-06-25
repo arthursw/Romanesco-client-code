@@ -1,4 +1,4 @@
-define [ 'utils', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], () ->
+define [ 'Items/Items', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], (Item) ->
 
 	###
 	# Global functions #
@@ -150,7 +150,7 @@ define [ 'utils', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], () ->
 
 	# # Hide every path except *me* and set fastModeOn to true
 	# #
-	# # @param me [RItem] the only item not to hide
+	# # @param me [Item] the only item not to hide
 	# R.hideOthers = (me)->
 	# 	for name, item of R.paths
 	# 		if item != me
@@ -158,7 +158,7 @@ define [ 'utils', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], () ->
 	# 	R.fastModeOn = true
 	# 	return
 
-	# # Show every path and set fastModeOn to false (do nothing if not in fastMode. The fastMode is when items are hidden when user modifies an RItem)
+	# # Show every path and set fastModeOn to false (do nothing if not in fastMode. The fastMode is when items are hidden when user modifies an Item)
 	# R.showAll = ()->
 	# 	if not R.fastModeOn then return
 	# 	for name, item of R.paths
@@ -388,7 +388,7 @@ define [ 'utils', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], () ->
 	# 			intersection = raster.bounds.intersect(P.view.bounds)
 	# 			if intersection.area > 0
 	# 				positionInRaster = intersection.topLeft.subtract(raster.bounds.topLeft) #.divide(raster.bounds.width, raster.bounds.height).multiply(1000, 1000)
-	# 				intersectionInView = R.projectToViewRectangle(intersection)
+	# 				intersectionInView = Utils.CS.projectToViewRectangle(intersection)
 	# 				imageData = R.context.getImageData(intersectionInView.x, intersectionInView.y, intersectionInView.width, intersectionInView.height)
 	# 				raster.setImageData(imageData, positionInRaster.x, positionInRaster.y)
 
@@ -400,7 +400,7 @@ define [ 'utils', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], () ->
 	# 	return
 
 	# R.putRasterToRasters = (raster)->
-	# 	bounds = R.projectToViewRectangle(raster.bounds)
+	# 	bounds = Utils.CS.projectToViewRectangle(raster.bounds)
 	# 	raster.size = raster.size.multiply(P.view.zoom)
 	# 	R.putImageToRasters(raster, bounds)
 	# 	return
@@ -413,7 +413,7 @@ define [ 'utils', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], () ->
 	# 			intersection = raster.bounds.intersect(bounds)
 	# 			if intersection.area > 0
 	# 				positionInRaster = intersection.topLeft.subtract(raster.bounds.topLeft).divide(raster.bounds.width, raster.bounds.height).multiply(1000, 1000)
-	# 				intersectionInView = R.projectToViewRectangle(intersection)
+	# 				intersectionInView = Utils.CS.projectToViewRectangle(intersection)
 	# 				imageData = container.getImageData(intersectionInView.x, intersectionInView.y, intersectionInView.width, intersectionInView.height)
 	# 				raster.setImageData(imageData, positionInRaster.x, positionInRaster.y)
 
@@ -426,7 +426,7 @@ define [ 'utils', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], () ->
 	# 			intersection = raster.bounds.intersect(bounds)
 	# 			if intersection.area > 0
 	# 				positionInRaster = intersection.topLeft.subtract(raster.bounds.topLeft).divide(raster.bounds.width, raster.bounds.height).multiply(1000, 1000)
-	# 				intersectionInView = R.projectToViewRectangle(intersection)
+	# 				intersectionInView = Utils.CS.projectToViewRectangle(intersection)
 	# 				imageData = container.getImageData(intersectionInView.x, intersectionInView.y, intersectionInView.width, intersectionInView.height)
 	# 				raster.setImageData(imageData, positionInRaster.x, positionInRaster.y)
 
@@ -461,7 +461,7 @@ define [ 'utils', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], () ->
 	# # 1. remove rasters on which @ lies
 	# # 2. redraw all items which lie on those rasters
 	# # @param bounds [Paper rectangle] the area to update
-	# # @param item [RItem] (optional) the item not to update (draw)
+	# # @param item [Item] (optional) the item not to update (draw)
 	# this.updateClientRasters = (bounds, ritem=null)->
 
 	# 	console.log "updateClientRasters"
@@ -556,16 +556,16 @@ define [ 'utils', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], () ->
 	R.fakeGeoJsonBox = (rectangle)->
 		box = {}
 
-		planet = R.pointToObj( R.projectToPlanet(rectangle.topLeft) )
+		planet = Utils.CS.pointToObj( Utils.CS.projectToPlanet(rectangle.topLeft) )
 
 		box.planetX = planet.x
 		box.planetY = planet.y
 
 		box.box = coordinates: [[
-			R.pointToArray(R.projectToPosOnPlanet(rectangle.topLeft, planet))
-			R.pointToArray(R.projectToPosOnPlanet(rectangle.topRight, planet))
-			R.pointToArray(R.projectToPosOnPlanet(rectangle.bottomRight, planet))
-			R.pointToArray(R.projectToPosOnPlanet(rectangle.bottomLeft, planet))
+			Utils.CS.pointToArray(Utils.CS.projectToPosOnPlanet(rectangle.topLeft, planet))
+			Utils.CS.pointToArray(Utils.CS.projectToPosOnPlanet(rectangle.topRight, planet))
+			Utils.CS.pointToArray(Utils.CS.projectToPosOnPlanet(rectangle.bottomRight, planet))
+			Utils.CS.pointToArray(Utils.CS.projectToPosOnPlanet(rectangle.bottomLeft, planet))
 		]]
 		return JSON.stringify(box)
 

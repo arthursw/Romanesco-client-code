@@ -4,8 +4,8 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Item'], function(Item) {
-    var Lock;
+  define(['Items/Item'], function(Item) {
+    var Link, Lock, VideoGame, Website;
     Lock = (function(_super) {
       __extends(Lock, _super);
 
@@ -90,17 +90,17 @@
       };
 
       Lock.highlightStage = function(color) {
-        R.backgroundRectangle = new P.Path.Rectangle(P.view.bounds);
-        R.backgroundRectangle.fillColor = color;
-        R.backgroundRectangle.sendToBack();
+        R.view.backgroundRectangle = new P.Path.Rectangle(P.view.bounds);
+        R.view.backgroundRectangle.fillColor = color;
+        R.view.backgroundRectangle.sendToBack();
       };
 
       Lock.unhighlightStage = function() {
         var _ref;
-        if ((_ref = R.backgroundRectangle) != null) {
+        if ((_ref = R.view.backgroundRectangle) != null) {
           _ref.remove();
         }
-        R.backgroundRectangle = null;
+        R.view.backgroundRectangle = null;
       };
 
       Lock.highlightValidity = function(item) {
@@ -339,7 +339,7 @@
           }
         }
         if ((_ref1 = this.data) != null ? _ref1.loadEntireArea : void 0) {
-          R.entireAreas.push(this);
+          R.view.entireAreas.push(this);
         }
         if (this.modulePk != null) {
           Dajaxice.draw.getModuleSource(R.initializeModule, {
@@ -377,9 +377,9 @@
         this.group.addChild(this.drawing);
       };
 
-      Lock.prototype.setParameter = function(controller, value, updateGUI, update) {
-        Lock.__super__.setParameter.call(this, controller, value, updateGUI, update);
-        switch (controller.name) {
+      Lock.prototype.setParameter = function(name, value, updateGUI, update) {
+        Lock.__super__.setParameter.call(this, name, value, updateGUI, update);
+        switch (name) {
           case 'strokeWidth':
           case 'strokeColor':
           case 'fillColor':
@@ -414,7 +414,7 @@
           city: {
             city: R.city
           },
-          box: R.boxFromRectangle(this.rectangle),
+          box: Utils.CS.boxFromRectangle(this.rectangle),
           object_type: this.constructor.object_type,
           data: JSON.stringify(data),
           siteData: JSON.stringify(siteData),
@@ -438,6 +438,15 @@
         Lock.__super__.saveCallback.apply(this, arguments);
       };
 
+      Lock.prototype.addUpdateFunctionAndArguments = function(args, type) {
+        var item, _i, _len, _ref;
+        _ref = this.children();
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          item = _ref[_i];
+          item.addUpdateFunctionAndArguments(args, type);
+        }
+      };
+
       Lock.prototype.update = function(type) {
         var args, item, itemsToUpdate, pk, updateBoxArgs, _i, _len, _ref;
         if (this.pk == null) {
@@ -449,7 +458,7 @@
           return;
         }
         updateBoxArgs = {
-          box: R.boxFromRectangle(this.rectangle),
+          box: Utils.CS.boxFromRectangle(this.rectangle),
           pk: this.pk,
           object_type: this.object_type,
           name: this.data.name,
@@ -524,7 +533,7 @@
           item = _ref[_i];
           item.rectangle.center.x += delta.x;
           item.rectangle.center.y += delta.y;
-          if (R.RDiv.prototype.isPrototypeOf(item)) {
+          if (R.Div.prototype.isPrototypeOf(item)) {
             item.updateTransform();
           }
         }
@@ -630,7 +639,7 @@
       return Lock;
 
     })(Item);
-    Lock.Website = (function(_super) {
+    Website = (function(_super) {
       __extends(Website, _super);
 
       Website.label = 'Website';
@@ -654,7 +663,7 @@
       return Website;
 
     })(Lock);
-    Lock.VideoGame = (function(_super) {
+    VideoGame = (function(_super) {
       __extends(VideoGame, _super);
 
       VideoGame.label = 'Video game';
@@ -720,7 +729,7 @@
       return VideoGame;
 
     })(Lock);
-    Lock.Link = (function(_super) {
+    Link = (function(_super) {
       __extends(Link, _super);
 
       Link.label = 'Link';

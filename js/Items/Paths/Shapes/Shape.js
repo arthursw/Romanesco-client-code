@@ -3,7 +3,7 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Path'], function(Path) {
+  define(['Items/Paths/Path'], function(Path) {
     var Shape;
     Shape = (function(_super) {
       __extends(Shape, _super);
@@ -16,7 +16,7 @@
 
       Shape.label = 'Shape';
 
-      Shape.rdescription = "Base shape class";
+      Shape.description = "Base shape class";
 
       Shape.squareByDefault = true;
 
@@ -65,8 +65,14 @@
         this.shape = this.addPath(new this.constructor.Shape(this.rectangle));
       };
 
+      Shape.prototype.process = function() {
+        this.initializeDrawing();
+        this.createShape();
+        this.drawing.rotation = this.rotation;
+      };
+
       Shape.prototype.draw = function(simplified) {
-        var error, process;
+        var error;
         if (simplified == null) {
           simplified = false;
         }
@@ -74,18 +80,11 @@
         if (!R.rasterizer.requestDraw(this, simplified)) {
           return;
         }
-        process = (function(_this) {
-          return function() {
-            _this.initializeDrawing();
-            _this.createShape();
-            _this.drawing.rotation = _this.rotation;
-          };
-        })(this);
         if (!R.catchErrors) {
-          process();
+          this.process();
         } else {
           try {
-            process();
+            this.process();
           } catch (_error) {
             error = _error;
             console.error(error.stack);

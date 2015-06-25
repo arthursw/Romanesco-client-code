@@ -4,23 +4,10 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Item'], function(Item) {
+  define(['Items/Item'], function(Item) {
     var Content;
     Content = (function(_super) {
       __extends(Content, _super);
-
-      Content.indexToName = {
-        0: 'bottomLeft',
-        1: 'left',
-        2: 'topLeft',
-        3: 'top',
-        4: 'rotation-handle',
-        5: 'top',
-        6: 'topRight',
-        7: 'right',
-        8: 'bottomRight',
-        9: 'bottom'
-      };
 
       Content.initializeParameters = function() {
         var parameters;
@@ -89,40 +76,6 @@
         this.liJ.text(zindexLabel);
       };
 
-      Content.prototype.initializeSelection = function(event, hitResult) {
-        Content.__super__.initializeSelection.call(this, event, hitResult);
-        if ((hitResult != null ? hitResult.type : void 0) === 'segment') {
-          if (hitResult.item === this.selectionRectangle) {
-            if (this.constructor.indexToName[hitResult.segment.index] === 'rotation-handle') {
-              this.selectionState = {
-                rotation: true
-              };
-            }
-          }
-        }
-      };
-
-      Content.prototype.beginSelect = function(event) {
-        Content.__super__.beginSelect.call(this, event);
-        if (this.selectionState.rotation != null) {
-          this.beginAction(new R.RotationCommand(this));
-        }
-      };
-
-      Content.prototype.createSelectionRectangle = function(bounds) {
-        this.selectionRectangle.insert(1, new P.Point(bounds.left, bounds.center.y));
-        this.selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top));
-        this.selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top - 25));
-        this.selectionRectangle.insert(3, new P.Point(bounds.center.x, bounds.top));
-        this.selectionRectangle.insert(7, new P.Point(bounds.right, bounds.center.y));
-        this.selectionRectangle.insert(9, new P.Point(bounds.center.x, bounds.bottom));
-      };
-
-      Content.prototype.updateSelectionRectangle = function() {
-        Content.__super__.updateSelectionRectangle.call(this);
-        this.selectionRectangle.rotation = this.rotation;
-      };
-
       Content.prototype.setRotation = function(rotation, update) {
         var previousRotation;
         if (update == null) {
@@ -141,22 +94,6 @@
             "function": "setRotation",
             "arguments": [this.rotation, false]
           });
-        }
-      };
-
-      Content.prototype.updateSetRotation = function(event) {
-        var rotation;
-        rotation = event.point.subtract(this.rectangle.center).angle + 90;
-        if (event.modifiers.shift || R.specialKey(event) || Utils.Event.getSnap() > 1) {
-          rotation = Utils.roundToMultiple(rotation, event.modifiers.shift ? 10 : 5);
-        }
-        this.setRotation(rotation);
-        Lock.highlightValidity(this);
-      };
-
-      Content.prototype.endSetRotation = function(update) {
-        if (update) {
-          this.update('rotation');
         }
       };
 

@@ -3,14 +3,14 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Path'], function(Path) {
+  define(['Items/Paths/Path'], function(Path) {
     var PrecisePath;
     PrecisePath = (function(_super) {
       __extends(PrecisePath, _super);
 
       PrecisePath.label = 'Precise path';
 
-      PrecisePath.rdescription = "This path offers precise controls, one can modify points along with their handles and their type.";
+      PrecisePath.description = "This path offers precise controls, one can modify points along with their handles and their type.";
 
       PrecisePath.iconURL = 'static/images/icons/inverted/editCurve.png';
 
@@ -140,7 +140,7 @@
         var i, point, _i, _len;
         for (i = _i = 0, _len = points.length; _i < _len; i = _i += 4) {
           point = points[i];
-          this.controlPath.add(R.posOnPlanetToProject(point, planet));
+          this.controlPath.add(Utils.CS.posOnPlanetToProject(point, planet));
           this.controlPath.lastSegment.handleIn = new P.Point(points[i + 1]);
           this.controlPath.lastSegment.handleOut = new P.Point(points[i + 2]);
           this.controlPath.lastSegment.rtype = points[i + 3];
@@ -366,6 +366,26 @@
         }
       };
 
+      PrecisePath.prototype.simpleProcess = function(redrawing) {
+        this.beginDraw();
+        this.updateDraw();
+        this.endDraw();
+      };
+
+      PrecisePath.prototype.process = function(redrawing) {
+        var i, segment, _i, _len, _ref;
+        this.beginDraw(redrawing);
+        _ref = this.controlPath.segments;
+        for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+          segment = _ref[i];
+          if (i === 0) {
+            continue;
+          }
+          this.checkUpdateDrawing(segment, redrawing);
+        }
+        this.endDraw(redrawing);
+      };
+
       PrecisePath.prototype.draw = function(simplified, redrawing) {
         var controlPathLength, error, nIteration, nf, offset, process, reminder, step;
         if (simplified == null) {
@@ -391,36 +411,12 @@
         reminder = nf - nIteration;
         offset = reminder * step / 2;
         this.drawingOffset = 0;
-        if (this.constructor.renderType === 'simple') {
-          process = (function(_this) {
-            return function() {
-              _this.beginDraw();
-              _this.updateDraw();
-              return _this.endDraw();
-            };
-          })(this);
-        } else {
-          process = (function(_this) {
-            return function() {
-              var i, segment, _i, _len, _ref;
-              _this.beginDraw(redrawing);
-              _ref = _this.controlPath.segments;
-              for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-                segment = _ref[i];
-                if (i === 0) {
-                  continue;
-                }
-                _this.checkUpdateDrawing(segment, redrawing);
-              }
-              _this.endDraw(redrawing);
-            };
-          })(this);
-        }
+        process = this.constructor.renderType === 'simple' ? this.simpleProcess : this.process;
         if (!R.catchErrors) {
-          process();
+          process(redrawing);
         } else {
           try {
-            process();
+            process(redrawing);
           } catch (_error) {
             error = _error;
             console.error(error.stack);
@@ -448,9 +444,9 @@
         _ref = this.controlPath.segments;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           segment = _ref[_i];
-          points.push(R.projectToPosOnPlanet(segment.point));
-          points.push(R.pointToObj(segment.handleIn));
-          points.push(R.pointToObj(segment.handleOut));
+          points.push(Utils.CS.projectToPosOnPlanet(segment.point));
+          points.push(Utils.CS.pointToObj(segment.handleIn));
+          points.push(Utils.CS.pointToObj(segment.handleOut));
           points.push(segment.rtype);
         }
         return points;
@@ -977,9 +973,9 @@
         this.modifyControlPathCommand(previousPointsAndPlanet, this.getPointsAndPlanet());
       };
 
-      PrecisePath.prototype.setParameter = function(controller, value, updateGUI, update) {
+      PrecisePath.prototype.setParameter = function(name, value, updateGUI, update) {
         var _ref, _ref1;
-        PrecisePath.__super__.setParameter.call(this, controller, value, updateGUI, update);
+        PrecisePath.__super__.setParameter.call(this, name, value, updateGUI, update);
         switch (controller.name) {
           case 'showSelectionRectangle':
             if ((_ref = this.selectionRectangle) != null) {

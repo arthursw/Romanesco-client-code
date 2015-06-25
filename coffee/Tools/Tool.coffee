@@ -1,4 +1,4 @@
-define [ 'Sidebar' ], (Sidebar) ->
+define [ 'UI/Button' ], (Button) ->
 
 	# An RTool can be selected from the sidebar, or with special shortcuts.
 	# once selected, a tool will usually react to user events (mouse and keyboard events)
@@ -6,9 +6,9 @@ define [ 'Sidebar' ], (Sidebar) ->
 	# Here are all types of tools:
 	# - MoveTool to scroll the view in the project space
 	# - SelectTool to select RItems
-	# - TextTool to add RText (editable text box)
-	# - MediaTool to add RMedia (can be an image, video, shadertoy, or anything embeddable)
-	# - LockTool to add RLock (a locked area)
+	# - TextTool to add Text (editable text box)
+	# - MediaTool to add Media (can be an image, video, shadertoy, or anything embeddable)
+	# - LockTool to add Lock (a locked area)
 	# - CodeTool to open code editor and create a script
 	# - ScreenshotTool to take a screenshot
 	# - CarTool to have a car and travel in the world with arrow key (and play video games)
@@ -79,7 +79,7 @@ define [ 'Sidebar' ], (Sidebar) ->
 			return
 
 		createButton: ()->
-			@btn = new Sidebar.Button(@constructor.label, @constructor.iconURL, @constructor.favorite, @constructor.category)
+			@btn = new Button(@constructor.label, @constructor.iconURL, @constructor.favorite, @constructor.category)
 
 			# find or create the corresponding button in the sidebar
 			# @btnJ ?= R.toolsJ.find('li[data-name="'+@name+'"]')
@@ -110,7 +110,7 @@ define [ 'Sidebar' ], (Sidebar) ->
 		# - update cursor
 		# - update parameters
 		# @param [RTool constructor] the constructor used to update gui parameters (@constructor.parameters)
-		# @param [RItem] selected item to update gui parameters
+		# @param [Item] selected item to update gui parameters
 		# @param [Boolean] deselected selected items (false when selecting MoveTool or SelectTool)
 		select: (deselectItems=true, updateParameters=true)->
 			if R.selectedTool == @ then return

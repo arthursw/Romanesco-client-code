@@ -1,4 +1,4 @@
-define [ 'Content', 'PathTool' ], (Content, PathTool) ->
+define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 
 	# todo: Actions, undo & redo...
 	# todo: strokeWidth min = 0?
@@ -45,7 +45,7 @@ define [ 'Content', 'PathTool' ], (Content, PathTool) ->
 
 	class Path extends Content
 		@label = 'Pen' 										# the name used in the gui (to create the button and for the tooltip/popover)
-		@rdescription = "The classic and basic pen tool" 	# the path description
+		@description = "The classic and basic pen tool" 	# the path description
 		@cursorPosition = { x: 24, y: 0 } 					# the position of the cursor image (relative to the cursor position)+
 		@cursorDefault = "crosshair" 						# the cursor to use with this path
 
@@ -118,10 +118,10 @@ define [ 'Content', 'PathTool' ], (Content, PathTool) ->
 		# @param data [Object] (optional) the data containing information about parameters and state of RPath
 		# @param pk [ID] (optional) the primary key of the path in the database
 		# @param points [Array of P.Point] (optional) the points of the controlPath, the points must fit on the control path (the control path is stored in @data.points)
-		# @param lock [RLock] the lock which contains this RPath (if any)
+		# @param lock [Lock] the lock which contains this RPath (if any)
 		constructor: (@date=null, @data=null, @pk=null, points=null, @lock=null) ->
 			if not @lock
-				super(@data, @pk, @date, R.pathList, R.sortedPaths)
+				super(@data, @pk, @date, R.sidebar.pathListJ, R.sortedPaths)
 			else
 				super(@data, @pk, @date, @lock.itemListsJ.find('.rPath-list'), @lock.sortedPaths)
 
@@ -368,7 +368,7 @@ define [ 'Content', 'PathTool' ], (Content, PathTool) ->
 					position = bounds.center
 
 				@canvasRaster?.remove()
-				@canvasRaster = new Raster(canvas, position)
+				@canvasRaster = new P.Raster(canvas, position)
 				@drawing.addChild(@canvasRaster)
 				@context = @canvasRaster.canvas.getContext("2d")
 				@context.strokeStyle = @data.strokeColor
@@ -450,7 +450,7 @@ define [ 'Content', 'PathTool' ], (Content, PathTool) ->
 
 		# @return [P.Point] the planet on which the RPath lies
 		getPlanet: ()->
-			return R.projectToPlanet( @controlPath.segments[0].point )
+			return Utils.CS.projectToPlanet( @controlPath.segments[0].point )
 
 		# save RPath to server
 		save: (addCreateCommand=true)->
@@ -460,7 +460,7 @@ define [ 'Content', 'PathTool' ], (Content, PathTool) ->
 
 			args =
 				city: R.city
-				box: R.boxFromRectangle( @getDrawingBounds() )
+				box: Utils.CS.boxFromRectangle( @getDrawingBounds() )
 				points: @pathOnPlanet()
 				data: @getStringifiedData()
 				date: @date
@@ -494,7 +494,7 @@ define [ 'Content', 'PathTool' ], (Content, PathTool) ->
 						pk: @pk
 						points: @pathOnPlanet()
 						data: @getStringifiedData()
-						box: R.boxFromRectangle( @getDrawingBounds() )
+						box: Utils.CS.boxFromRectangle( @getDrawingBounds() )
 			return args
 
 		# update the RPath in the database
@@ -597,8 +597,8 @@ define [ 'Content', 'PathTool' ], (Content, PathTool) ->
 			points = []
 			planet = @getPlanet()
 			for segment in controlSegments
-				p = R.projectToPosOnPlanet(segment.point, planet)
-				points.push( R.pointToArray(p) )
+				p = Utils.CS.projectToPosOnPlanet(segment.point, planet)
+				points.push( Utils.CS.pointToArray(p) )
 			return points
 
 	return Path

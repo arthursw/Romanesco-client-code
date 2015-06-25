@@ -1,16 +1,16 @@
-define ['Div', 'oembed'], (Div) ->
+define ['Items/Divs/Div', 'oembed'], (Div) ->
 
 	# todo: remove @url? duplicated in @data.url or remove data.url
 	# todo: websocket the url change
 
-	# RMedia holds an image, video or any content inside an iframe (can be a [shadertoy](https://www.shadertoy.com/))
+	# Media holds an image, video or any content inside an iframe (can be a [shadertoy](https://www.shadertoy.com/))
 	# The first attempt is to load the media as an image:
 	# - if it succeeds, the image is embedded as a simple image tag,
-	#   and can be either be fit (proportion are kept) or resized (dimensions will be the same as RMedia) in the RMedia
+	#   and can be either be fit (proportion are kept) or resized (dimensions will be the same as Media) in the Media
 	#   (the user can modify this in the gui with the 'fit image' button)
-	# - if it fails, RMedia checks if the url start with 'iframe'
+	# - if it fails, Media checks if the url start with 'iframe'
 	#   if it does, the iframe is embedded as is (this enables to embed shadertoys for example)
-	# - otherwise RMedia tries to embed it with jquery oembed (this enable to embed youtube and vimeo videos just with the video link)
+	# - otherwise Media tries to embed it with jquery oembed (this enable to embed youtube and vimeo videos just with the video link)
 	class Media extends Div
 		@label = 'Media'
 		@modalTitle = "Insert a media"
@@ -19,7 +19,7 @@ define ['Div', 'oembed'], (Div) ->
 
 		@initialize: (rectangle)->
 			submit = (data)->
-				div = new R.RMedia(rectangle, data)
+				div = new R.Media(rectangle, data)
 				div.finish()
 				if not div.group then return
 				div.save()
@@ -95,13 +95,13 @@ define ['Div', 'oembed'], (Div) ->
 			return
 
 		# called when user clicks in the "fit image" button in the gui
-		# toggle the 'fit-image' class to fit (proportion are kept) or resize (dimensions will be the same as RMedia) the image in the RMedia
+		# toggle the 'fit-image' class to fit (proportion are kept) or resize (dimensions will be the same as Media) the image in the Media
 		toggleFitImage: ()->
 			if @isImage?
 				@contentJ.toggleClass("fit-image", @data.fitImage)
 			return
 
-		# overload {RDiv#setParameter}
+		# overload {Div#setParameter}
 		# update = false when called by parameter.onChange from websocket
 		# toggle fit image if required
 		setParameter: (name, value)->
@@ -121,7 +121,7 @@ define ['Div', 'oembed'], (Div) ->
 				return true
 			return false
 
-		# try to load the url as an image: and call {RMedia#loadMedia} with the following string:
+		# try to load the url as an image: and call {Media#loadMedia} with the following string:
 		# - 'success' if it succeeds
 		# - 'error' if it fails
 		# - 'timeout' if there was no response for 1 seconds (wait 5 seconds if the url as an image extension since it is likely that it will succeed)
@@ -150,7 +150,7 @@ define ['Div', 'oembed'], (Div) ->
 			return
 
 		# embed the media in the div (this will load it) and update css
-		# called by {RMedia#checkIsImage}
+		# called by {Media#checkIsImage}
 		# @param imageLoadResult [String] the result of the image load test: 'success', 'error' or 'timeout'
 		loadMedia: (imageLoadResult)=>
 			if imageLoadResult == 'success'
@@ -196,10 +196,10 @@ define ['Div', 'oembed'], (Div) ->
 
 		# bug?: called many times when div is resized, maybe because update called urlChanged
 
-		# remove the RMedia content and embed the media from *url*
-		# update the RMedia if *updateDiv*
+		# remove the Media content and embed the media from *url*
+		# update the Media if *updateDiv*
 		# @param url [String] the url of the media to embed
-		# @param updateDiv [Boolean] whether to update the RMedia
+		# @param updateDiv [Boolean] whether to update the Media
 		urlChanged: (url, updateDiv=false) =>
 			console.log 'urlChanged, updateDiv: ' + updateDiv + ', ' + @pk
 			@url = url

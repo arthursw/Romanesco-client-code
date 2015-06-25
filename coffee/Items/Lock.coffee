@@ -1,13 +1,13 @@
-define [ 'Item' ], (Item) ->
+define [ 'Items/Item' ], (Item) ->
 
-	# RLock are locked area which can only be modified by their author
+	# Lock are locked area which can only be modified by their author
 	# all RItems on the area are also locked, and can be unlocked if the user drags them outside the div
 
-	# There are different RLocks:
-	# - RLock: a simple RLock which just locks the area and the items underneath, and displays a popover with a message when the user clicks on it
-	# - RLink: extends RLock but works as a link: the one who clicks on it is redirected to the website
+	# There are different Locks:
+	# - Lock: a simple Lock which just locks the area and the items underneath, and displays a popover with a message when the user clicks on it
+	# - Link: extends Lock but works as a link: the one who clicks on it is redirected to the website
 	# - RWebsite:
-	#    - extends RLock and provide the author a special website adresse
+	#    - extends Lock and provide the author a special website adresse
 	#    - the owner of the site can choose a few options: "restrict area" and "hide toolbar"
 	#    - a user going to a site with the "restricted area" option can not go outside the area
 	#    - the tool bar will be hidden to users navigating to site with the "hide toolbar" option
@@ -15,7 +15,7 @@ define [ 'Item' ], (Item) ->
 	#    - a video game is an area which can interact with other RItems (very experimental)
 	#    - video games are always loaded entirely (the whole area is loaded at once with its items)
 
-	# an RLock can be set in background mode ({RLock#updateBackgroundMode}):
+	# an Lock can be set in background mode ({Lock#updateBackgroundMode}):
 	# - this hide the jQuery div and display a equivalent rectangle on the paper project instead (named controlPath in the code)
 	# - it is usefull to add and edit items on the area
 	#
@@ -84,14 +84,14 @@ define [ 'Item' ], (Item) ->
 			return
 
 		@highlightStage: (color)->
-			R.backgroundRectangle = new P.Path.Rectangle(P.view.bounds)
-			R.backgroundRectangle.fillColor = color
-			R.backgroundRectangle.sendToBack()
+			R.view.backgroundRectangle = new P.Path.Rectangle(P.view.bounds)
+			R.view.backgroundRectangle.fillColor = color
+			R.view.backgroundRectangle.sendToBack()
 			return
 
 		@unhighlightStage: ()->
-			R.backgroundRectangle?.remove()
-			R.backgroundRectangle = null
+			R.view.backgroundRectangle?.remove()
+			R.view.backgroundRectangle = null
 			return
 
 		@highlightValidity: (item)->
@@ -102,7 +102,7 @@ define [ 'Item' ], (Item) ->
 		# - if bounds is not defined, the bounds of the item will be used
 		# - cancel all highlights
 		# - if the item has been dragged over a lock or out of a lock: highlight (if *highlight*) or update the items accordingly
-		# @param item [RItem] the item to check
+		# @param item [Item] the item to check
 		# @param bounds [Paper P.Rectangle] (optional) the bounds to consider, item's bounds are used if *bounds* is null
 		# @param highlight [boolean] (optional) whether to highlight or update the items
 		@validatePosition: (item, bounds=null, highlight=false)->
@@ -170,7 +170,7 @@ define [ 'Item' ], (Item) ->
 						return false
 			return true
 		# # @param point [Paper point] the point to test
-		# # @return [RLock] the intersecting lock or null
+		# # @return [Lock] the intersecting lock or null
 		# @intersectPoint: (point)->
 		# 	for lock in R.locks
 		# 		if lock.getBounds().contains(point)
@@ -183,7 +183,7 @@ define [ 'Item' ], (Item) ->
 		# 	return @intersectRectangle(rectangle).length>0
 
 		# @param rectangle [Paper P.Rectangle] the rectangle to test
-		# @return [Array<RLock>] the locks
+		# @return [Array<Lock>] the locks
 		@getLockWhichContains: (rectangle)->
 			for lock in R.locks
 				if lock.getBounds().contains(rectangle)
@@ -191,7 +191,7 @@ define [ 'Item' ], (Item) ->
 			return null
 
 		# @param rectangle [Paper P.Rectangle] the rectangle to test
-		# @return [Array<RLock>] the intersecting locks
+		# @return [Array<Lock>] the intersecting locks
 		@getLocksWhichIntersect: (rectangle)->
 			locks = []
 			for lock in R.locks
@@ -295,7 +295,7 @@ define [ 'Item' ], (Item) ->
 
 			# check if the lock must be entirely loaded
 			if @data?.loadEntireArea
-				R.entireAreas.push(@)
+				R.view.entireAreas.push(@)
 
 			if @modulePk?
 				Dajaxice.draw.getModuleSource(R.initializeModule, { pk: @modulePk, accepted: true })
@@ -354,7 +354,7 @@ define [ 'Item' ], (Item) ->
 
 			args =
 				city: city: R.city
-				box: R.boxFromRectangle(@rectangle)
+				box: Utils.CS.boxFromRectangle(@rectangle)
 				object_type: @constructor.object_type
 				data: JSON.stringify(data)
 				siteData: JSON.stringify(siteData)
@@ -395,7 +395,7 @@ define [ 'Item' ], (Item) ->
 
 			# initialize data to be saved
 			updateBoxArgs =
-				box: R.boxFromRectangle(@rectangle)
+				box: Utils.CS.boxFromRectangle(@rectangle)
 				pk: @pk
 				object_type: @object_type
 				name: @data.name
@@ -449,7 +449,7 @@ define [ 'Item' ], (Item) ->
 			for item in @children()
 				item.rectangle.center.x += delta.x
 				item.rectangle.center.y += delta.y
-				if R.RDiv.prototype.isPrototypeOf(item)
+				if R.Div.prototype.isPrototypeOf(item)
 					item.updateTransform()
 			super(position, update)
 			return
@@ -521,15 +521,15 @@ define [ 'Item' ], (Item) ->
 			return
 
 	# RWebsite:
-	#  - extends RLock and provide the author a special website adresse
+	#  - extends Lock and provide the author a special website adresse
 	#  - the owner of the site can choose a few options: "restrict area" and "hide toolbar"
 	#  - a user going to a site with the "restricted area" option can not go outside the area
 	#  - the tool bar will be hidden to users navigating to site with the "hide toolbar" option
-	class Lock.Website extends Lock
+	class Website extends Lock
 		@label = 'Website'
 		@object_type = 'website'
 
-		# overload {RDiv#constructor}
+		# overload {Div#constructor}
 		# the mouse interaction is modified to enable user navigation (the user can scroll the view by dragging on the website area)
 		constructor: (@rectangle, @data=null, @pk=null, @owner=null, date=null) ->
 			super(@rectangle, @data, @pk, @owner, date)
@@ -544,11 +544,11 @@ define [ 'Item' ], (Item) ->
 	# - a video game is an area which can interact with other RItems (very experimental)
 	# - video games are always loaded entirely (the whole area is loaded at the same time with its items)
 	# this a default videogame class which must be redefined in custom scripts
-	class Lock.VideoGame extends Lock
+	class VideoGame extends Lock
 		@label = 'Video game'
 		@object_type = 'video-game'
 
-		# overload {RDiv#constructor}
+		# overload {Div#constructor}
 		# the mouse interaction is modified to enable user navigation (the user can scroll the view by dragging on the videogame area)
 		constructor: (@rectangle, @data=null, @pk=null, @owner=null, date=null) ->
 			super(@rectangle, @data, @pk, @owner, date)
@@ -556,14 +556,14 @@ define [ 'Item' ], (Item) ->
 			@checkpoints = []
 			return
 
-		# overload {RDiv#getData} + set data.loadEntireArea to true (we want videogames to load entirely)
+		# overload {Div#getData} + set data.loadEntireArea to true (we want videogames to load entirely)
 		getData: ()->
 			data = super()
 			data.loadEntireArea = true
 			return data
 
 		# todo: remove
-		# redefine {RLock#enableInteraction}
+		# redefine {Lock#enableInteraction}
 		enableInteraction: () ->
 			return
 
@@ -597,8 +597,8 @@ define [ 'Item' ], (Item) ->
 			return
 
 	# todo: make the link enabled even with the move tool?
-	# RLink: extends RLock but works as a link: the one who clicks on it is redirected to the website
-	class Lock.Link extends Lock
+	# Link: extends Lock but works as a link: the one who clicks on it is redirected to the website
+	class Link extends Lock
 		@label = 'Link'
 		@modalTitle = "Insert a hyperlink"
 		@modalTitleUpdate = "Modify your link"

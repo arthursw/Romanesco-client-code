@@ -1,4 +1,4 @@
-define ['utils'], () ->
+define ['Utils/Utils'], () ->
 
 	class CityManager
 
@@ -45,7 +45,7 @@ define ['utils'], () ->
 				owner: owner
 				name: name
 				site: null
-			R.load()
+			R.loader.load()
 			View.updateHash()
 			return
 

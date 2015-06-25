@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Shape'], function(Shape) {
+  define(['Items/Paths/Shapes/Shape'], function(Shape) {
     var StripeAnimation;
     StripeAnimation = (function(_super) {
       __extends(StripeAnimation, _super);
@@ -19,7 +19,7 @@
 
       StripeAnimation.label = 'Stripe animation';
 
-      StripeAnimation.rdescription = "Creates a stripe animation from a set sequence of image.";
+      StripeAnimation.description = "Creates a stripe animation from a set sequence of image.";
 
       StripeAnimation.squareByDefault = false;
 
@@ -96,7 +96,7 @@
                   span = document.createElement('span');
                   span.innerHTML = ['<img class="thumb" src="', e.target.result, '" title="', escape(theFile.name), '"/>'].join('');
                   $("#stripeAnimationGallery").append(span);
-                  stripeAnimation.rasters.push(new Raster(e.target.result));
+                  stripeAnimation.rasters.push(new P.Raster(e.target.result));
                   stripeAnimation.nRasterLoaded++;
                   if (stripeAnimation.nRasterLoaded === stripeAnimation.nRasterToLoad) {
                     stripeAnimation.rasterLoaded();
@@ -144,13 +144,13 @@
           raster.size = this.minSize;
         }
         size = this.rasters[0].size;
-        this.result = new Raster();
+        this.result = new P.Raster();
         this.result.position = this.rectangle.center;
         this.result.size = size;
         this.result.name = 'stripe animation raster';
         this.result.controller = this;
         this.drawing.addChild(this.result);
-        this.stripes = new Raster();
+        this.stripes = new P.Raster();
         this.stripes.size = new P.Size(size.width * 2, size.height);
         this.stripes.position = this.rectangle.center;
         this.stripes.name = 'stripe mask raster';

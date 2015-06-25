@@ -1,7 +1,7 @@
 
 	# class QuantificationPath extends PrecisePath
 	#   @label = 'Quantification path'
-	#   @rdescription = "Quantification path."
+	#   @description = "Quantification path."
 
 	#   parameters: ()->
 	#     parameters = super()

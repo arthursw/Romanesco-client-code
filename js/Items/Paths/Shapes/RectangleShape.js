@@ -3,7 +3,7 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Shape'], function(Shape) {
+  define(['Items/Paths/Shapes/Shape'], function(Shape) {
     var RectangleShape;
     RectangleShape = (function(_super) {
       __extends(RectangleShape, _super);
@@ -18,7 +18,7 @@
 
       RectangleShape.label = 'P.Rectangle';
 
-      RectangleShape.rdescription = "Simple rectangle, square by default (use shift key to draw a rectangle) which can have rounded corners.\nUse special key (command on a mac, control otherwise) to center the shape on the first point.";
+      RectangleShape.description = "Simple rectangle, square by default (use shift key to draw a rectangle) which can have rounded corners.\nUse special key (command on a mac, control otherwise) to center the shape on the first point.";
 
       RectangleShape.iconURL = 'static/images/icons/inverted/rectangle.png';
 

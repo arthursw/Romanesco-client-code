@@ -1,11 +1,11 @@
-define [ 'Shape' ], (Shape) ->
+define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 
 	# The star shape can be animated
 	class StarShape extends Shape
 		@Shape = P.Path.Star
 		@category = 'Shape/Animated'
 		@label = 'Star'
-		@rdescription = "Draws a star which can be animated (the color changes and it rotates)."
+		@description = "Draws a star which can be animated (the color changes and it rotates)."
 		@iconURL = 'static/images/icons/inverted/star.png'
 		@iconAlt = 'star'
 

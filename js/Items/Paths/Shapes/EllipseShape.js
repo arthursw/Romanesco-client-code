@@ -3,7 +3,7 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Shape'], function(Shape) {
+  define(['Items/Paths/Shapes/Shape'], function(Shape) {
     var EllipseShape;
     EllipseShape = (function(_super) {
       __extends(EllipseShape, _super);
@@ -18,7 +18,7 @@
 
       EllipseShape.label = 'Ellipse';
 
-      EllipseShape.rdescription = "Simple ellipse, circle by default (use shift key to draw an ellipse).\nUse special key (command on a mac, control otherwise) to avoid the shape to be centered on the first point.";
+      EllipseShape.description = "Simple ellipse, circle by default (use shift key to draw an ellipse).\nUse special key (command on a mac, control otherwise) to avoid the shape to be centered on the first point.";
 
       EllipseShape.iconURL = 'static/images/icons/inverted/circle.png';
 

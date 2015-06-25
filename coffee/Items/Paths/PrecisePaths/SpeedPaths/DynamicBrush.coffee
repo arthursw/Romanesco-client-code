@@ -1,8 +1,8 @@
-define ['SpeedPath'], (SpeedPath) ->
+define ['Items/Paths/PrecisePaths/SpeedPaths/SpeedPath'], (SpeedPath) ->
 
 	class DynamicBrush extends SpeedPath
 		@label = 'Dynamic brush'
-		@rdescription = "The stroke width is function of the drawing speed: the faster the wider."
+		@description = "The stroke width is function of the drawing speed: the faster the wider."
 		@polygonMode = false
 
 		# "http://thenounproject.com/term/spray-bottle/7835/"

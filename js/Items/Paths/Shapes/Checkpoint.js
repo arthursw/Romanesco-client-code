@@ -3,7 +3,7 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Shape'], function(Shape) {
+  define(['Items/Paths/Shapes/Shape'], function(Shape) {
     var Checkpoint;
     Checkpoint = (function(_super) {
       __extends(Checkpoint, _super);
@@ -16,7 +16,7 @@
 
       Checkpoint.label = 'Checkpoint';
 
-      Checkpoint.rdescription = "Draw checkpoints on a lock with a Racer to create a race\n(the players must go through each checkpoint as fast as possible, with the car tool).";
+      Checkpoint.description = "Draw checkpoints on a lock with a Racer to create a race\n(the players must go through each checkpoint as fast as possible, with the car tool).";
 
       Checkpoint.category = 'Video game/Racer';
 

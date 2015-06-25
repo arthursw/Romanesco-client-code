@@ -148,7 +148,7 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-lan
 			@editor.getSession().setValue("""
 				class NewPath extends R.PrecisePath
 				  @label = 'NewPath'
-				  @rdescription = "A fancy path."
+				  @description = "A fancy path."
 
 				  drawBegin: ()->
 

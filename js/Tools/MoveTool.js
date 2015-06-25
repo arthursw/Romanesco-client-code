@@ -3,21 +3,22 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tool'], function(Tool) {
-    Tool.Move = (function(_super) {
-      __extends(Move, _super);
+  define(['Tools/Tool'], function(Tool) {
+    var MoveTool;
+    MoveTool = (function(_super) {
+      __extends(MoveTool, _super);
 
-      Move.label = 'Media';
+      MoveTool.label = 'Media';
 
-      Move.description = '';
+      MoveTool.description = '';
 
-      Move.iconURL = 'move.png';
+      MoveTool.iconURL = 'move.png';
 
-      Move.favorite = true;
+      MoveTool.favorite = true;
 
-      Move.category = '';
+      MoveTool.category = '';
 
-      Move.cursor = {
+      MoveTool.cursor = {
         position: {
           x: 32,
           y: 32
@@ -26,8 +27,8 @@
         icon: 'move'
       };
 
-      function Move() {
-        Move.__super__.constructor.call(this, true);
+      function MoveTool() {
+        MoveTool.__super__.constructor.call(this, true);
         this.prevPoint = {
           x: 0,
           y: 0
@@ -36,7 +37,7 @@
         return;
       }
 
-      Move.prototype.select = function(deselectItems, updateParameters) {
+      MoveTool.prototype.select = function(deselectItems, updateParameters) {
         var div, _i, _len, _ref;
         if (deselectItems == null) {
           deselectItems = false;
@@ -44,7 +45,7 @@
         if (updateParameters == null) {
           updateParameters = true;
         }
-        Move.__super__.select.call(this, deselectItems, updateParameters);
+        MoveTool.__super__.select.call(this, deselectItems, updateParameters);
         R.stageJ.addClass("moveTool");
         _ref = R.divs;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -53,9 +54,9 @@
         }
       };
 
-      Move.prototype.deselect = function() {
+      MoveTool.prototype.deselect = function() {
         var div, _i, _len, _ref;
-        Move.__super__.deselect.call(this);
+        MoveTool.__super__.deselect.call(this);
         R.stageJ.removeClass("moveTool");
         _ref = R.divs;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -64,13 +65,13 @@
         }
       };
 
-      Move.prototype.begin = function(event) {};
+      MoveTool.prototype.begin = function(event) {};
 
-      Move.prototype.update = function(event) {};
+      MoveTool.prototype.update = function(event) {};
 
-      Move.prototype.end = function(moved) {};
+      MoveTool.prototype.end = function(moved) {};
 
-      Move.prototype.beginNative = function(event) {
+      MoveTool.prototype.beginNative = function(event) {
         this.dragging = true;
         this.initialPosition = {
           x: event.pageX,
@@ -82,7 +83,7 @@
         };
       };
 
-      Move.prototype.updateNative = function(event) {
+      MoveTool.prototype.updateNative = function(event) {
         if (this.dragging) {
           View.moveBy({
             x: (this.prevPoint.x - event.pageX) / P.view.zoom,
@@ -95,15 +96,15 @@
         }
       };
 
-      Move.prototype.endNative = function(event) {
+      MoveTool.prototype.endNative = function(event) {
         this.dragging = false;
       };
 
-      return Move;
+      return MoveTool;
 
     })(Tool);
-    new Tool.Move();
-    return Tool.Move;
+    Tool.Move = MoveTool;
+    return MoveTool;
   });
 
 }).call(this);

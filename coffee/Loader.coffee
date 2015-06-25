@@ -1,4 +1,4 @@
-define [ 'utils' ], () ->
+define [], () ->
 
 	# --- load --- #
 
@@ -69,7 +69,7 @@ define [ 'utils' ], () ->
 			i = @loadedAreas.length
 			while i--
 				area = @loadedAreas[i]
-				pos = R.posOnPlanetToProject(area.pos, area.planet)
+				pos = Utils.CS.posOnPlanetToProject(area.pos, area.planet)
 				rectangle = new P.Rectangle(pos.x, pos.y, R.scale * area.zoom, R.scale * area.zoom)
 
 				if not rectangle.intersects(limit) or area.zoom != qZoom
@@ -102,8 +102,8 @@ define [ 'utils' ], () ->
 			areasToLoad = []
 			for x in [l .. r] by scale
 				for y in [t .. b] by scale
-					planet = R.projectToPlanet(new P.Point(x,y))
-					pos = R.projectToPosOnPlanet(new P.Point(x,y))
+					planet = Utils.CS.projectToPlanet(new P.Point(x,y))
+					pos = Utils.CS.projectToPosOnPlanet(new P.Point(x,y))
 
 					# rasterizer always add all areas since it must check if it is up-to-date
 					# (items which are loaded could need to be updated)
@@ -159,12 +159,12 @@ define [ 'utils' ], () ->
 			# define unload limit rectangle
 			unloadDist = Math.round(R.scale / P.view.zoom)
 
-			limit = R.entireArea or bounds.expand(unloadDist)
+			limit = R.view.entireArea or bounds.expand(unloadDist)
 
 			# remove rasters which are outside the limit
 			R.rasterizer.unload(limit)
 
-			qZoom = R.quantizeZoom(1.0 / P.view.zoom)
+			qZoom = Utils.CS.quantizeZoom(1.0 / P.view.zoom)
 
 			# remove areas which are outside the limit
 			@unloadAreas(area, qZoom)
@@ -255,31 +255,31 @@ define [ 'utils' ], () ->
 
 						lock = null
 						switch box.object_type
-							when 'link'
-								lock = new R.RLink(R.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
 							when 'lock'
-								lock = new Lock(R.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
+								lock = new Lock(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
+							when 'link'
+								lock = new Link(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
 							when 'website'
-								lock = new R.RWebsite(R.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
+								lock = new Website(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
 							when 'video-game'
-								lock = new R.RVideoGame(R.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
+								lock = new VideoGame(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
 
 						lock.lastUpdateDate = box.lastUpdate.$date
 
-					when 'Div'			# add RDivs (RText and RMedia)
+					when 'Div'			# add RDivs (Text and Media)
 						div = item
 						if div.box.coordinates[0].length<5
 							console.log "Error: box has less than 5 points"
 
 
 
-						# rdiv = new R.g[div.object_type](R.rectangleFromBox(box), data, div._id.$oid, date, div.lock)
+						# rdiv = new R.g[div.object_type](Utils.CS.rectangleFromBox(box), data, div._id.$oid, date, div.lock)
 
 						switch div.object_type
 							when 'text'
-								rdiv = new R.RText(R.rectangleFromBox(div), data, pk, date, lock)
+								rdiv = new Text(Utils.CS.rectangleFromBox(div), data, pk, date, lock)
 							when 'media'
-								rdiv = new R.RMedia(R.rectangleFromBox(div), data, pk, date, lock)
+								rdiv = new Media(Utils.CS.rectangleFromBox(div), data, pk, date, lock)
 
 						rdiv.lastUpdateDate = div.lastUpdate.$date
 
@@ -292,7 +292,7 @@ define [ 'utils' ], () ->
 
 						# convert points from planet coordinates to project coordinates
 						for point in path.points.coordinates
-							points.push( R.posOnPlanetToProject(point, planet) )
+							points.push( Utils.CS.posOnPlanetToProject(point, planet) )
 
 						# create the RPath with the corresponding RTool
 						rpath = null
@@ -305,15 +305,15 @@ define [ 'utils' ], () ->
 						else
 							console.log "Unknown path type: " + path.object_type
 					when 'AreaToUpdate'
-						R.rasterizer.addAreaToUpdate(R.rectangleFromBox(item))
+						R.rasterizer.addAreaToUpdate(Utils.CS.rectangleFromBox(item))
 
-						# areaToUpdate = new P.Path.Rectangle(R.rectangleFromBox(item))
+						# areaToUpdate = new P.Path.Rectangle(Utils.CS.rectangleFromBox(item))
 						# areaToUpdate.fillColor = 'rgba(255,50,50,0.25)'
 						# areaToUpdate.strokeColor = 'rgba(255,50,50,0.5)'
 						# areaToUpdate.strokeWidth = 3
 						# areaToUpdate.getBounds = ()-> return areaToUpdate.bounds
 						# R.areasToUpdateLayer.addChild(areaToUpdate)
-						# R.mainLayer.activate()
+						# R.view.mainLayer.activate()
 					else
 						continue
 			return
@@ -347,7 +347,7 @@ define [ 'utils' ], () ->
 			if not results.rasters? or results.rasters.length==0
 				R.rasterizer.rasterizeAreasToUpdate()
 
-			R.RDiv.updateZIndex(R.sortedDivs)
+			R.Div.updateZIndex(R.sortedDivs)
 
 			if not R.rasterizerMode
 
@@ -423,7 +423,7 @@ define [ 'utils' ], () ->
 			@removeDebugRectangle(area.rectangle)
 			return
 
-		removeDebugRectangle = (rectangle)->
+		removeDebugRectangle: (rectangle)->
 			removeRect = ()-> rectangle.remove()
 			setTimeout(removeRect, 1500)
 			return

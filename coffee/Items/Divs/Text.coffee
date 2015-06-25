@@ -1,6 +1,6 @@
-define ['Div'], (Div) ->
+define [ 'Items/Divs/Div' ], (Div) ->
 
-	# RText: a textarea to write some text.
+	# Text: a textarea to write some text.
 	# The text can have any google font, any effect, but all the text has the same formating.
 	class Text extends Div
 		@label = 'Text'
@@ -9,7 +9,7 @@ define ['Div'], (Div) ->
 		@modalTitleUpdate = "Modify your text"
 		@object_type = 'text'
 
-		# parameters of the RText highly customize the gui (add functionnalities like font selector, etc.)
+		# parameters of the Text highly customize the gui (add functionnalities like font selector, etc.)
 		@initializeParameters: ()->
 
 			parameters = super()
@@ -41,7 +41,7 @@ define ['Div'], (Div) ->
 							else
 								inputValue = input.val()
 							for item in R.selectedItems
-								item.setFontFamily?(inputValue) 	# not necessarly an RText
+								item.setFontFamily?(inputValue) 	# not necessarly an Text
 							return
 
 						input.on 'typeahead:cursorchanged', ()->
@@ -142,7 +142,7 @@ define ['Div'], (Div) ->
 
 		@parameters = @initializeParameters()
 
-		# overload {RDiv#constructor}
+		# overload {Div#constructor}
 		# initialize mouse event listeners to be able to select and edit text, bind key event listener to @textChanged
 		constructor: (bounds, @data=null, @pk=null, @date, @lock=null) ->
 			super(bounds, @data, @pk, @date, @lock)
@@ -189,7 +189,7 @@ define ['Div'], (Div) ->
 
 		# called whenever the text is changed:
 		# emit the new text to websocket
-		# update the RText in 1 second (deferred execution)
+		# update the Text in 1 second (deferred execution)
 		# @param event [jQuery Event] the key event
 		textChanged: (event) =>
 			newText = @contentJ.val()
@@ -209,9 +209,9 @@ define ['Div'], (Div) ->
 		# - check font validity
 		# - add font to the page header (in a script tag, this will load the font)
 		# - update css
-		# - update RText if *update*
+		# - update Text if *update*
 		# @param fontFamily [String] the name of the font family
-		# @param update [Boolean] whether to update the RText
+		# @param update [Boolean] whether to update the Text
 		setFontFamily: (fontFamily, update=true)->
 			if not fontFamily? then return
 
@@ -241,7 +241,7 @@ define ['Div'], (Div) ->
 		# only called when user modifies GUI
 		# add/remove (toggle) the font style of the text defined by *value*
 		# if *value* is 'justify', 'left', 'right' or 'center', the text is aligned as the *value* (the previous value is ignored, no toggle)
-		# this only modifies @data, the css will be modified in {RText#setFontStyle}
+		# this only modifies @data, the css will be modified in {Text#setFontStyle}
 		# eit the change on websocket
 		# @param value [String] the style to toggle, can be 'underline', 'overline', 'line-through', 'italic', 'bold', 'justify', 'left', 'right' or 'center'
 		changeFontStyle: (value)=>
@@ -283,8 +283,8 @@ define ['Div'], (Div) ->
 			return
 
 		# set the font style of the text (update the css)
-		# called by {RText#changeFontStyle}
-		# @param update [Boolean] (optional) whether to update the RText
+		# called by {Text#changeFontStyle}
+		# @param update [Boolean] (optional) whether to update the Text
 		setFontStyle: (update=true)->
 			if @data.fontStyle?.italic?
 				@contentJ.css( "font-style": if @data.fontStyle.italic then "italic" else "normal")
@@ -300,7 +300,7 @@ define ['Div'], (Div) ->
 
 		# set the font size of the text (update @data and the css)
 		# @param fontSize [Number] the new font size
-		# @param update [Boolean] (optional) whether to update the RText
+		# @param update [Boolean] (optional) whether to update the Text
 		setFontSize: (fontSize, update=true)->
 			if not fontSize? then return
 			@data.fontSize = fontSize
@@ -311,7 +311,7 @@ define ['Div'], (Div) ->
 
 		# set the font effect of the text, only one effect can be applied at the same time (for now)
 		# @param fontEffect [String] the new font effect
-		# @param update [Boolean] (optional) whether to update the RText
+		# @param update [Boolean] (optional) whether to update the Text
 		setFontEffect: (fontEffect, update=true)->
 			if not fontEffect? then return
 
@@ -333,13 +333,13 @@ define ['Div'], (Div) ->
 
 		# set the font color of the text, update css
 		# @param fontColor [String] the new font color
-		# @param update [Boolean] (optional) whether to update the RText
+		# @param update [Boolean] (optional) whether to update the Text
 		setFontColor: (fontColor, update=true)->
 			@contentJ.css( "color": fontColor ? 'black')
 			return
 
 		# update font to match the styles, effects and colors in @data
-		# @param update [Boolean] (optional) whether to update the RText
+		# @param update [Boolean] (optional) whether to update the Text
 		setFont: (update=true)->
 			@setFontStyle(update)
 			@setFontFamily(@data.fontFamily, update)
@@ -349,7 +349,7 @@ define ['Div'], (Div) ->
 			return
 
 		# update = false when called by parameter.onChange from websocket
-		# overload {RDiv#setParameter}
+		# overload {Div#setParameter}
 		# update text content and font styles, effects and colors
 		setParameter: (name, value)->
 			super(name, value)
@@ -360,8 +360,8 @@ define ['Div'], (Div) ->
 					@setFont(false)
 			return
 
-		# overload {RDiv#delete}
-		# do not delete RText if we are editing the text (the delete key is used to delete the text)
+		# overload {Div#delete}
+		# do not delete Text if we are editing the text (the delete key is used to delete the text)
 		delete: () ->
 			if @contentJ.hasClass("selected")
 				return

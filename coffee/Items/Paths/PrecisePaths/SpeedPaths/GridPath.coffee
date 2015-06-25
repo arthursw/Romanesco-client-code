@@ -1,9 +1,9 @@
-define ['SpeedPath'], (SpeedPath) ->
+define ['Items/Paths/PrecisePaths/SpeedPaths/SpeedPath'], (SpeedPath) ->
 
 	# The grid path is similar to the thickness path, but draws a grid along the path
 	class GridPath extends SpeedPath
 		@label = 'Grid path'
-		@rdescription = "Draws a grid along the path, the thickness of the grid being function of the speed of the drawing."
+		@description = "Draws a grid along the path, the thickness of the grid being function of the speed of the drawing."
 
 		@initializeParameters: ()->
 			parameters = super()

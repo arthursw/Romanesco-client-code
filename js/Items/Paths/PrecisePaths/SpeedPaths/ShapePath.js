@@ -3,7 +3,7 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['SpeedPath'], function(SpeedPath) {
+  define(['Items/Paths/PrecisePaths/SpeedPaths/SpeedPath'], function(SpeedPath) {
     var ShapePath;
     ShapePath = (function(_super) {
       __extends(ShapePath, _super);
@@ -14,7 +14,7 @@
 
       ShapePath.label = 'Shape path';
 
-      ShapePath.rdescription = "Draws rectangles or ellipses along the path. The size of the shapes is function of the drawing speed.";
+      ShapePath.description = "Draws rectangles or ellipses along the path. The size of the shapes is function of the drawing speed.";
 
       ShapePath.initializeParameters = function() {
         var parameters;
@@ -82,40 +82,39 @@
       };
 
       ShapePath.prototype.updateDraw = function(offset, step) {
-        var addShape, midOffset, speed, stepOffset;
+        var midOffset, speed, stepOffset;
         if (!step) {
           return;
         }
         speed = this.speedAt(offset);
-        addShape = (function(_this) {
-          return function(offset, height, speed) {
-            var normal, point, rectangle, shape, width;
-            point = _this.controlPath.getPointAt(offset);
-            normal = _this.controlPath.getNormalAt(offset);
-            width = _this.data.minWidth + (_this.data.maxWidth - _this.data.minWidth) * speed / _this.constructor.maxSpeed;
-            rectangle = new P.Rectangle(point.subtract(new P.Point(width / 2, height / 2)), new P.Size(width, height));
-            if (!_this.data.ellipse) {
-              shape = _this.addPath(new P.Path.Rectangle(rectangle));
-            } else {
-              shape = _this.addPath(new P.Path.Ellipse(rectangle));
-            }
-            shape.rotation = normal.angle;
-          };
-        })(this);
         if (!this.data.speedForLength) {
-          addShape(offset, this.data.step, speed);
+          this.addShape(offset, this.data.step, speed);
         } else {
           speed = this.data.minSpeed + (speed / this.constructor.maxSpeed) * (this.data.maxSpeed - this.data.minSpeed);
           stepOffset = offset - this.lastOffset;
           if (stepOffset > speed) {
             midOffset = (offset + this.lastOffset) / 2;
-            addShape(midOffset, stepOffset, speed);
+            this.addShape(midOffset, stepOffset, speed);
             this.lastOffset = offset;
           }
         }
       };
 
       ShapePath.prototype.endDraw = function() {};
+
+      ShapePath.prototype.addShape = function(offset, height, speed) {
+        var normal, point, rectangle, shape, width;
+        point = this.controlPath.getPointAt(offset);
+        normal = this.controlPath.getNormalAt(offset);
+        width = this.data.minWidth + (this.data.maxWidth - this.data.minWidth) * speed / this.constructor.maxSpeed;
+        rectangle = new P.Rectangle(point.subtract(new P.Point(width / 2, height / 2)), new P.Size(width, height));
+        if (!this.data.ellipse) {
+          shape = this.addPath(new P.Path.Rectangle(rectangle));
+        } else {
+          shape = this.addPath(new P.Path.Ellipse(rectangle));
+        }
+        shape.rotation = normal.angle;
+      };
 
       return ShapePath;
 

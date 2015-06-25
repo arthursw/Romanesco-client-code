@@ -4,14 +4,14 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Content', 'PathTool'], function(Content, PathTool) {
+  define(['Items/Content', 'Tools/PathTool'], function(Content, PathTool) {
     var Path;
     Path = (function(_super) {
       __extends(Path, _super);
 
       Path.label = 'Pen';
 
-      Path.rdescription = "The classic and basic pen tool";
+      Path.description = "The classic and basic pen tool";
 
       Path.cursorPosition = {
         x: 24,
@@ -113,7 +113,7 @@
         this.update = __bind(this.update, this);
         this.saveCallback = __bind(this.saveCallback, this);
         if (!this.lock) {
-          Path.__super__.constructor.call(this, this.data, this.pk, this.date, R.pathList, R.sortedPaths);
+          Path.__super__.constructor.call(this, this.data, this.pk, this.date, R.sidebar.pathListJ, R.sortedPaths);
         } else {
           Path.__super__.constructor.call(this, this.data, this.pk, this.date, this.lock.itemListsJ.find('.rPath-list'), this.lock.sortedPaths);
         }
@@ -232,8 +232,8 @@
 
       Path.prototype.loadPath = function(points) {};
 
-      Path.prototype.setParameter = function(controller, value, updateGUI, update) {
-        Path.__super__.setParameter.call(this, controller, value, updateGUI, update);
+      Path.prototype.setParameter = function(name, value, updateGUI, update) {
+        Path.__super__.setParameter.call(this, name, value, updateGUI, update);
         if (this.previousBoundingBox == null) {
           this.previousBoundingBox = this.getDrawingBounds();
         }
@@ -325,7 +325,7 @@
           if ((_ref2 = this.canvasRaster) != null) {
             _ref2.remove();
           }
-          this.canvasRaster = new Raster(canvas, position);
+          this.canvasRaster = new P.Raster(canvas, position);
           this.drawing.addChild(this.canvasRaster);
           this.context = this.canvasRaster.canvas.getContext("2d");
           this.context.strokeStyle = this.data.strokeColor;
@@ -387,7 +387,7 @@
       };
 
       Path.prototype.getPlanet = function() {
-        return R.projectToPlanet(this.controlPath.segments[0].point);
+        return Utils.CS.projectToPlanet(this.controlPath.segments[0].point);
       };
 
       Path.prototype.save = function(addCreateCommand) {
@@ -401,7 +401,7 @@
         R.paths[this.pk != null ? this.pk : this.id] = this;
         args = {
           city: R.city,
-          box: R.boxFromRectangle(this.getDrawingBounds()),
+          box: Utils.CS.boxFromRectangle(this.getDrawingBounds()),
           points: this.pathOnPlanet(),
           data: this.getStringifiedData(),
           date: this.date,
@@ -441,7 +441,7 @@
               pk: this.pk,
               points: this.pathOnPlanet(),
               data: this.getStringifiedData(),
-              box: R.boxFromRectangle(this.getDrawingBounds())
+              box: Utils.CS.boxFromRectangle(this.getDrawingBounds())
             };
         }
         return args;
@@ -491,7 +491,6 @@
         if ((this.lock != null) && this.lock.owner !== R.me) {
           return;
         }
-        this.group.visible = false;
         this.remove();
         if (this.pk == null) {
           return;
@@ -514,8 +513,8 @@
         planet = this.getPlanet();
         for (_i = 0, _len = controlSegments.length; _i < _len; _i++) {
           segment = controlSegments[_i];
-          p = R.projectToPosOnPlanet(segment.point, planet);
-          points.push(R.pointToArray(p));
+          p = Utils.CS.projectToPosOnPlanet(segment.point, planet);
+          points.push(Utils.CS.pointToArray(p));
         }
         return points;
       };
