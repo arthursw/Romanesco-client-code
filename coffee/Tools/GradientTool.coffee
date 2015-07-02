@@ -24,7 +24,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 				bounds = R.selectedItems[0].getBounds()
 			else
 				bounds = P.view.bounds.scale(0.25)
-			color = if color? then new Color(color) else Utils.Array.random(R.defaultColor)
+			color = if color? then new P.Color(color) else Utils.Array.random(R.defaultColor)
 			firstColor = color.clone()
 			firstColor.alpha = 0.2
 			secondColor = color.clone()
@@ -55,7 +55,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 			delta = destination.subtract(origin)
 
 			for stop in value.gradient.stops
-				color = new Color(if stop.color? then stop.color else stop[0])
+				color = new P.Color(if stop.color? then stop.color else stop[0])
 				location = parseFloat(if stop.rampPoint? then stop.rampPoint else stop[1])
 				position = origin.add(delta.multiply(location))
 
@@ -75,7 +75,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 			@line.strokeColor = R.selectionBlue
 			@line.strokeWidth = 1
 
-			R.selectionLayer.addChild(@group)
+			R.view.selectionLayer.addChild(@group)
 
 			@selectHandle(@startHandle)
 			if updateGradient
@@ -220,5 +220,5 @@ define [ 'Tools/Tool' ], (Tool) ->
 			@dragging = false
 			return
 
-	Tool.Gradient = GradientTool
+	R.Tools.Gradient = GradientTool
 	return GradientTool

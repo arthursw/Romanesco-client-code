@@ -1,7 +1,7 @@
 define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 
 	class Medusa extends Shape
-		@Shape = paper.P.Path.Rectangle
+		@Shape = P.Path.Rectangle
 		@label = 'Medusa'
 		@description = "Creates a bunch of aniamted Medusa."
 		@squareByDefault = true
@@ -33,7 +33,7 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 
 		@parameters = @initializeParameters()
 		@createTool(@)
-
+		
 		# animted paths must be initialized
 		initialize: ()->
 			@data.animate = true
@@ -47,17 +47,17 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 			@data.elasticConstant
 
 			@path = @addPath()
-			topSegment = new Segment(@rectangle.center.x, @rectangle.top)
+			topSegment = new P.Segment(@rectangle.center.x, @rectangle.top)
 			topSegment.handleIn = new P.Point(-@rectangle.width/3, 0)
 			topSegment.handleOut =  new P.Point(@rectangle.width/3, 0)
 			@path.add(topSegment)
 
-			@leftSegment = new Segment(@rectangle.left, @rectangle.top+@rectangle.height*0.7)
+			@leftSegment = new P.Segment(@rectangle.left, @rectangle.top+@rectangle.height*0.7)
 			@leftSegment.handleIn = new P.Point(0, -@rectangle.height*0.5)
 			@leftSegment.handleOut =  new P.Point(0, @rectangle.height*0.3)
 			@path.add(@leftSegment)
 
-			@rightSegment = new Segment(@rectangle.right, @rectangle.top+@rectangle.height*0.7)
+			@rightSegment = new P.Segment(@rectangle.right, @rectangle.top+@rectangle.height*0.7)
 			@rightSegment.handleIn = new P.Point(0, -@rectangle.height*0.5)
 			@rightSegment.handleOut =  new P.Point(0, @rectangle.height*0.3)
 			@path.add(@rightSegment)

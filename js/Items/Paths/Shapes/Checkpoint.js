@@ -12,7 +12,7 @@
         return Checkpoint.__super__.constructor.apply(this, arguments);
       }
 
-      Checkpoint.Shape = paper.P.Path.Rectangle;
+      Checkpoint.Shape = P.Path.Rectangle;
 
       Checkpoint.label = 'Checkpoint';
 
@@ -50,7 +50,7 @@
         this.data.strokeColor = 'rgb(150,30,30)';
         this.data.fillColor = null;
         this.shape = this.addPath(new P.Path.Rectangle(this.rectangle));
-        this.text = this.addPath(new PointText(this.rectangle.center.add(0, 4)));
+        this.text = this.addPath(new P.PointText(this.rectangle.center.add(0, 4)));
         this.text.content = this.data.checkpointNumber != null ? 'Checkpoint ' + this.data.checkpointNumber : 'Checkpoint';
         this.text.justification = 'center';
       };
@@ -77,5 +77,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Checkpoint.map

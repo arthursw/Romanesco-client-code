@@ -5,8 +5,8 @@
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
-  define([], function() {
-    var Rasterizer;
+  define(['Items/Lock'], function(Lock) {
+    var CanvasTileRasterizer, InstantPaperTileRasterizer, PaperTileRasterizer, Rasterizer, TileRasterizer;
     Rasterizer = (function() {
       Rasterizer.TYPE = 'default';
 
@@ -139,14 +139,14 @@
       return Rasterizer;
 
     })();
-    Rasterizer.Tile = (function(_super) {
-      __extends(Tile, _super);
+    TileRasterizer = (function(_super) {
+      __extends(TileRasterizer, _super);
 
-      Tile.TYPE = 'abstract tile';
+      TileRasterizer.TYPE = 'abstract tile';
 
-      Tile.loadingBarJ = null;
+      TileRasterizer.loadingBarJ = null;
 
-      Tile.addChildren = function(parent, sortedItems) {
+      TileRasterizer.addChildren = function(parent, sortedItems) {
         var item, _i, _len, _ref;
         if (parent.children == null) {
           return;
@@ -163,7 +163,7 @@
         }
       };
 
-      Tile.getSortedItems = function() {
+      TileRasterizer.getSortedItems = function() {
         var sortedItems;
         sortedItems = [];
         this.addChildren(R.view.mainLayer, sortedItems);
@@ -171,10 +171,10 @@
         return sortedItems;
       };
 
-      function Tile() {
+      function TileRasterizer() {
         this.rasterizeCallback = __bind(this.rasterizeCallback, this);
         this.rasterizeImmediately = __bind(this.rasterizeImmediately, this);
-        Tile.__super__.constructor.call(this);
+        TileRasterizer.__super__.constructor.call(this);
         this.itemsToExclude = [];
         this.areaToRasterize = null;
         this.areasToUpdate = [];
@@ -190,7 +190,7 @@
         return;
       }
 
-      Tile.prototype.loadItem = function(item) {
+      TileRasterizer.prototype.loadItem = function(item) {
         var _ref;
         if (((_ref = item.data) != null ? _ref.animate : void 0) || R.selectedTool.constructor.drawItems) {
           if (typeof item.draw === "function") {
@@ -206,39 +206,39 @@
         }
       };
 
-      Tile.prototype.startLoading = function() {
+      TileRasterizer.prototype.startLoading = function() {
         this.startLoadingTime = P.view._time;
-        R.TileRasterizer.loadingBarJ.css({
+        TileRasterizer.loadingBarJ.css({
           width: 0
         });
-        R.TileRasterizer.loadingBarJ.show();
+        TileRasterizer.loadingBarJ.show();
         Utils.deferredExecution(this.rasterizeCallback, 'rasterize', this.rasterizationDelay);
       };
 
-      Tile.prototype.stopLoading = function(cancelTimeout) {
+      TileRasterizer.prototype.stopLoading = function(cancelTimeout) {
         if (cancelTimeout == null) {
           cancelTimeout = true;
         }
         this.startLoadingTime = null;
-        R.TileRasterizer.loadingBarJ.hide();
+        TileRasterizer.loadingBarJ.hide();
         if (cancelTimeout) {
           clearTimeout(R.updateTimeout['rasterize']);
         }
       };
 
-      Tile.prototype.rasterizeImmediately = function() {
+      TileRasterizer.prototype.rasterizeImmediately = function() {
         this.stopLoading();
         this.rasterizeCallback();
       };
 
-      Tile.prototype.updateLoadingBar = function(time) {
+      TileRasterizer.prototype.updateLoadingBar = function(time) {
         var duration, totalWidth;
         if (this.startLoadingTime == null) {
           return;
         }
         duration = 1000 * (time - this.startLoadingTime) / this.rasterizationDelay;
         totalWidth = 241;
-        R.TileRasterizer.loadingBarJ.css({
+        TileRasterizer.loadingBarJ.css({
           width: duration * totalWidth
         });
         if (duration >= 1) {
@@ -246,12 +246,12 @@
         }
       };
 
-      Tile.prototype.drawItemsAndHideRasters = function() {
+      TileRasterizer.prototype.drawItemsAndHideRasters = function() {
         this.drawItems(true);
         this.hideRasters();
       };
 
-      Tile.prototype.selectItem = function(item) {
+      TileRasterizer.prototype.selectItem = function(item) {
         this.drawItems();
         this.rasterize(item, true);
         switch (this.autoRasterization) {
@@ -269,7 +269,7 @@
         }
       };
 
-      Tile.prototype.deselectItem = function(item) {
+      TileRasterizer.prototype.deselectItem = function(item) {
         if (this.rasterizeItems) {
           if (typeof item.rasterize === "function") {
             item.rasterize();
@@ -285,7 +285,7 @@
         }
       };
 
-      Tile.prototype.rasterLoaded = function(raster) {
+      TileRasterizer.prototype.rasterLoaded = function(raster) {
         var allRastersAreReady, rasterColumn, x, y, _ref;
         raster.context.clearRect(0, 0, R.scale, R.scale);
         raster.context.drawImage(raster.image, 0, 0);
@@ -305,7 +305,7 @@
         }
       };
 
-      Tile.prototype.createRaster = function(x, y, zoom, raster) {
+      TileRasterizer.prototype.createRaster = function(x, y, zoom, raster) {
         var _base;
         raster.zoom = zoom;
         raster.ready = true;
@@ -316,20 +316,20 @@
         this.rasters[x][y] = raster;
       };
 
-      Tile.prototype.getRasterBounds = function(x, y) {
+      TileRasterizer.prototype.getRasterBounds = function(x, y) {
         var size;
         size = this.rasters[x][y].zoom * R.scale;
         return new P.Rectangle(x, y, size, size);
       };
 
-      Tile.prototype.removeRaster = function(raster, x, y) {
+      TileRasterizer.prototype.removeRaster = function(raster, x, y) {
         delete this.rasters[x][y];
         if (Utils.isEmpty(this.rasters[x])) {
           delete this.rasters[x];
         }
       };
 
-      Tile.prototype.unload = function(limit) {
+      TileRasterizer.prototype.unload = function(limit) {
         var qZoom, raster, rasterColumn, rectangle, x, y, _ref;
         qZoom = Utils.CS.quantizeZoom(1.0 / P.view.zoom);
         _ref = this.rasters;
@@ -347,9 +347,9 @@
         }
       };
 
-      Tile.prototype.loadImageForRaster = function(raster, url) {};
+      TileRasterizer.prototype.loadImageForRaster = function(raster, url) {};
 
-      Tile.prototype.load = function(rasters, qZoom) {
+      TileRasterizer.prototype.load = function(rasters, qZoom) {
         var r, raster, url, x, y, _i, _len, _ref;
         this.move();
         for (_i = 0, _len = rasters.length; _i < _len; _i++) {
@@ -365,7 +365,7 @@
         }
       };
 
-      Tile.prototype.createRasters = function(rectangle) {
+      TileRasterizer.prototype.createRasters = function(rectangle) {
         var qBounds, qZoom, scale, x, y, _i, _j, _ref, _ref1, _ref2, _ref3;
         qZoom = Utils.CS.quantizeZoom(1.0 / P.view.zoom);
         scale = R.scale * qZoom;
@@ -377,11 +377,11 @@
         }
       };
 
-      Tile.prototype.move = function() {
+      TileRasterizer.prototype.move = function() {
         this.createRasters(P.view.bounds);
       };
 
-      Tile.prototype.splitAreaToRasterize = function() {
+      TileRasterizer.prototype.splitAreaToRasterize = function() {
         var area, areaToRasterizeInteger, areas, maxSize;
         maxSize = P.view.size.multiply(2);
         areaToRasterizeInteger = Utils.Rectangle.expandRectangleToInteger(this.areaToRasterize);
@@ -399,7 +399,7 @@
         return areas;
       };
 
-      Tile.prototype.rasterizeCanvasInRaster = function(x, y, canvas, rectangle, qZoom, clearRasters, sourceRectangle) {
+      TileRasterizer.prototype.rasterizeCanvasInRaster = function(x, y, canvas, rectangle, qZoom, clearRasters, sourceRectangle) {
         var context, destinationRectangle, intersection, rasterRectangle, _ref;
         if (clearRasters == null) {
           clearRasters = false;
@@ -427,7 +427,7 @@
         }
       };
 
-      Tile.prototype.rasterizeCanvas = function(canvas, rectangle, clearRasters, sourceRectangle) {
+      TileRasterizer.prototype.rasterizeCanvas = function(canvas, rectangle, clearRasters, sourceRectangle) {
         var qBounds, qZoom, scale, x, y, _i, _j, _ref, _ref1, _ref2, _ref3;
         if (clearRasters == null) {
           clearRasters = false;
@@ -446,18 +446,18 @@
         }
       };
 
-      Tile.prototype.clearAreaInRasters = function(rectangle) {
+      TileRasterizer.prototype.clearAreaInRasters = function(rectangle) {
         this.rasterizeCanvas(null, rectangle, true);
       };
 
-      Tile.prototype.rasterizeArea = function(area) {
+      TileRasterizer.prototype.rasterizeArea = function(area) {
         P.view.viewSize = area.size.multiply(P.view.zoom);
         P.view.center = area.center;
         P.view.update();
         this.rasterizeCanvas(R.canvas, area, true);
       };
 
-      Tile.prototype.rasterizeAreas = function(areas) {
+      TileRasterizer.prototype.rasterizeAreas = function(areas) {
         var area, viewPosition, viewSize, viewZoom, _i, _len;
         viewZoom = P.view.zoom;
         viewSize = P.view.viewSize;
@@ -472,7 +472,7 @@
         P.view.center = viewPosition;
       };
 
-      Tile.prototype.prepareView = function() {
+      TileRasterizer.prototype.prepareView = function() {
         var item, pk, _i, _len, _ref, _ref1, _ref2, _ref3;
         _ref = R.items;
         for (pk in _ref) {
@@ -487,8 +487,8 @@
           }
         }
         R.grid.visible = false;
-        R.selectionLayer.visible = false;
-        R.carLayer.visible = false;
+        R.view.selectionLayer.visible = false;
+        R.view.carLayer.visible = false;
         this.viewOnFrame = P.view.onFrame;
         P.view.onFrame = null;
         if ((_ref3 = this.rasterLayer) != null) {
@@ -496,24 +496,24 @@
         }
       };
 
-      Tile.prototype.restoreView = function() {
+      TileRasterizer.prototype.restoreView = function() {
         var _ref;
         if ((_ref = this.rasterLayer) != null) {
           _ref.visible = true;
         }
         P.view.onFrame = this.viewOnFrame;
-        R.carLayer.visible = true;
-        R.selectionLayer.visible = true;
+        R.view.carLayer.visible = true;
+        R.view.selectionLayer.visible = true;
         R.grid.visible = true;
       };
 
-      Tile.prototype.rasterizeCallback = function(step) {
+      TileRasterizer.prototype.rasterizeCallback = function(step) {
         var area, areas, item, pk, sortedItems, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3, _ref4;
         if (!this.areaToRasterize) {
           return;
         }
         console.log("rasterize");
-        R.logElapsedTime();
+        Utils.logElapsedTime();
         R.startTimer();
         if (this.autoRasterization === 'deferred' || this.autoRasterization === 'disabled') {
           this.showRasters();
@@ -561,16 +561,16 @@
         this.itemsAreVisible = false;
         this.stopLoading();
         R.stopTimer('Time to rasterize path: ');
-        R.logElapsedTime();
+        Utils.logElapsedTime();
       };
 
-      Tile.prototype.rasterize = function(items, excludeItems) {
+      TileRasterizer.prototype.rasterize = function(items, excludeItems) {
         var item, _i, _len;
         if (this.rasterizationDisabled) {
           return;
         }
         console.log("ask rasterize" + (excludeItems ? " excluding items." : ""));
-        R.logElapsedTime();
+        Utils.logElapsedTime();
         if (!Utils.Array.isArray(items)) {
           items = [items];
         }
@@ -589,7 +589,7 @@
         }
       };
 
-      Tile.prototype.rasterizeRectangle = function(rectangle) {
+      TileRasterizer.prototype.rasterizeRectangle = function(rectangle) {
         this.drawItems();
         if (this.areaToRasterize == null) {
           this.areaToRasterize = rectangle;
@@ -599,15 +599,15 @@
         Utils.callNextFrame(this.rasterizeCallback, 'rasterize');
       };
 
-      Tile.prototype.addAreaToUpdate = function(area) {
+      TileRasterizer.prototype.addAreaToUpdate = function(area) {
         this.areasToUpdate.push(area);
       };
 
-      Tile.prototype.setQZoomToUpdate = function(qZoom) {
+      TileRasterizer.prototype.setQZoomToUpdate = function(qZoom) {
         this.areasToUpdateQZoom = qZoom;
       };
 
-      Tile.prototype.rasterizeAreasToUpdate = function() {
+      TileRasterizer.prototype.rasterizeAreasToUpdate = function() {
         var area, previousAreaToRasterize, previousItemsToExclude, previousZoom, _i, _len, _ref;
         if (this.areasToUpdate.length === 0) {
           return;
@@ -630,7 +630,7 @@
         P.view.zoom = previousZoom;
       };
 
-      Tile.prototype.clearRasters = function() {
+      TileRasterizer.prototype.clearRasters = function() {
         var raster, rasterColumn, x, y, _ref;
         _ref = this.rasters;
         for (x in _ref) {
@@ -642,7 +642,7 @@
         }
       };
 
-      Tile.prototype.drawItems = function(showItems) {
+      TileRasterizer.prototype.drawItems = function(showItems) {
         var item, pk, _ref;
         if (showItems == null) {
           showItems = false;
@@ -670,7 +670,7 @@
         this.itemsAreDrawn = true;
       };
 
-      Tile.prototype.showItems = function() {
+      TileRasterizer.prototype.showItems = function() {
         var item, pk, _ref;
         if (this.itemsAreVisible) {
           return;
@@ -683,26 +683,26 @@
         this.itemsAreVisible = true;
       };
 
-      Tile.prototype.disableRasterization = function() {
+      TileRasterizer.prototype.disableRasterization = function() {
         this.rasterizationDisabled = true;
         this.clearRasters();
         this.drawItems(true);
       };
 
-      Tile.prototype.enableRasterization = function() {
+      TileRasterizer.prototype.enableRasterization = function() {
         this.rasterizationDisabled = false;
         this.rasterizeView();
       };
 
-      Tile.prototype.rasterizeView = function() {
+      TileRasterizer.prototype.rasterizeView = function() {
         this.rasterizeRectangle(P.view.bounds);
       };
 
-      Tile.prototype.hideRasters = function() {};
+      TileRasterizer.prototype.hideRasters = function() {};
 
-      Tile.prototype.showRasters = function() {};
+      TileRasterizer.prototype.showRasters = function() {};
 
-      Tile.prototype.hideOthers = function(itemToExclude) {
+      TileRasterizer.prototype.hideOthers = function(itemToExclude) {
         var item, pk, _ref;
         console.log(itemToExclude.pk);
         _ref = R.items;
@@ -714,7 +714,7 @@
         }
       };
 
-      Tile.prototype.extractImage = function(rectangle, redraw) {
+      TileRasterizer.prototype.extractImage = function(rectangle, redraw) {
         var dataURL, disableDrawing, item, pk, rasterizeItems, _ref;
         if (redraw) {
           rasterizeItems = this.rasterizeItems;
@@ -744,30 +744,30 @@
         }
       };
 
-      return Tile;
+      return TileRasterizer;
 
     })(Rasterizer);
-    Rasterizer.PaperTile = (function(_super) {
-      __extends(PaperTile, _super);
+    PaperTileRasterizer = (function(_super) {
+      __extends(PaperTileRasterizer, _super);
 
-      PaperTile.TYPE = 'paper tile';
+      PaperTileRasterizer.TYPE = 'paper tile';
 
-      function PaperTile() {
+      function PaperTileRasterizer() {
         this.onRasterLoad = __bind(this.onRasterLoad, this);
         this.rasterLayer = new P.Layer();
         this.rasterLayer.name = 'raster layer';
         this.rasterLayer.moveBelow(R.view.mainLayer);
         R.view.mainLayer.activate();
-        PaperTile.__super__.constructor.call(this);
+        PaperTileRasterizer.__super__.constructor.call(this);
         return;
       }
 
-      PaperTile.prototype.onRasterLoad = function() {
+      PaperTileRasterizer.prototype.onRasterLoad = function() {
         raster.context = raster.canvas.getContext('2d');
         this.rasterLoaded(raster);
       };
 
-      PaperTile.prototype.createRaster = function(x, y, zoom) {
+      PaperTileRasterizer.prototype.createRaster = function(x, y, zoom) {
         var raster, _ref;
         if (((_ref = this.rasters[x]) != null ? _ref[y] : void 0) != null) {
           return;
@@ -783,19 +783,19 @@
         raster.context = raster.canvas.getContext('2d');
         this.rasterLayer.addChild(raster);
         raster.onLoad = this.onRasterLoad;
-        PaperTile.__super__.createRaster.call(this, x, y, zoom, raster);
+        PaperTileRasterizer.__super__.createRaster.call(this, x, y, zoom, raster);
       };
 
-      PaperTile.prototype.removeRaster = function(raster, x, y) {
+      PaperTileRasterizer.prototype.removeRaster = function(raster, x, y) {
         raster.remove();
-        PaperTile.__super__.removeRaster.call(this, raster, x, y);
+        PaperTileRasterizer.__super__.removeRaster.call(this, raster, x, y);
       };
 
-      PaperTile.prototype.loadImageForRaster = function(raster, url) {
+      PaperTileRasterizer.prototype.loadImageForRaster = function(raster, url) {
         raster.source = url;
       };
 
-      PaperTile.prototype.hideRasters = function() {
+      PaperTileRasterizer.prototype.hideRasters = function() {
         var raster, rasterColumn, x, y, _ref;
         _ref = this.rasters;
         for (x in _ref) {
@@ -807,7 +807,7 @@
         }
       };
 
-      PaperTile.prototype.showRasters = function() {
+      PaperTileRasterizer.prototype.showRasters = function() {
         var raster, rasterColumn, x, y, _ref;
         _ref = this.rasters;
         for (x in _ref) {
@@ -819,25 +819,25 @@
         }
       };
 
-      return PaperTile;
+      return PaperTileRasterizer;
 
-    })(Rasterizer.Tile);
-    Rasterizer.InstantPaperTile = (function(_super) {
-      __extends(InstantPaperTile, _super);
+    })(TileRasterizer);
+    InstantPaperTileRasterizer = (function(_super) {
+      __extends(InstantPaperTileRasterizer, _super);
 
-      InstantPaperTile.TYPE = 'light';
+      InstantPaperTileRasterizer.TYPE = 'light';
 
-      function InstantPaperTile() {
-        InstantPaperTile.__super__.constructor.call(this);
+      function InstantPaperTileRasterizer() {
+        InstantPaperTileRasterizer.__super__.constructor.call(this);
         this.disableDrawing = true;
         this.updateDrawingAfterDelay = true;
         this.itemsToDraw = {};
         return;
       }
 
-      InstantPaperTile.prototype.drawItemsAndHideRasters = function() {};
+      InstantPaperTileRasterizer.prototype.drawItemsAndHideRasters = function() {};
 
-      InstantPaperTile.prototype.requestDraw = function(item, simplified, redrawing) {
+      InstantPaperTileRasterizer.prototype.requestDraw = function(item, simplified, redrawing) {
         var delay, time;
         if (this.disableDrawing) {
           if (this.updateDrawingAfterDelay) {
@@ -855,21 +855,21 @@
         return !this.disableDrawing;
       };
 
-      InstantPaperTile.prototype.selectItem = function(item) {
+      InstantPaperTileRasterizer.prototype.selectItem = function(item) {
         if (!this.rasterizeItems) {
           item.removeDrawing();
         }
-        InstantPaperTile.__super__.selectItem.call(this, item);
+        InstantPaperTileRasterizer.__super__.selectItem.call(this, item);
       };
 
-      InstantPaperTile.prototype.deselectItem = function(item) {
-        InstantPaperTile.__super__.deselectItem.call(this, item);
+      InstantPaperTileRasterizer.prototype.deselectItem = function(item) {
+        InstantPaperTileRasterizer.__super__.deselectItem.call(this, item);
         if (!this.rasterizeItems) {
           item.replaceDrawing();
         }
       };
 
-      InstantPaperTile.prototype.rasterizeCallback = function(step) {
+      InstantPaperTileRasterizer.prototype.rasterizeCallback = function(step) {
         var item, pk, _ref;
         this.disableDrawing = false;
         _ref = R.items;
@@ -887,29 +887,29 @@
           }
         }
         this.disableDrawing = true;
-        InstantPaperTile.__super__.rasterizeCallback.call(this, step);
+        InstantPaperTileRasterizer.__super__.rasterizeCallback.call(this, step);
       };
 
-      InstantPaperTile.prototype.rasterizeAreasToUpdate = function() {
+      InstantPaperTileRasterizer.prototype.rasterizeAreasToUpdate = function() {
         this.disableDrawing = false;
-        InstantPaperTile.__super__.rasterizeAreasToUpdate.call(this);
+        InstantPaperTileRasterizer.__super__.rasterizeAreasToUpdate.call(this);
         this.disableDrawing = true;
       };
 
-      return InstantPaperTile;
+      return InstantPaperTileRasterizer;
 
-    })(Rasterizer.PaperTile);
-    Rasterizer.CanvasTile = (function(_super) {
-      __extends(CanvasTile, _super);
+    })(PaperTileRasterizer);
+    CanvasTileRasterizer = (function(_super) {
+      __extends(CanvasTileRasterizer, _super);
 
-      CanvasTile.TYPE = 'canvas tile';
+      CanvasTileRasterizer.TYPE = 'canvas tile';
 
-      function CanvasTile() {
-        CanvasTile.__super__.constructor.call(this);
+      function CanvasTileRasterizer() {
+        CanvasTileRasterizer.__super__.constructor.call(this);
         return;
       }
 
-      CanvasTile.prototype.createRaster = function(x, y, zoom) {
+      CanvasTileRasterizer.prototype.createRaster = function(x, y, zoom) {
         var raster, _ref;
         raster = (_ref = this.rasters[x]) != null ? _ref[y] : void 0;
         if (raster != null) {
@@ -926,21 +926,21 @@
           };
         })(this);
         $("#rasters").append(raster.canvasJ);
-        CanvasTile.__super__.createRaster.call(this, x, y, zoom, raster);
+        CanvasTileRasterizer.__super__.createRaster.call(this, x, y, zoom, raster);
       };
 
-      CanvasTile.prototype.removeRaster = function(raster, x, y) {
+      CanvasTileRasterizer.prototype.removeRaster = function(raster, x, y) {
         raster.canvasJ.remove();
-        CanvasTile.__super__.removeRaster.call(this, raster, x, y);
+        CanvasTileRasterizer.__super__.removeRaster.call(this, raster, x, y);
       };
 
-      CanvasTile.prototype.loadImageForRaster = function(raster, url) {
+      CanvasTileRasterizer.prototype.loadImageForRaster = function(raster, url) {
         raster.image.src = url;
       };
 
-      CanvasTile.prototype.move = function() {
+      CanvasTileRasterizer.prototype.move = function() {
         var css, raster, rasterColumn, scale, viewPos, x, y, _ref;
-        CanvasTile.__super__.move.call(this);
+        CanvasTileRasterizer.__super__.move.call(this);
         _ref = this.rasters;
         for (x in _ref) {
           rasterColumn = _ref[x];
@@ -970,7 +970,7 @@
         }
       };
 
-      CanvasTile.prototype.hideRasters = function() {
+      CanvasTileRasterizer.prototype.hideRasters = function() {
         var raster, rasterColumn, x, y, _ref;
         _ref = this.rasters;
         for (x in _ref) {
@@ -982,7 +982,7 @@
         }
       };
 
-      CanvasTile.prototype.showRasters = function() {
+      CanvasTileRasterizer.prototype.showRasters = function() {
         var raster, rasterColumn, x, y, _ref;
         _ref = this.rasters;
         for (x in _ref) {
@@ -994,12 +994,14 @@
         }
       };
 
-      return CanvasTile;
+      return CanvasTileRasterizer;
 
-    })(Rasterizer.Tile);
+    })(TileRasterizer);
+    Rasterizer.Tile = TileRasterizer;
+    Rasterizer.CanvasTile = CanvasTileRasterizer;
+    Rasterizer.InstantPaperTile = InstantPaperTileRasterizer;
+    Rasterizer.PaperTile = PaperTileRasterizer;
     return Rasterizer;
   });
 
 }).call(this);
-
-//# sourceMappingURL=Rasterizer.map

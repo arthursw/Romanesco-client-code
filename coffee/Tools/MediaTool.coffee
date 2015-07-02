@@ -1,7 +1,7 @@
-define [ 'Tools/Tool' ], (Tool) ->
+define [ 'Tools/Tool', 'Tools/ItemTool', 'Items/Divs/Media' ], (Tool, ItemTool, Media) ->
 
 	# Media creation tool
-	class MediaTool extends Tool.Item
+	class MediaTool extends ItemTool
 
 		@label = 'Media'
 		@description = ''
@@ -15,7 +15,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 			icon: 'image'
 
 		constructor: () ->
-			super(R.Media)
+			super(Media)
 			return
 
 		# End Media action:
@@ -29,5 +29,5 @@ define [ 'Tools/Tool' ], (Tool) ->
 				delete R.currentPaths[from]
 			return
 
-	Tool.Media = MediaTool
+	R.Tools.Media = MediaTool
 	return MediaTool

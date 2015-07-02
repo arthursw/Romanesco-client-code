@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Items/Content'], function(Content) {
+  define(['Items/Item', 'Items/Content'], function(Item, Content) {
     var Div;
     Div = (function(_super) {
       __extends(Div, _super);
@@ -28,8 +28,6 @@
       };
 
       Div.parameters = Div.initializeParameters();
-
-      Div.createTool(Div);
 
       Div.updateHiddenDivs = function(event) {
         var div, point, projectPoint, _i, _len, _ref;
@@ -115,11 +113,11 @@
         }
         this.divJ.click((function(_this) {
           return function(event) {
-            if (_this.selectionRectangle != null) {
+            if (_this.selected != null) {
               return;
             }
             if (!event.shiftKey) {
-              Tool.Select.deselectAll();
+              R.tools.select.deselectAll()();
             }
             _this.select();
           };
@@ -341,8 +339,8 @@
         if (!Div.__super__.select.call(this, updateOptions, updateSelectionRectangle) || this.divJ.hasClass("selected")) {
           return false;
         }
-        if (R.selectedTool !== Tool.select) {
-          Tool.select.select();
+        if (R.selectedTool !== R.tools.select) {
+          R.tools.select.select();
         }
         this.divJ.addClass("selected");
         return true;
@@ -427,9 +425,8 @@
       return Div;
 
     })(Content);
+    Item.Div = Div;
     return Div;
   });
 
 }).call(this);
-
-//# sourceMappingURL=Div.map

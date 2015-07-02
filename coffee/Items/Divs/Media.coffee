@@ -1,4 +1,4 @@
-define ['Items/Divs/Div', 'oembed'], (Div) ->
+define ['Items/Item', 'Items/Divs/Div', 'oembed'], (Item, Div) ->
 
 	# todo: remove @url? duplicated in @data.url or remove data.url
 	# todo: websocket the url change
@@ -212,7 +212,7 @@ define ['Items/Divs/Div', 'oembed'], (Div) ->
 
 			# websocket urlchange
 			if updateDiv
-				# if R.me? then R.chatSocket.emit( "parameter change", R.me, @pk, "url", @url ) # will not work unless url is in @data.url
+				# if R.me? then R.socket.emit( "parameter change", R.me, @pk, "url", @url ) # will not work unless url is in @data.url
 				@update()
 			return
 
@@ -224,4 +224,5 @@ define ['Items/Divs/Div', 'oembed'], (Div) ->
 			@contentJ?.find("iframe").attr("width",width).attr("height",height)
 			return
 
+	Item.Media = Media
 	return Media

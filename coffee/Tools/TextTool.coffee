@@ -1,7 +1,7 @@
-define [ 'Tools/Tool' ], (Tool) ->
+define [ 'Tools/Tool', 'Tools/ItemTool', 'Items/Divs/Media' ], (Tool, ItemTool, Media) ->
 
 	# Text creation tool
-	class TextTool extends Tool.Item
+	class TextTool extends ItemTool
 
 		@label = 'Text'
 		@description = ''
@@ -30,5 +30,5 @@ define [ 'Tools/Tool' ], (Tool) ->
 				delete R.currentPaths[from]
 			return
 
-	Tool.Text = TextTool
+	R.Tools.Text = TextTool
 	return TextTool

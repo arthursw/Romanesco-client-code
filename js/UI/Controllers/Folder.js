@@ -52,5 +52,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Folder.map

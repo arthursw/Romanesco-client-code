@@ -30,7 +30,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 						max: 10
 						onChange: (value)-> 		# set volume of the car, stop the sound if volume==0 and restart otherwise
 							if R.selectedTool.constructor.name == "CarTool"
-								sound = Tool.car.sound
+								sound = R.Tools.car.sound
 								if sound? and value>0
 									if not sound.isPlaying
 										sound.play()
@@ -56,7 +56,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 
 			# create Paper raster and initialize car parameters
 			@car = new P.Raster("/static/images/car.png")
-			R.carLayer.addChild(@car)
+			R.view.carLayer.addChild(@car)
 			@car.position = P.view.center
 			@car.speed = 0
 			@car.direction = new P.Point(0, -1)
@@ -156,7 +156,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 			# R.gameAt(@car.position)?.updateGame(@)
 
 			if Date.now()-@lastUpdate>150 			# emit car position every 150 milliseconds
-				if R.me? then R.chatSocket.emit "car move", R.me, @car.position, @car.rotation, @car.speed
+				if R.me? then R.socket.emit "car move", R.me, @car.position, @car.rotation, @car.speed
 				@lastUpdate = Date.now()
 
 			#P.view.center = @car.position
@@ -165,9 +165,9 @@ define [ 'Tools/Tool' ], (Tool) ->
 		keyUp: (event)->
 			switch event.key
 				when 'escape'
-					Tool.move.select()
+					R.Tools.move.select()
 
 			return
 
-	Tool.Car = CarTool
+	R.Tools.Car = CarTool
 	return CarTool

@@ -24,8 +24,6 @@
 
       SpiralShape.iconURL = 'static/images/icons/inverted/spiral.png';
 
-      SpiralShape.iconAlt = 'spiral';
-
       SpiralShape.initializeParameters = function() {
         var parameters;
         parameters = SpiralShape.__super__.constructor.initializeParameters.call(this);
@@ -113,5 +111,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=SpiralShape.map

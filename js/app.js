@@ -64,5 +64,3 @@
   requirejs(['main']);
 
 }).call(this);
-
-//# sourceMappingURL=App.map

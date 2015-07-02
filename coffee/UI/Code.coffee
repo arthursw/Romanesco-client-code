@@ -1,4 +1,4 @@
-define [ 'jqtree' ], () ->
+define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 
 	class FileManager
 
@@ -78,12 +78,14 @@ define [ 'jqtree' ], () ->
 				dragAndDrop: true
 				onCanMoveTo: (moved_node, target_node, position)-> return target_node.type == 'tree' or position != 'inside'
 			)
-			@fileBrowserJ.bind('tree.select', @loadAndOpenFile)
+			@fileBrowserJ.bind('tree.click', @loadAndOpenFile)
 			@fileBrowserJ.bind('tree.move', @onFileMoved)
 			return
 
 		loadAndOpenFile: (event)=>
-			if event.node.type == 'tree' then return
+			if event.node.type == 'tree'
+				@fileBrowserJ.tree('toggle', event.node)
+				return
 			@loadFile(event.node.path, @openFile)
 			return
 
@@ -127,15 +129,36 @@ define [ 'jqtree' ], () ->
 		# 		)
 
 		# 	return
-
-	class ModuleCreator
-
-		constructor: ()->
-			return
+	#
+	# class ModuleCreator
+	#
+	# 	constructor: ()->
+	# 		return
 
 		createButton: (content)->
+
 			source = atob(content.content)
 
+			expressions = CoffeeScript.nodes(source).expressions
+			properties = expressions[0]?.args?[1]?.body?.expressions?[0]?.body?.expressions
+
+			if not properties? then return
+
+			for property in properties
+				name = property.variable?.properties?[0]?.name?.value
+				value = property.value?.base?.value
+				if not (value? and name?) then continue
+				switch name
+					when 'label'
+						label = value
+					when 'description'
+						description = value
+					when 'iconURL'
+						iconURL = value
+					when 'category'
+						category = value
+
+			###
 			iconResult = /@iconURL = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source)
 
 			if iconResult? and iconResult.length>=2
@@ -150,8 +173,10 @@ define [ 'jqtree' ], () ->
 
 			if labelResult? and labelResult.length>=2
 				label = labelResult[2]
-
-			console.log '{ label: ' + label + ', description: ' + description + ', iconURL: ' + iconURL + ', file: ' + content.name + ' }'
+			###
+			file = content.path.replace('coffee/', '')
+			file = '"' + file.replace('.coffee', '') + '"'
+			console.log '{ name: ' + label + ', popoverContent: ' + description + ', iconURL: ' + iconURL + ', file: ' + file + ', category: ' + category + ' }'
 			return
 
 		createButtons: (pathDirectory)->
@@ -184,4 +209,5 @@ define [ 'jqtree' ], () ->
 
 			return
 
+	# FileManager.ModuleCreator = ModuleCreator
 	return FileManager

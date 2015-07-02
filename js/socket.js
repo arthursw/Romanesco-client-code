@@ -14,12 +14,17 @@
         this.submitChatUserName = __bind(this.submitChatUserName, this);
         this.onConnectionError = __bind(this.onConnectionError, this);
         this.onKeyPress = __bind(this.onKeyPress, this);
+        this.addMessage = __bind(this.addMessage, this);
         this.initialize();
         return;
       }
 
+      Socket.prototype.emit = function() {
+        this.socket.emit.apply(this.socket, arguments);
+      };
+
       Socket.prototype.initialize = function() {
-        this.chatJ = R.sidebar.sidebarJ.find("#chatContent");
+        this.chatJ = $("#chatContent");
         this.chatMainJ = this.chatJ.find("#chatMain");
         this.chatRoomJ = this.chatMainJ.find("#chatRoom");
         this.chatUsernamesJ = this.chatMainJ.find("#chatUserNames");
@@ -255,17 +260,16 @@
           }
           P.view.update();
         }
-        return;
-        return {
-          rasterizeItem: function() {
-            if (!item.currentCommand) {
-              R.rasterizer.rasterize(item);
-            }
-          },
-          getChatRoom: function() {
-            return 'x: ' + Math.round(P.view.center.x / R.scale) + ', y: ' + Math.round(P.view.center.y / R.scale);
-          }
-        };
+      };
+
+      Socket.prototype.rasterizeItem = function() {
+        if (!item.currentCommand) {
+          R.rasterizer.rasterize(item);
+        }
+      };
+
+      Socket.prototype.getChatRoom = function() {
+        return 'x: ' + Math.round(P.view.center.x / R.scale) + ', y: ' + Math.round(P.view.center.y / R.scale);
       };
 
       return Socket;
@@ -275,5 +279,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Socket.map

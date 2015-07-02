@@ -8,11 +8,11 @@
     MoveTool = (function(_super) {
       __extends(MoveTool, _super);
 
-      MoveTool.label = 'Media';
+      MoveTool.label = 'Move';
 
       MoveTool.description = '';
 
-      MoveTool.iconURL = 'move.png';
+      MoveTool.iconURL = 'hand.png';
 
       MoveTool.favorite = true;
 
@@ -24,7 +24,7 @@
           y: 32
         },
         name: 'default',
-        icon: 'move'
+        icon: 'hand'
       };
 
       function MoveTool() {
@@ -103,10 +103,8 @@
       return MoveTool;
 
     })(Tool);
-    Tool.Move = MoveTool;
+    R.Tools.Move = MoveTool;
     return MoveTool;
   });
 
 }).call(this);
-
-//# sourceMappingURL=MoveTool.map

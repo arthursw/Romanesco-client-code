@@ -1,4 +1,4 @@
-define [ ], () ->
+define ['Tools/Tool' ], (Tool) ->
 
 	if not window.rasterizerMode then return
 
@@ -7,10 +7,9 @@ define [ ], () ->
 	R.initializeRasterizerMode = ()->
 
 		R.initToolsRasterizer = ()->
-			R.tools = {}
 			R.modules = {}
 			for pathClass in R.pathClasses
-				R.tools[pathClass.label] = RPath: pathClass
+				Tool[pathClass.label] = RPath: pathClass
 				R.modules[pathClass.label] = { name: pathClass.label, iconURL: pathClass.iconURL, source: pathClass.source, description: pathClass.description, owner: 'Romanesco', thumbnailURL: pathClass.thumbnailURL, accepted: true, coreModule: true, category: pathClass.category }
 			R.initializeModules()
 			return
@@ -41,7 +40,7 @@ define [ ], () ->
 		R.initCodeEditor = R.fakeFunction
 		R.initSocket = R.fakeFunction
 		R.initPosition = R.fakeFunction
-		Grid.updateGrid = R.fakeFunction
+		R.view.grid.update = R.fakeFunction
 		R.RSound = R.fakeFunction
 		R.chatSocket = emit: R.fakeFunction
 		R.defaultColors = []
@@ -88,7 +87,7 @@ define [ ], () ->
 
 			imagePosition = P.view.bounds.topLeft.clone()
 
-			# text = new PointText(P.view.bounds.center)
+			# text = new P.PointText(P.view.bounds.center)
 			# text.justification = 'center'
 			# text.fillColor = 'black'
 			# text.content = 'Pos: ' + P.view.bounds.center.toString()

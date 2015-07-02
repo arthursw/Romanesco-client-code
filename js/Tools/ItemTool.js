@@ -31,14 +31,14 @@
           from = R.me;
         }
         point = event.point;
-        Tool.Select.deselectAll();
+        R.tools.select.deselectAll();
         R.currentPaths[from] = new P.Path.Rectangle(point, point);
         R.currentPaths[from].name = 'div tool rectangle';
         R.currentPaths[from].dashArray = [4, 10];
         R.currentPaths[from].strokeColor = 'black';
-        R.selectionLayer.addChild(R.currentPaths[from]);
+        R.view.selectionLayer.addChild(R.currentPaths[from]);
         if ((R.me != null) && from === R.me) {
-          R.chatSocket.emit("bounce", {
+          R.socket.emit("bounce", {
             tool: this.name,
             "function": "begin",
             "arguments": [event, R.me, R.currentPaths[from].data]
@@ -68,7 +68,7 @@
           R.currentPaths[from].fillColor = 'red';
         }
         if ((R.me != null) && from === R.me) {
-          R.chatSocket.emit("bounce", {
+          R.socket.emit("bounce", {
             tool: this.name,
             "function": "update",
             "arguments": [event, R.me]
@@ -106,7 +106,7 @@
           R.currentPaths[from].height = 10;
         }
         if ((R.me != null) && from === R.me) {
-          R.chatSocket.emit("bounce", {
+          R.socket.emit("bounce", {
             tool: this.name,
             "function": "end",
             "arguments": [event, R.me]
@@ -118,10 +118,8 @@
       return ItemTool;
 
     })(Tool);
-    Tool.Item = ItemTool;
+    R.Tools.Item = ItemTool;
     return ItemTool;
   });
 
 }).call(this);
-
-//# sourceMappingURL=ItemTool.map

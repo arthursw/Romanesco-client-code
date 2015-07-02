@@ -3,16 +3,16 @@ define [ 'Tools/Tool' ], (Tool) ->
 	# MoveTool to scroll the view in the project space
 	class MoveTool extends Tool
 
-		@label = 'Media'
+		@label = 'Move'
 		@description = ''
-		@iconURL = 'move.png'
+		@iconURL = 'hand.png'
 		@favorite = true
 		@category = ''
 		@cursor =
 			position:
 				x: 32, y: 32
 			name: 'default'
-			icon: 'move'
+			icon: 'hand'
 
 		constructor: () ->
 			super(true)
@@ -73,5 +73,5 @@ define [ 'Tools/Tool' ], (Tool) ->
 			@dragging = false
 			return
 
-	Tool.Move = MoveTool
+	R.Tools.Move = MoveTool
 	return MoveTool

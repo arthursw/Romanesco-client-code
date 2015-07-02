@@ -79,29 +79,18 @@ define [ 'UI/Button' ], (Button) ->
 			return
 
 		createButton: ()->
-			@btn = new Button(@constructor.label, @constructor.iconURL, @constructor.favorite, @constructor.category)
 
-			# find or create the corresponding button in the sidebar
-			# @btnJ ?= R.toolsJ.find('li[data-name="'+@name+'"]')
+			@btn = new Button(
+				name: @constructor.label
+				iconURL: @constructor.iconURL
+				favorite: @constructor.favorite
+				category: @constructor.category
+				description: @constructor.description
+				popover: true
+			)
 
-			@btn.btnJ.click( () => @select() )
+			@btn.btnJ.click( @select )
 
-			# initialize the popover (help tooltip)
-			popoverOptions =
-				placement: 'right'
-				container: 'body'
-				trigger: 'hover'
-				delay:
-					show: 500
-					hide: 100
-
-			if not @constructor.description?
-				popoverOptions.content = @constructor.label
-			else
-				popoverOptions.title = @constructor.label
-				popoverOptions.content = @constructor.description
-
-			@btnJ.popover( popoverOptions )
 			return
 
 		# Select the tool:
@@ -112,7 +101,7 @@ define [ 'UI/Button' ], (Button) ->
 		# @param [RTool constructor] the constructor used to update gui parameters (@constructor.parameters)
 		# @param [Item] selected item to update gui parameters
 		# @param [Boolean] deselected selected items (false when selecting MoveTool or SelectTool)
-		select: (deselectItems=true, updateParameters=true)->
+		select: (deselectItems=true, updateParameters=true)=>
 			if R.selectedTool == @ then return
 
 			R.previousTool = R.selectedTool
@@ -122,7 +111,7 @@ define [ 'UI/Button' ], (Button) ->
 			@updateCursor()
 
 			if deselectItems
-				Tool.Select.deselectAll()
+				R.tools.select.deselectAll()
 
 			if updateParameters
 				@updateParameters()
@@ -134,7 +123,7 @@ define [ 'UI/Button' ], (Button) ->
 
 		updateCursor: ()->
 			if @constructor.cursor.icon?
-				R.stageJ.css('cursor', 'url(static/images/cursors/'+@constructor.cursor.icon+'.png) '+@cursor.position.x+' '+@constructor.cursor.position.y+','+@constructor.cursor.name)
+				R.stageJ.css('cursor', 'url(static/images/cursors/'+@constructor.cursor.icon+'.png) '+@constructor.cursor.position.x+' '+@constructor.cursor.position.y+','+@constructor.cursor.name)
 			else
 				R.stageJ.css('cursor', @constructor.cursor.name)
 			return
@@ -166,4 +155,6 @@ define [ 'UI/Button' ], (Button) ->
 		disableSnap: ()->
 			return false
 
+	R.Tools = {}
+	R.tools = {}
 	return Tool

@@ -70,8 +70,8 @@
         this.popoverOnHide = __bind(this.popoverOnHide, this);
         this.popoverOnShown = __bind(this.popoverOnShown, this);
         this.popoverOnShow = __bind(this.popoverOnShow, this);
-        this.gradientTool = R.tools['Gradient'];
-        this.selectTool = Tool.select;
+        this.gradientTool = R.tools.gradient;
+        this.selectTool = R.tools.select;
         ColorController.__super__.constructor.call(this, this.name, this.parameter, this.folder);
         return;
       }
@@ -213,7 +213,7 @@
           _ref = this.gradient.gradient.stops;
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             stop = _ref[_i];
-            c = new Color(stop.color != null ? stop.color : stop[0]);
+            c = new P.Color(stop.color != null ? stop.color : stop[0]);
             colors += ', ' + c.toCSS();
           }
           this.colorInputJ.css({
@@ -262,5 +262,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=ColorController.map

@@ -47,7 +47,11 @@ define [ ], () ->
 			@alertsContainer.addClass("show")
 			if delay!=0
 				clearTimeout(R.alertTimeOut)
-				@alertTimeOut = setTimeout( ( () -> @alertsContainer.removeClass("show") ) , delay )
+				@alertTimeOut = setTimeout(@hide, delay )
+			return
+
+		hide: ()=>
+			@alertsContainer.removeClass("show")
 			return
 
 	return AlertManager

@@ -3,7 +3,7 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tools/Tool'], function(Tool) {
+  define(['Tools/Tool', 'Tools/ItemTool', 'Items/Lock'], function(Tool, ItemTool, Lock) {
     var LockTool;
     LockTool = (function(_super) {
       __extends(LockTool, _super);
@@ -45,7 +45,7 @@
         if ((_ref = this.textItem) != null) {
           _ref.remove();
         }
-        this.textItem = new PointText(point);
+        this.textItem = new P.PointText(point);
         this.textItem.justification = 'right';
         this.textItem.fillColor = 'black';
         this.textItem.content = '' + cost + ' romanescoins';
@@ -68,11 +68,9 @@
 
       return LockTool;
 
-    })(Tool.Item);
-    Tool.Lock = LockTool;
+    })(ItemTool);
+    R.Tools.Lock = LockTool;
     return LockTool;
   });
 
 }).call(this);
-
-//# sourceMappingURL=LockTool.map

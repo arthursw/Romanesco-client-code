@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Items/Divs/Div'], function(Div) {
+  define(['Items/Item', 'Items/Divs/Div'], function(Item, Div) {
     var Text;
     Text = (function(_super) {
       __extends(Text, _super);
@@ -267,7 +267,7 @@
       Text.prototype.textChanged = function(event) {
         var newText;
         newText = this.contentJ.val();
-        this.deferredAction(R.ModifyTextCommand, newText);
+        this.deferredAction(Command.ModifyText, newText);
       };
 
       Text.prototype.setText = function(newText, update) {
@@ -280,7 +280,7 @@
           if (update) {
             this.update('text');
           }
-          R.chatSocket.emit("bounce", {
+          R.socket.emit("bounce", {
             itemPk: this.pk,
             "function": "setText",
             "arguments": [newText, false]
@@ -309,8 +309,8 @@
           return;
         }
         this.data.fontFamily = fontFamily;
-        R.addFont(fontFamily, this.data.effect);
-        R.loadFonts();
+        R.fontManager.addFont(fontFamily, this.data.effect);
+        R.fontManager.loadFonts();
         this.contentJ.css({
           "font-family": "'" + fontFamily + "', 'Helvetica Neue', Helvetica, Arial, sans-serif"
         });
@@ -424,7 +424,7 @@
         if (fontEffect == null) {
           return;
         }
-        R.addFont(this.data.fontFamily, fontEffect);
+        R.fontManager.addFont(this.data.fontFamily, fontEffect);
         i = this.contentJ[0].classList.length - 1;
         while (i >= 0) {
           className = this.contentJ[0].classList[i];
@@ -433,7 +433,7 @@
           }
           i--;
         }
-        R.loadFonts();
+        R.fontManager.loadFonts();
         this.contentJ.addClass("font-effect-" + fontEffect);
         if (update) {
           this.update();
@@ -485,9 +485,8 @@
       return Text;
 
     })(Div);
+    Item.Text = Text;
     return Text;
   });
 
 }).call(this);
-
-//# sourceMappingURL=Text.map

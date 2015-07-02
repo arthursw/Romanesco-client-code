@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define([], function() {
+  define(['Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command'], function(Tool, Content, Div, Command) {
     var ScreenshotRectangle, SelectionRectangle, SelectionRotationRectangle;
     SelectionRectangle = (function() {
       SelectionRectangle.indexToName = {
@@ -50,10 +50,10 @@
         switch (name) {
           case 'left':
           case 'right':
-            return new Point(rectangle[name], rectangle.center.y);
+            return new P.Point(rectangle[name], rectangle.center.y);
           case 'top':
           case 'bottom':
-            return new Point(rectangle.center.x, rectangle[name]);
+            return new P.Point(rectangle.center.x, rectangle[name]);
           default:
             return rectangle[name];
         }
@@ -63,24 +63,60 @@
         segments: true,
         stroke: true,
         fill: true,
-        selected: true,
         tolerance: 5
       };
 
-      function SelectionRectangle(items) {
-        this.items = items;
+      SelectionRectangle.create = function() {
+        var item, _i, _len, _ref;
+        _ref = R.selectedItems;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          item = _ref[_i];
+          if (!Content.prototype.isPrototypeOf(item)) {
+            return new SelectionRectangle();
+          }
+        }
+        return new SelectionRotationRectangle();
+      };
+
+      SelectionRectangle.getDelta = function(center, point, rotation) {
+        var d, x, y;
+        d = point.subtract(center);
+        x = new P.Point(1, 0);
+        y = new P.Point(0, 1);
+        return new P.Point(x.rotate(rotation).dot(d), y.rotate(rotation).dot(d));
+      };
+
+      SelectionRectangle.setRectangle = function(items, previousRectangle, rectangle, rotation) {
+        var delta, item, itemRectangle, previousCenter, scale, _i, _len;
+        scale = new P.Point(rectangle.size.divide(previousRectangle.size));
+        previousCenter = previousRectangle.center;
+        for (_i = 0, _len = items.length; _i < _len; _i++) {
+          item = items[_i];
+          itemRectangle = item.rectangle.clone();
+          delta = this.getDelta(previousCenter, itemRectangle.center, rotation);
+          itemRectangle.center = rectangle.center.add(delta.multiply(scale).rotate(rotation));
+          itemRectangle = itemRectangle.scale(scale.x, scale.y);
+          item.setRectangle(itemRectangle);
+        }
+      };
+
+      function SelectionRectangle() {
+        this.items = R.selectedItems;
         this.rectangle = this.getBoundingRectangle(this.items);
         this.transformState = null;
         this.group = new P.Group();
         this.group.name = "selection rectangle group";
+        this.group.controller = this;
         this.path = new P.Path.Rectangle(this.rectangle);
         this.path.name = "selection rectangle path";
         this.path.strokeColor = R.selectionBlue;
         this.path.strokeWidth = 1;
         this.path.selected = true;
         this.path.controller = this;
-        this.group.addChild(this.path);
         this.addHandles(this.rectangle);
+        this.update();
+        this.group.addChild(this.path);
+        R.view.selectionLayer.addChild(this.group);
         this.path.pivot = this.rectangle.center;
         return;
       }
@@ -122,19 +158,19 @@
         switch (hitResult.type) {
           case 'stroke':
             this.transformState = {
-              command: 'Move',
+              command: 'Translate',
               corner: this.getClosestCorner(hitResult.point)
             };
             break;
           case 'segment':
             this.transformState = {
-              command: 'Resize',
+              command: 'Scale',
               index: hitResult.segment.index
             };
             break;
           default:
             this.transformState = {
-              command: 'Move'
+              command: 'Translate'
             };
         }
       };
@@ -143,15 +179,46 @@
         var hitResult;
         hitResult = this.path.hitTest(event.point, this.constructor.hitOptions);
         if (hitResult == null) {
-          return;
+          return false;
         }
         this.setTransformState(hitResult);
-        return this.transformState;
+        R.commandManager.beginAction(new Command[this.transformState.command](R.selectedItems), event);
+        return true;
+      };
+
+      SelectionRectangle.prototype.update = function() {
+        this.items = R.selectedItems;
+        if (this.items.length === 0) {
+          this.remove();
+          return;
+        }
+        this.rectangle = this.getBoundingRectangle(this.items);
+        this.updatePath();
+        Div.showDivs();
+      };
+
+      SelectionRectangle.prototype.updatePath = function() {
+        var index, name, _ref;
+        _ref = this.constructor.indexToName;
+        for (index in _ref) {
+          name = _ref[index];
+          this.path.segments[index].point = this.constructor.pointFromName(this.rectangle, name);
+        }
+        this.path.pivot = this.rectangle.center;
+        this.path.rotation = this.rotation || 0;
+      };
+
+      SelectionRectangle.prototype.remove = function() {
+        this.group.remove();
+        this.rectangle = null;
+        R.tools.select.selectionRectangle = null;
+        Div.showDivs();
       };
 
       SelectionRectangle.prototype.translate = function(delta) {
         var item, _i, _len, _ref;
         this.translation = this.translation.add(delta);
+        this.rectangle = this.rectangle.translate(delta);
         this.path.translate(delta);
         _ref = this.items;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -165,7 +232,7 @@
         if (this.dragOffset == null) {
           this.dragOffset = this.rectangle.center.subtract(event.downPoint);
         }
-        destination = Utils.Event.snap2D(event.point.add(this.dragOffset));
+        destination = Utils.Snap.snap2D(event.point.add(this.dragOffset));
         this.translate(destination.subtract(this.rectangle.center));
       };
 
@@ -176,20 +243,20 @@
         if (this.dragOffset == null) {
           this.dragOffset = rectangle[cornerName].subtract(event.downPoint);
         }
-        destination = Utils.Event.snap2D(event.point.add(this.dragOffset));
+        destination = Utils.Snap.snap2D(event.point.add(this.dragOffset));
         rectangle.moveCorner(cornerName, destination);
         this.translate(rectangle.center.subtract(this.rectangle.center));
       };
 
       SelectionRectangle.prototype.beginTranslate = function(event) {
-        this.translation = new Point();
+        this.translation = new P.Point();
       };
 
       SelectionRectangle.prototype.updateTranslate = function(event) {
-        if (Utils.Event.getSnap() <= 1) {
+        if (Utils.Snap.getSnap() <= 1) {
           this.translate(event.delta);
         } else {
-          if (this.selectionState.corner != null) {
+          if (this.transfromState.corner != null) {
             this.snapEdgePosition(event);
           } else {
             this.snapPosition(event);
@@ -199,66 +266,81 @@
 
       SelectionRectangle.prototype.endTranslate = function() {
         this.dragOffset = null;
-        return this.translation;
+        return {
+          delta: this.translation
+        };
       };
 
-      SelectionRectangle.prototype.getScale = function(event) {
-        return event.point.subtract(this.rectangle.center);
+      SelectionRectangle.prototype.beginScale = function(event) {
+        this.previousRectangle = this.rectangle.clone();
       };
 
-      SelectionRectangle.prototype.keepAspectRatio = function(event, scale) {
-        if (!event.modifiers.shift && __indexOf.call(this.constructor.cornersNames, name) >= 0 && this.rectangle.width > 0 && this.rectangle.height > 0) {
-          if (Math.abs(scale.x / this.rectangle.width) > Math.abs(scale.y / this.rectangle.height)) {
-            scale.x = Utils.sign(scale.x) * Math.abs(this.rectangle.width * scale.y / this.rectangle.height);
+      SelectionRectangle.prototype.snapPoint = function(point) {
+        return Utils.Snap.snap2D(point);
+      };
+
+      SelectionRectangle.prototype.keepAspectRatio = function(event, rectangle, delta, name) {
+        if (__indexOf.call(this.constructor.cornersNames, name) >= 0 && rectangle.width > 0 && rectangle.height > 0 && (this.items.length > 1 || !event.modifiers.shift)) {
+          if (Math.abs(delta.x / rectangle.width) > Math.abs(delta.y / rectangle.height)) {
+            delta.x = Utils.sign(delta.x) * Math.abs(rectangle.width * delta.y / rectangle.height);
           } else {
-            scale.y = Utils.sign(scale.y) * Math.abs(this.rectangle.height * scale.x / this.rectangle.width);
+            delta.y = Utils.sign(delta.y) * Math.abs(rectangle.height * delta.x / rectangle.width);
           }
         }
       };
 
-      SelectionRectangle.prototype.getScaleCenter = function() {
-        var name;
-        if (R.specialKey(event)) {
-          name = this.constructor.indexToName[this.selectionState.index];
-          return this.constructor.pointFromName(this.rectangle, this.constructor.oppositeName[name]);
-        } else {
-          return this.rectangle.center;
+      SelectionRectangle.prototype.moveSelectedSide = function(name, rectangle, center, delta) {
+        rectangle[name] = this.constructor.valueFromName(center.add(delta), name);
+      };
+
+      SelectionRectangle.prototype.moveOppositeSide = function(name, rectangle, center, delta) {
+        rectangle[this.constructor.oppositeName[name]] = this.constructor.valueFromName(center.subtract(delta), name);
+      };
+
+      SelectionRectangle.prototype.adjustPosition = function(center) {};
+
+      SelectionRectangle.prototype.adjustPosition = function(rectangle, center) {
+        rectangle.center = center.add(rectangle.center.subtract(center).rotate(this.rotation));
+      };
+
+      SelectionRectangle.prototype.cancelNegativeSize = function(rectangle, center) {
+        if (rectangle.width < 0) {
+          rectangle.width = Math.abs(rectangle.width);
+          rectangle.center.x = center.x;
         }
-      };
-
-      SelectionRectangle.prototype.normalizeScale = function(scale) {
-        scale.x = Math.abs(2 * scale.x / rectangle.width);
-        scale.y = Math.abs(2 * scale.y / rectangle.height);
-      };
-
-      SelectionRectangle.prototype.scale = function(scale, center) {
-        var item, _i, _len, _ref;
-        this.scaling = this.scaling.add(scale);
-        this.rectangle.scaleFromCenter(scale, center);
-        this.path.scale(scale.x, scale.y, center);
-        _ref = this.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
-          item.scale(scale, center);
+        if (rectangle.height < 0) {
+          rectangle.height = Math.abs(rectangle.height);
+          rectangle.center.y = center.y;
         }
-      };
-
-      SelectionRectangle.prototype.beginScale = function(event) {
-        this.scaling = new Point(1, 1);
       };
 
       SelectionRectangle.prototype.updateScale = function(event) {
-        var center, scale;
-        event.point = Utils.Event.snap2D(event.point);
-        scale = this.getScale(event);
-        this.keepAspectRatio(event, scale);
-        this.normalizeScale(scale);
-        center = this.getScaleCenter(event);
-        this.scale(scale, center);
+        var center, delta, name, point, rectangle, rotation;
+        point = this.snapPoint(event.point);
+        name = this.constructor.indexToName[this.transformState.index];
+        rectangle = this.rectangle.clone();
+        center = rectangle.center.clone();
+        rotation = this.rotation || 0;
+        delta = this.constructor.getDelta(center, point, rotation);
+        this.keepAspectRatio(event, rectangle, delta, name);
+        this.moveSelectedSide(name, rectangle, center, delta);
+        if (!R.specialKey(event)) {
+          this.moveOppositeSide(name, rectangle, center, delta);
+        } else {
+          this.adjustPosition(rectangle, center);
+        }
+        this.cancelNegativeSize(rectangle, center);
+        this.constructor.setRectangle(this.items, this.rectangle, rectangle, rotation);
+        this.rectangle = rectangle;
+        this.updatePath();
       };
 
       SelectionRectangle.prototype.endScale = function() {
-        return [this.scaling, this.rectangle.center];
+        return {
+          previous: this.previousRectangle.clone(),
+          "new": this.rectangle.clone(),
+          rotation: this.rotation
+        };
       };
 
       return SelectionRectangle;
@@ -280,9 +362,17 @@
         9: 'bottom'
       };
 
-      function SelectionRotationRectangle(rectangle) {
-        SelectionRotationRectangle.__super__.constructor.call(this, rectangle);
+      SelectionRotationRectangle.pointFromName = function(rectangle, name) {
+        if (name === 'rotation-handle') {
+          return new P.Point(rectangle.center.x, rectangle.top - 25);
+        } else {
+          return SelectionRotationRectangle.__super__.constructor.pointFromName.call(this, rectangle, name);
+        }
+      };
+
+      function SelectionRotationRectangle() {
         this.rotation = 0;
+        SelectionRotationRectangle.__super__.constructor.call(this);
         return;
       }
 
@@ -292,11 +382,29 @@
         this.path.insert(3, new P.Point(bounds.center.x, bounds.top));
       };
 
+      SelectionRotationRectangle.prototype.update = function(rotation) {
+        this.items = R.selectedItems;
+        if (rotation) {
+          this.rotation = rotation;
+        } else if (this.items.length === 1 && Content.prototype.isPrototypeOf(this.items[0])) {
+          this.rotation = this.items[0].rotation;
+        }
+        SelectionRotationRectangle.__super__.update.call(this);
+      };
+
       SelectionRotationRectangle.prototype.setTransformState = function(hitResult) {
+        var name;
         if ((hitResult != null ? hitResult.type : void 0) === 'segment') {
-          if (this.constructor.indexToName[hitResult.segment.index] === 'rotation-handle') {
-            this.selectionState = {
-              type: 'rotation'
+          name = this.constructor.indexToName[hitResult.segment.index];
+          if (name === 'rotation-handle') {
+            this.transformState = {
+              command: 'Rotate'
+            };
+            return;
+          }
+          if (this.items.length > 1 && __indexOf.call(this.constructor.sidesNames, name) >= 0) {
+            this.transformState = {
+              command: 'Translate'
             };
             return;
           }
@@ -304,44 +412,36 @@
         SelectionRotationRectangle.__super__.setTransformState.call(this, hitResult);
       };
 
-      SelectionRotationRectangle.prototype.getScale = function(event) {
-        var delta, dx, dy, x, y;
-        delta = SelectionRotationRectangle.__super__.getScale.call(this, event);
-        x = new P.Point(1, 0);
-        x.angle += this.rotation;
-        dx = x.dot(delta);
-        y = new P.Point(0, 1);
-        y.angle += this.rotation;
-        dy = y.dot(delta);
-        return new Point(dx, dy);
-      };
-
       SelectionRotationRectangle.prototype.rotate = function(angle) {
         var item, _i, _len, _ref;
+        this.deltaRotation += angle;
         this.rotation += angle;
         this.path.rotate(angle);
         _ref = this.items;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           item = _ref[_i];
-          item.rotate(angle, rectangle.center);
+          item.rotate(angle, this.rectangle.center);
         }
       };
 
       SelectionRotationRectangle.prototype.beginRotate = function() {
-        this.rotation = 0;
+        this.deltaRotation = 0;
       };
 
       SelectionRotationRectangle.prototype.updateRotate = function(event) {
         var angle;
         angle = event.point.subtract(this.rectangle.center).angle + 90;
-        if (event.modifiers.shift || R.specialKey(event) || Utils.Event.getSnap() > 1) {
+        if (event.modifiers.shift || R.specialKey(event) || Utils.Snap.getSnap() > 1) {
           angle = Utils.roundToMultiple(rotation, event.modifiers.shift ? 10 : 5);
         }
         this.rotate(angle - this.rotation);
       };
 
       SelectionRotationRectangle.prototype.endRotate = function() {
-        return [this.rotation, this.rectangle.center];
+        return {
+          delta: this.deltaRotation,
+          center: this.rectangle.center
+        };
       };
 
       return SelectionRotationRectangle;
@@ -369,7 +469,7 @@
         });
         this.updateTransform();
         this.select();
-        Tool.select.select();
+        R.tools.select.select();
         return;
       }
 
@@ -377,7 +477,7 @@
         this.removing = true;
         ScreenshotRectangle.__super__.remove.call(this);
         this.buttonJ.remove();
-        R.tools['Screenshot'].selectionRectangle = null;
+        R.tools.Screenshot.selectionRectangle = null;
       };
 
       ScreenshotRectangle.prototype.deselect = function() {
@@ -428,5 +528,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=SelectionRectangle.map

@@ -10,8 +10,7 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 		A meander or meandros (Greek: Μαίανδρος) is a decorative border constructed from a continuous line, shaped into a repeated motif.
 		Such a design is also called the Greek fret or Greek key design, although these are modern designations.
 		(source: http://en.wikipedia.org/wiki/Meander_(art))"""
-		@iconURL = 'static/images/icons/inverted/squareSpiral.png'
-		@iconAlt = 'square spiral'
+		@iconURL = "static/images/icons/inverted/squareSpiral.png"
 
 		# The thickness path adds 3 parameters in the options bar:
 		# step: a number which defines the size of the steps along the control path

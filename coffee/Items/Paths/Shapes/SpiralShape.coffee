@@ -8,7 +8,6 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 		@label = 'Spiral'
 		@description = "The spiral shape can have an intern radius, and a custom number of sides."
 		@iconURL = 'static/images/icons/inverted/spiral.png'
-		@iconAlt = 'spiral'
 
 		@initializeParameters: ()->
 			parameters = super()

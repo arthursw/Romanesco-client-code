@@ -1,4 +1,4 @@
-define [ ], () ->
+define [ 'Items/Lock' ], (Lock) ->
 
 	#  values: ['one raster per shape', 'paper.js only', 'tiled canvas', 'hide inactives', 'single canvas']
 
@@ -121,7 +121,7 @@ define [ ], () ->
 		extractImage: (rectangle, redraw)->
 			return Rasterizer.areaToImageDataUrl(rectangle)
 
-	class Rasterizer.Tile extends Rasterizer
+	class TileRasterizer extends Rasterizer
 
 		@TYPE = 'abstract tile'
 		@loadingBarJ = null
@@ -139,7 +139,7 @@ define [ ], () ->
 			sortedItems = []
 			@addChildren(R.view.mainLayer, sortedItems)
 			@addChildren(R.view.lockLayer, sortedItems)
-			# @addChildrenToParent(R.selectionLayer, sortedItems) # the selection layer is never rasterized (should it be?)
+			# @addChildrenToParent(R.view.selectionLayer, sortedItems) # the selection layer is never rasterized (should it be?)
 			return sortedItems
 
 		constructor: ()->
@@ -174,15 +174,15 @@ define [ ], () ->
 
 		startLoading: ()->
 			@startLoadingTime = P.view._time
-			R.TileRasterizer.loadingBarJ.css( width: 0 )
-			R.TileRasterizer.loadingBarJ.show()
+			TileRasterizer.loadingBarJ.css( width: 0 )
+			TileRasterizer.loadingBarJ.show()
 
 			Utils.deferredExecution(@rasterizeCallback, 'rasterize', @rasterizationDelay)
 			return
 
 		stopLoading: (cancelTimeout=true)->
 			@startLoadingTime = null
-			R.TileRasterizer.loadingBarJ.hide()
+			TileRasterizer.loadingBarJ.hide()
 
 			if cancelTimeout
 				clearTimeout(R.updateTimeout['rasterize'])
@@ -197,7 +197,7 @@ define [ ], () ->
 			if not @startLoadingTime? then return
 			duration = 1000 * ( time - @startLoadingTime ) / @rasterizationDelay
 			totalWidth = 241
-			R.TileRasterizer.loadingBarJ.css( width: duration * totalWidth )
+			TileRasterizer.loadingBarJ.css( width: duration * totalWidth )
 			if duration>=1
 				@stopLoading(false)
 			return
@@ -400,8 +400,8 @@ define [ ], () ->
 				item.group?.visible = false 	# group is null when item has been deleted
 
 			R.grid.visible = false
-			R.selectionLayer.visible = false
-			R.carLayer.visible = false
+			R.view.selectionLayer.visible = false
+			R.view.carLayer.visible = false
 			@viewOnFrame = P.view.onFrame
 			P.view.onFrame = null
 
@@ -412,8 +412,8 @@ define [ ], () ->
 			@rasterLayer?.visible = true
 
 			P.view.onFrame = @viewOnFrame
-			R.carLayer.visible = true
-			R.selectionLayer.visible = true
+			R.view.carLayer.visible = true
+			R.view.selectionLayer.visible = true
 			R.grid.visible = true
 			return
 
@@ -423,7 +423,7 @@ define [ ], () ->
 
 			console.log "rasterize"
 
-			R.logElapsedTime()
+			Utils.logElapsedTime()
 
 			R.startTimer()
 
@@ -442,7 +442,7 @@ define [ ], () ->
 					# p = new P.Path.Rectangle(area)
 					# p.strokeColor = 'red'
 					# p.strokeWidth = 1
-					# R.debugLayer.addChild(p)
+					# R.view.debugLayer.addChild(p)
 					@clearAreaInRasters(area)
 					for item in sortedItems
 						if item.raster?.bounds.intersects(area) and item not in @itemsToExclude
@@ -465,7 +465,7 @@ define [ ], () ->
 			@stopLoading()
 
 			R.stopTimer('Time to rasterize path: ')
-			R.logElapsedTime()
+			Utils.logElapsedTime()
 			return
 
 		rasterize: (items, excludeItems)->
@@ -473,7 +473,7 @@ define [ ], () ->
 			if @rasterizationDisabled then return
 
 			console.log "ask rasterize" + (if excludeItems then " excluding items." else "")
-			R.logElapsedTime()
+			Utils.logElapsedTime()
 
 			if not Utils.Array.isArray(items) then items = [items]
 			if not excludeItems then @itemsToExclude = []
@@ -612,7 +612,7 @@ define [ ], () ->
 			else
 				return Rasterizer.areaToImageDataUrl(rectangle)
 
-	class Rasterizer.PaperTile extends Rasterizer.Tile
+	class PaperTileRasterizer extends TileRasterizer
 
 		@TYPE = 'paper tile'
 
@@ -667,7 +667,7 @@ define [ ], () ->
 					raster.visible = true
 			return
 
-	class Rasterizer.InstantPaperTile extends Rasterizer.PaperTile
+	class InstantPaperTileRasterizer extends PaperTileRasterizer
 
 		@TYPE = 'light'
 
@@ -728,7 +728,7 @@ define [ ], () ->
 			@disableDrawing = true
 			return
 
-	class Rasterizer.CanvasTile extends Rasterizer.Tile
+	class CanvasTileRasterizer extends TileRasterizer
 
 		@TYPE = 'canvas tile'
 
@@ -801,5 +801,10 @@ define [ ], () ->
 				for y, raster of rasterColumn
 					raster.canvasJ.show()
 			return
+
+	Rasterizer.Tile = TileRasterizer
+	Rasterizer.CanvasTile = CanvasTileRasterizer
+	Rasterizer.InstantPaperTile = InstantPaperTileRasterizer
+	Rasterizer.PaperTile = PaperTileRasterizer
 
 	return Rasterizer

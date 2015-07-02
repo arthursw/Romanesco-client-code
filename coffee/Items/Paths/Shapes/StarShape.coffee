@@ -7,7 +7,6 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 		@label = 'Star'
 		@description = "Draws a star which can be animated (the color changes and it rotates)."
 		@iconURL = 'static/images/icons/inverted/star.png'
-		@iconAlt = 'star'
 
 		@initializeParameters: ()->
 			parameters = super()

@@ -4,7 +4,6 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 		@label = 'Paint brush'
 		@description = "Paints a thick stroke with customable blur effects."
 		@iconURL = 'static/images/icons/inverted/brush.png'
-		@iconAlt = 'brush'
 
 		@initializeParameters: ()->
 			parameters = super()
@@ -60,9 +59,9 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 
 			radialGradient = @context.createRadialGradient(point.x, point.y, innerRadius, point.x, point.y, outerRadius)
 
-			midColor = new Color(@data.strokeColor)
+			midColor = new P.Color(@data.strokeColor)
 			midColor.alpha = 0.5
-			endColor = new Color(@data.strokeColor)
+			endColor = new P.Color(@data.strokeColor)
 			endColor.alpha = 0
 			radialGradient.addColorStop(0, @data.strokeColor)
 			radialGradient.addColorStop(0.5, midColor.toCSS())

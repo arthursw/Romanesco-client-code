@@ -1,4 +1,4 @@
-define ['Items/Paths/Path'], (Path) ->
+define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Command) ->
 
 	# PrecisePath extends R.RPath to add precise editing functionalities
 	# PrecisePath adds control handles to the control path (which can be hidden):
@@ -50,7 +50,6 @@ define ['Items/Paths/Path'], (Path) ->
 		@label = 'Precise path'
 		@description = "This path offers precise controls, one can modify points along with their handles and their type."
 		@iconURL = 'static/images/icons/inverted/editCurve.png'
-		@iconAlt = 'edit curve'
 
 		@hitOptions =
 			segments: true
@@ -143,7 +142,7 @@ define ['Items/Paths/Path'], (Path) ->
 			# check if points fit to the newly created control path:
 			# - flatten a copy of the control path, as it was flattened when the path was saved
 			# - check if *points* correspond to the points on this flattened path
-			flattenedPath = @controlPath.copyTo(project)
+			flattenedPath = @controlPath.copyTo(P.project)
 			flattenedPath.flatten(@constructor.secureStep)
 			distanceMax = @constructor.secureDistance*@constructor.secureDistance
 
@@ -163,14 +162,82 @@ define ['Items/Paths/Path'], (Path) ->
 			console.log "Time to secure the path: " + ((Date.now()-time)/1000) + " sec."
 			return
 
+		deselectPoint: ()->
+			@selectionHighlight?.remove()
+			@selectionHighlight = null
+
+			@selectedSegment = null
+			@selectedHandle = null
+			return
+
+		performHitTest: (point)->
+			@controlPath.visible = true
+			hitResult = @controlPath.hitTest(point, @constructor.hitOptions)
+			@controlPath.visible = false
+			return hitResult
+
 		# redefine hit test to test not only on the selection rectangle, but also on the control path
 		# @param point [P.Point] the point to test
 		# @param hitOptions [Object] the [paper hit test options](http://paperjs.org/reference/item/#hittest-point)
-		hitTest: (point, hitOptions)->
-			if @speedGroup?.visible then hitResult = @handleGroup?.hitTest(point)
-			hitResult ?= super(point, hitOptions)
-			hitResult ?= @controlPath.hitTest(point, hitOptions)
-			return hitResult
+		hitTest: (event)->
+			point = event.point
+
+			@deselectPoint()
+			hitResult = @performHitTest(point)
+
+			if not hitResult? then return
+
+			specialKey = R.specialKey(event)
+			@selectedSegment = hitResult.segment
+
+			modifyPoint = false
+			if hitResult.type == 'segment'
+
+				if specialKey and hitResult.item == @controlPath
+					@selectedSegment = hitResult.segment
+					@deletePointCommand()
+				else
+					if hitResult.item == @controlPath
+						@selectedSegment = hitResult.segment
+						modifyPoint = true
+
+			if not @data.smooth
+				if hitResult.type is "handle-in"
+					@selectedHandle = hitResult.segment.handleIn
+					modifyPoint = true
+				else if hitResult.type is "handle-out"
+					@selectedHandle = hitResult.segment.handleOut
+					modifyPoint = true
+
+			if modifyPoint
+				R.commandManager.beginAction(new Command.ModifyPoint(@))
+
+			return
+
+		# initializeSelection: (event, hitResult) ->
+		# 	super(event, hitResult)
+		#
+		# 	specialKey = R.specialKey(event)
+		#
+		# 	if hitResult.type == 'segment'
+		#
+		# 		if specialKey and hitResult.item == @controlPath
+		# 			@selectionState = segment: hitResult.segment
+		# 			@deletePointCommand()
+		# 		else
+		# 			if hitResult.item == @controlPath
+		# 				@selectionState = segment: hitResult.segment
+		#
+		# 	if not @data.smooth
+		# 		if hitResult.type is "handle-in"
+		# 			@selectionState = segment: hitResult.segment, handle: hitResult.segment.handleIn
+		# 		else if hitResult.type is "handle-out"
+		# 			@selectionState = segment: hitResult.segment, handle: hitResult.segment.handleOut
+		#
+		# 	@highlightSelectedPoint()
+		#
+		# 	return
+
 
 		# initialize drawing
 		# @param createCanvas [Boolean] (optional, default to true) whether to create a child canavs *@canvasRaster*
@@ -212,7 +279,7 @@ define ['Items/Paths/Path'], (Path) ->
 		# - each time the user adds a point to the control path (either by moving the mouse in normal mode, or by clicking in polygon mode)
 		#   *checkUpdateDrawing* check by how long the control path was extended, and calls @updateDraw() if some draw step must be performed
 		# called when creating the path (by @updateCreate() and @finish()) and in @draw()
-		# @param segment [Paper Segment] the segment on the control path where we want to updateDraw
+		# @param segment [Paper P.Segment] the segment on the control path where we want to updateDraw
 		# @param redrawing [Boolean] (optional) whether the path is being redrawn or the user draws the path (the path is being loaded/updated or the user is drawing it with the mouse)
 
 		checkUpdateDrawing: (segment, redrawing=true)->
@@ -431,12 +498,12 @@ define ['Items/Paths/Path'], (Path) ->
 			if not R.catchErrors
 				# R.rasterizer.hideOthers(@)
 				# R.startTimer()
-				process(redrawing)
+				process.call(@, redrawing)
 				# R.stopTimer("Time to draw")
 				# R.rasterizer.showItems()
 			else
 				try 	# catch errors to log them in the code editor console (if user is making a script)
-					process(redrawing)
+					process.call(@, redrawing)
 				catch error
 					console.error error.stack
 					console.error error
@@ -451,7 +518,7 @@ define ['Items/Paths/Path'], (Path) ->
 
 		# @return [Array of Paper point] a list of point from the control path converted in the planet coordinate system
 		pathOnPlanet: ()->
-			flatennedPath = @controlPath.copyTo(project)
+			flatennedPath = @controlPath.copyTo(P.project)
 			flatennedPath.flatten(@constructor.secureStep)
 			flatennedPath.remove()
 			return super(flatennedPath.segments)
@@ -493,7 +560,6 @@ define ['Items/Paths/Path'], (Path) ->
 			# control path can be null if user is removing the path
 			@controlPath?.selected = false
 			@selectionHighlight?.remove()
-			@selectionHighlight = null
 			return true
 
 		# highlight selection path point:
@@ -503,10 +569,10 @@ define ['Items/Paths/Path'], (Path) ->
 			if not @controlPath.selected then return
 			@selectionHighlight?.remove()
 			@selectionHighlight = null
-			if not @selectionState.segment? then return
-			point = @selectionState.segment.point
-			@selectionState.segment.rtype ?= 'smooth'
-			switch @selectionState.segment.rtype
+			if not @selectedSegment? then return
+			point = @selectedSegment.point
+			@selectedSegment.rtype ?= 'smooth'
+			switch @selectedSegment.rtype
 				when 'smooth'
 					@selectionHighlight = new P.Path.Circle(point, 5)
 				when 'corner'
@@ -518,75 +584,79 @@ define ['Items/Paths/Path'], (Path) ->
 			@selectionHighlight.controller = @
 			@selectionHighlight.strokeColor = R.selectionBlue
 			@selectionHighlight.strokeWidth = 1
-			R.selectionLayer.addChild(@selectionHighlight)
-			@constructor.parameters['Edit curve'].pointType.controller.setValue(@selectionState.segment.rtype)
+			R.view.selectionLayer.addChild(@selectionHighlight)
+			@constructor.parameters['Edit curve'].pointType.controller.setValue(@selectedSegment.rtype)
 			return
 
-		# redefine {RPath#initializeSelection}
-		# Same functionnalities as {RPath#initializeSelection} (determine which action to perform depending on the the *hitResult*) but:
-		# - adds handle selection initialization, and highlight selected points if any
-		# - properly initialize transformation (rotation and scale) for PrecisePath
-		initializeSelection: (event, hitResult) ->
-			super(event, hitResult)
-
-			specialKey = R.specialKey(event)
-
-			if hitResult.type == 'segment'
-
-				if specialKey and hitResult.item == @controlPath
-					@selectionState = segment: hitResult.segment
-					@deletePointCommand()
-				else
-					if hitResult.item == @controlPath
-						@selectionState = segment: hitResult.segment
-
-			if not @data.smooth
-				if hitResult.type is "handle-in"
-					@selectionState = segment: hitResult.segment, handle: hitResult.segment.handleIn
-				else if hitResult.type is "handle-out"
-					@selectionState = segment: hitResult.segment, handle: hitResult.segment.handleOut
-
-			@highlightSelectedPoint()
-
-			return
+		# # redefine {RPath#initializeSelection}
+		# # Same functionnalities as {RPath#initializeSelection} (determine which action to perform depending on the the *hitResult*) but:
+		# # - adds handle selection initialization, and highlight selected points if any
+		# # - properly initialize transformation (rotation and scale) for PrecisePath
+		# initializeSelection: (event, hitResult) ->
+		# 	super(event, hitResult)
+		#
+		# 	specialKey = R.specialKey(event)
+		#
+		# 	if hitResult.type == 'segment'
+		#
+		# 		if specialKey and hitResult.item == @controlPath
+		# 			@selectionState = segment: hitResult.segment
+		# 			@deletePointCommand()
+		# 		else
+		# 			if hitResult.item == @controlPath
+		# 				@selectionState = segment: hitResult.segment
+		#
+		# 	if not @data.smooth
+		# 		if hitResult.type is "handle-in"
+		# 			@selectionState = segment: hitResult.segment, handle: hitResult.segment.handleIn
+		# 		else if hitResult.type is "handle-out"
+		# 			@selectionState = segment: hitResult.segment, handle: hitResult.segment.handleOut
+		#
+		# 	@highlightSelectedPoint()
+		#
+		# 	return
 
 		# begin select action
 		# @param event [Paper event] the mouse event
-		beginSelect: (event) ->
-
-			@selectionHighlight?.remove()
-			@selectionHighlight = null
-
-			super(event)
-
-			if @selectionState.segment?
-				@beginAction(new R.ModifyPointCommand(@))
-			else if @selectionState.speedHandle?
-				@beginAction(new R.ModifySpeedCommand(@))
-
-			return
-
-		updateSelect: (event)->
-			# if not @drawing then R.updateView()
-			super(event)
-			return
+		# beginSelect: (event) ->
+		#
+		# 	@selectionHighlight?.remove()
+		# 	@selectionHighlight = null
+		#
+		# 	super(event)
+		#
+		# 	if @selectedSegment?
+		# 		R.commandManager.beginAction(new Command.ModifyPoint(@))
+		# 	else if @selectionState.speedHandle?
+		# 		R.commandManager.beginAction(new Command.ModifySpeed(@))
+		#
+		# 	return
+		#
+		# updateSelect: (event)->
+		# 	# if not @drawing then R.updateView()
+		# 	super(event)
+		# 	return
 
 		# add or update the selection rectangle (path used to rotate and scale the RPath)
 		# @param reset [Boolean] (optional) true if must reset the selection rectangle (one of the control path segment has been modified)
-		updateSelectionRectangle: (reset=false)->
-			if reset
-				# reset transform matrix to have @controlPath.rotation = 0 and @controlPath.scaling = 1,1
-				@controlPath.firstSegment.point = @controlPath.firstSegment.point
-				@rectangle = @controlPath.bounds.clone()
-				@rotation = 0
-
-			super()
-
-			@controlPath.pivot = @selectionRectangle.pivot
-
-			@selectionRectangle.selected = @data.showSelectionRectangle
-			@selectionRectangle.visible = @data.showSelectionRectangle
-			return
+		# updateSelectionRectangle: (reset=false)->
+		# 	if reset
+		# 		# reset transform matrix to have @controlPath.rotation = 0 and @controlPath.scaling = 1,1
+		# 		@controlPath.firstSegment.point = @controlPath.firstSegment.point
+		# 		@rectangle = @controlPath.bounds.clone()
+		# 		@rotation = 0
+		#
+		# 	super()
+		#
+		# 	# @controlPath.pivot = @selectionRectangle.pivot
+		#
+		# 	# @selectionRectangle.selected = @data.showSelectionRectangle
+		# 	# @selectionRectangle.visible = @data.showSelectionRectangle
+		# 	return
+		#
+		# scale: (scale, center, update)->
+		# 	@controlPath.scale(scale, center)
+		# 	return
 
 		setRectangle: (rectangle, update=true)->
 			previousRectangle = @rectangle.clone()
@@ -601,16 +671,19 @@ define ['Items/Paths/Path'], (Path) ->
 			@controlPath.rotate(@rotation)
 			return
 
-		# setRotation: (rotation, update=true)->
-		# 	previousRotation = @rotation
-		# 	@drawing.pivot = @rectangle.center
-		# 	super(rotation, update)
-		# 	@controlPath.rotate(rotation-previousRotation)
-		# 	@drawing.rotate(rotation-previousRotation)
-		# 	return
+		setRotation: (rotation, center, update=true)->
+			# previousRotation = @rotation
+			# @drawing.pivot = @rectangle.center
+			# super(rotation, update)
+			# @controlPath.rotate(rotation-previousRotation)
+			# @drawing.rotate(rotation-previousRotation)
+			super(rotation, center, update)
+
+			@selectionHighlight?.position = @selectedSegment.point
+			return
 
 		# smooth the point of *segment*, i.e. align the handles with the tangent at this point
-		# @param segment [Paper Segment] the segment to smooth
+		# @param segment [Paper P.Segment] the segment to smooth
 		# @param offset [Number] (optional) the location of the segment (default is segment.location.offset)
 		smoothPoint: (segment, offset)->
 			segment.rtype = 'smooth'
@@ -649,17 +722,16 @@ define ['Items/Paths/Path'], (Path) ->
 			# check if user clicked on the curve
 
 			point = P.view.viewToProject(new P.Point(event.pageX, event.pageY))
+			hitResult = @performHitTest(point)
 
-			hitResult = @performHitTest(point, @constructor.hitOptions)
-
-			if not hitResult? 	# return if user did not click on the curve
-				return
+			# return if user did not click on the curve
+			if not hitResult? then return
 
 			switch hitResult.type
 				when 'segment' 										# if we click on a point: roll over the three point modes
 
 					segment = hitResult.segment
-					@selectionState.segment = segment
+					@selectedSegment = segment
 
 					switch segment.rtype
 						when 'smooth', null, undefined
@@ -677,7 +749,7 @@ define ['Items/Paths/Path'], (Path) ->
 			return
 
 		addPointCommand: (location)->
-			R.commandManager.add(new R.AddPointCommand(@, location), true)
+			R.commandManager.add(new Command.AddPoint(@, location), true)
 			return
 
 		addPointAt: (location, update=true)->
@@ -687,7 +759,7 @@ define ['Items/Paths/Path'], (Path) ->
 		# add a point according to *hitResult*
 		# @param location [Paper Location] the location where to add the point
 		# @param update [Boolean] whether update is required
-		# @return the new Segment
+		# @return the new P.Segment
 		addPoint: (index, point, offset, update=true)->
 
 			segment = @controlPath.insert(index + 1, new P.Point(point))
@@ -700,25 +772,25 @@ define ['Items/Paths/Path'], (Path) ->
 			@draw()
 			if not @socketAction
 				segment.selected = true
-				@selectionState.segment = segment
+				@selectedSegment = segment
 				@highlightSelectedPoint()
 				if update then @update('point')
-				R.chatSocket.emit "bounce", itemPk: @pk, function: "addPoint", arguments: [index, point, offset, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "addPoint", arguments: [index, point, offset, false]
 			return segment
 
 		deletePointCommand: ()->
-			if not @selectionState.segment? then return
-			R.commandManager.add(new R.DeletePointCommand(@, @selectionState.segment), true)
+			if not @selectedSegment? then return
+			R.commandManager.add(new Command.DeletePoint(@, @selectedSegment), true)
 			return
 
 		# delete the point of *segment* (from curve) and delete curve if there are no points anymore
-		# @param segment [Paper Segment or segment index] the segment to delete
+		# @param segment [Paper P.Segment or segment index] the segment to delete
 		# @return the location of the deleted point (to be able to re-add it in case of a undo)
 		deletePoint: (segment, update=true)->
 			if not segment then return
-			if not Segment.prototype.isPrototypeOf(segment) then segment = @controlPath.segments[segment]
-			@selectionState.segment = if segment.next? then segment.next else segment.previous
-			if @selectionState.segment then @selectionHighlight.position = @selectionState.segment.point
+			if not P.Segment.prototype.isPrototypeOf(segment) then segment = @controlPath.segments[segment]
+			@selectedSegment = if segment.next? then segment.next else segment.previous
+			if @selectedSegment then @selectionHighlight.position = @selectedSegment.point
 			location = { index: segment.location.index - 1, point: segment.location.point }
 			segment.remove()
 			if @controlPath.segments.length <= 1
@@ -729,13 +801,13 @@ define ['Items/Paths/Path'], (Path) ->
 			if not @socketAction
 				@updateSelectionRectangle(true)
 				if update then @update('point')
-				R.chatSocket.emit "bounce", itemPk: @pk, function: "deletePoint", arguments: [segment.index, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "deletePoint", arguments: [segment.index, false]
 			return location
 
 		# delete the selected point (from curve) and delete curve if there are no points anymore
 		# emit the action to websocket
 		deleteSelectedPoint: ()->
-			@deletePoint(@selectionState.segment)
+			@deletePoint(@selectedSegment)
 			return
 
 		# change selected segment position and handle position
@@ -745,65 +817,68 @@ define ['Items/Paths/Path'], (Path) ->
 		# @param update [Boolean] whether we must update the path (for example when it is a command) or not
 		# @param draw [Boolean] whether we must draw the path or not
 		modifySelectedPoint: (position, handleIn, handleOut, fastDraw=true, update=true)->
-			@modifyPoint(@selectionState.segment, position, handleIn, handleOut, fastDraw, update)
+			@modifyPoint(@selectedSegment, position, handleIn, handleOut, fastDraw, update)
 			return
 
 		modifyPoint: (segment, position, handleIn, handleOut, fastDraw=true, update=true)->
-			if not Segment.prototype.isPrototypeOf(segment) then segment = @controlPath.segments[segment]
+			if not P.Segment.prototype.isPrototypeOf(segment) then segment = @controlPath.segments[segment]
 			segment.point = new P.Point(position)
 			segment.handleIn = new P.Point(handleIn)
 			segment.handleOut = new P.Point(handleOut)
+			@rectangle = @controlPath.bounds
+			R.tools.select.updateSelectionRectangle()
 			@draw(fastDraw)
 			if fastDraw and @selectionHighlight?
 				@selectionHighlight.position = segment.point
 				@selectionHighlight.bringToFront()
 			else
 				@highlightSelectedPoint()
-			if @selectionRectangle? then @updateSelectionRectangle(true)
+			# if @selectionRectangle? then @updateSelectionRectangle(true)
 			if not @socketAction
 				if update then @update('segment')
-				R.chatSocket.emit "bounce", itemPk: @pk, function: "modifyPoint", arguments: [segment.index, position, handleIn, handleOut, fastDraw, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "modifyPoint", arguments: [segment.index, position, handleIn, handleOut, fastDraw, false]
 			return
 
 		updateModifyPoint: (event)->
 			# segment.rtype == null or 'smooth': handles are aligned, and have the same length if shit
 			# segment.rtype == 'corner': handles are not equal
 			# segment.rtype == 'point': no handles
-			segment = @selectionState.segment
+			segment = @selectedSegment
+			handle = @selectedHandle
 
-			if @selectionState.handle? 									# move the selected handle
+			if handle? 									# move the selected handle
 
-				if Utils.Event.getSnap() >= 1
-					point = Utils.Event.snap2D(event.point)
-					@selectionState.handle.x = point.x - segment.point.x
-					@selectionState.handle.y = point.y - segment.point.y
+				if Utils.Snap.getSnap() >= 1
+					point = Utils.Snap.snap2D(event.point)
+					handle.x = point.x - segment.point.x
+					handle.y = point.y - segment.point.y
 				else
-					@selectionState.handle.x += event.delta.x
-					@selectionState.handle.y += event.delta.y
+					handle.x += event.delta.x
+					handle.y += event.delta.y
 
 				if segment.rtype == 'smooth' or not segment.rtype?
-					if @selectionState.handle == segment.handleOut and not segment.handleIn.isZero()
+					if handle == segment.handleOut and not segment.handleIn.isZero()
 						if not event.modifiers.shift
 							segment.handleIn = segment.handleOut.normalize().multiply(-segment.handleIn.length)
 						else
 							segment.handleIn = segment.handleOut.multiply(-1)
-					if @selectionState.handle == segment.handleIn and not segment.handleOut.isZero()
+					if handle == segment.handleIn and not segment.handleOut.isZero()
 						if not event.modifiers.shift
 							segment.handleOut = segment.handleIn.normalize().multiply(-segment.handleOut.length)
 						else
 							segment.handleOut = segment.handleIn.multiply(-1)
 
-			else if @selectionState.segment?								# move the selected point
+			else if segment?								# move the selected point
 
-				if Utils.Event.getSnap() >= 1
-					point = Utils.Event.snap2D(event.point)
+				if Utils.Snap.getSnap() >= 1
+					point = Utils.Snap.snap2D(event.point)
 					segment.point.x = point.x
 					segment.point.y = point.y
 				else
 					segment.point.x += event.delta.x
 					segment.point.y += event.delta.y
 
-			Lock.highlightValidity(@, null, true)
+			Item.Lock.highlightValidity(@, null, true)
 			@modifyPoint(segment, segment.point, segment.handleIn, segment.handleOut, true, false)
 
 			return
@@ -818,12 +893,12 @@ define ['Items/Paths/Path'], (Path) ->
 			return
 
 		modifyPointTypeCommand: (rtype)->
-			R.commandManager.add(new R.ModifyPointTypeCommand(@, @selectionState.segment, rtype), true)
+			R.commandManager.add(new Command.ModifyPointType(@, @selectedSegment, rtype), true)
 			return
 
 		modifySelectedPointType: (value, update=true)->
-			if not @selectionState.segment? then return
-			@modifyPointType(@selectionState.segment, value, update)
+			if not @selectedSegment? then return
+			@modifyPointType(@selectedSegment, value, update)
 			return
 
 		# - set selected point mode to *rtype*: 'smooth', 'corner' or 'point'
@@ -832,28 +907,28 @@ define ['Items/Paths/Path'], (Path) ->
 		# @param rtype [String] new mode of the point: can be 'smooth', 'corner' or 'point'
 		# @param update [Boolean] whether update is required
 		modifyPointType: (segment, rtype, update=true)->
-			if not Segment.prototype.isPrototypeOf(segment) then segment = @controlPath.segments[segment]
+			if not P.Segment.prototype.isPrototypeOf(segment) then segment = @controlPath.segments[segment]
 			if @data.smooth then return
-			@selectionState.segment.rtype = rtype
+			@selectedSegment.rtype = rtype
 			switch rtype
 				when 'corner'
-					if @selectionState.segment.linear = true
-						@selectionState.segment.linear = false
-						@selectionState.segment.handleIn = @selectionState.segment.previous.point.subtract(@selectionState.segment.point).multiply(0.5)
-						@selectionState.segment.handleOut = @selectionState.segment.next.point.subtract(@selectionState.segment.point).multiply(0.5)
+					if @selectedSegment.linear = true
+						@selectedSegment.linear = false
+						@selectedSegment.handleIn = @selectedSegment.previous.point.subtract(@selectedSegment.point).multiply(0.5)
+						@selectedSegment.handleOut = @selectedSegment.next.point.subtract(@selectedSegment.point).multiply(0.5)
 				when 'point'
-					@selectionState.segment.linear = true
+					@selectedSegment.linear = true
 				when 'smooth'
-					@smoothPoint(@selectionState.segment)
+					@smoothPoint(@selectedSegment)
 			@draw()
 			@highlightSelectedPoint()
 			if not @socketAction
 				if update then @update('point')
-				R.chatSocket.emit "bounce", itemPk: @pk, function: "modifyPointType", arguments: [segment.index, rtype, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "modifyPointType", arguments: [segment.index, rtype, false]
 			return
 
 		modifyControlPathCommand: (previousPointsAndPlanet, newPointsAndPlanet)->
-			R.commandManager.add(new R.ModifyControlPathCommand(@, previousPointsAndPlanet, newPointsAndPlanet), false)
+			R.commandManager.add(new Command.ModifyControlPath(@, previousPointsAndPlanet, newPointsAndPlanet), false)
 			return
 
 		modifyControlPath: (pointsAndPlanet, update=true)->
@@ -863,12 +938,13 @@ define ['Items/Paths/Path'], (Path) ->
 			@setControlPath(pointsAndPlanet.points, pointsAndPlanet.planet)
 			@controlPath.selected = selected
 			if fullySelected then @controlPath.fullySelected = true
-			@selectionState = move: true
+			@selectedSegment = null
+			@selectedHandle = null
 			@highlightSelectedPoint()
 			@draw()
 			if not @socketAction
 				if update then @update('point')
-				R.chatSocket.emit "bounce", itemPk: @pk, function: "modifyControlPath", arguments: [pointsAndPlanet, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "modifyControlPath", arguments: [pointsAndPlanet, false]
 			return
 
 		setSmooth: (smooth)->
@@ -878,7 +954,8 @@ define ['Items/Paths/Path'], (Path) ->
 				@controlPath.smooth()
 				@controlPath.fullySelected = false
 				@controlPath.selected = true
-				@selectionState = move: true
+				@selectedSegment = null
+				@selectedHandle = null
 				@highlightSelectedPoint()
 				for segment in @controlPath.segments
 					segment.rtype = 'smooth'
@@ -902,10 +979,10 @@ define ['Items/Paths/Path'], (Path) ->
 		# called when a parameter is changed
 		setParameter: (name, value, updateGUI, update)->
 			super(name, value, updateGUI, update)
-			switch controller.name
-				when 'showSelectionRectangle'
-					@selectionRectangle?.selected = @data.showSelectionRectangle
-					@selectionRectangle?.visible = @data.showSelectionRectangle
+			# switch controller.name
+			# 	when 'showSelectionRectangle'
+			# 		@selectionRectangle?.selected = @data.showSelectionRectangle
+			# 		@selectionRectangle?.visible = @data.showSelectionRectangle
 			return
 
 		# overload {RPath#remove}, but in addition: remove the selected point highlight and the canvas raster

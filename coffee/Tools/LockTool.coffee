@@ -1,7 +1,7 @@
-define [ 'Tools/Tool' ], (Tool) ->
+define [ 'Tools/Tool', 'Tools/ItemTool', 'Items/Lock' ], (Tool, ItemTool, Lock) ->
 
 	# Lock creation tool
-	class LockTool extends Tool.Item
+	class LockTool extends ItemTool
 
 		@label = 'Lock'
 		@description = ''
@@ -30,7 +30,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 			cost = R.currentPaths[from].bounds.area/1000.0
 
 			@textItem?.remove()
-			@textItem = new PointText(point)
+			@textItem = new P.PointText(point)
 			@textItem.justification = 'right'
 			@textItem.fillColor = 'black'
 			@textItem.content = '' + cost + ' romanescoins'
@@ -49,5 +49,5 @@ define [ 'Tools/Tool' ], (Tool) ->
 				delete R.currentPaths[from]
 			return
 
-	Tool.Lock = LockTool
+	R.Tools.Lock = LockTool
 	return LockTool

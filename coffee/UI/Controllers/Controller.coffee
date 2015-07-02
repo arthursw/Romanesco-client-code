@@ -155,7 +155,7 @@ define [ 'Utils/Utils' ], () ->
 	# 			if typeof item.data?[name] isnt 'undefined'
 	# 				# if parameter.step? then value = value-value%parameter.step
 	# 				item.setParameterCommand(name, value)
-	# 				# if R.me? and datFolder.name != 'General' then R.chatSocket.emit( "parameter change", R.me, item.pk, name, value )
+	# 				# if R.me? and datFolder.name != 'General' then R.socket.emit( "parameter change", R.me, item.pk, name, value )
 	# 		return
 
 	# 	# if parameter has no onChange function: create a default one which will update item.data[name]
@@ -211,7 +211,7 @@ define [ 'Utils/Utils' ], () ->
 	# 					R.tools['Gradient'].select(parameterName, colorInputJ, value)
 	# 					colorInputJ.attr('data-gradient', 1)
 	# 				else
-	# 					Tool.select.select()
+	# 					R.tools.select.select()
 	# 					colorInputJ.attr('data-gradient', 0)
 	# 				return
 
@@ -307,7 +307,7 @@ define [ 'Utils/Utils' ], () ->
 	# 			# 		if this.checked
 	# 			# 			R.tools['Gradient'].select(parameter, colorPicker)
 	# 			# 		else
-	# 			# 			Tool.select.select()
+	# 			# 			R.tools.select.select()
 	# 			# 		return
 	# 			# 	# # swatchesJ.append(gradientSwatchesJ)
 
@@ -441,22 +441,16 @@ define [ 'Utils/Utils' ], () ->
 
 			return
 
-		listen: (command)->
-			$(command).on('do', @itemChanged)
-			$(command).on('undo', @itemChanged)
-			return
-
-		itemChanged: ()->
-			item = R.selectedItems[0]
-			@setValue(item.data[@name])
-			return
-
 		onChange: (value) =>
 			R.c = @
-			for item in R.selectedItems
-				# do not update if the value was never set (not even to null), update if it was set (even to null, for colors)
-				if typeof item.data?[@name] isnt 'undefined'
-					item.setParameterCommand(@, value)
+			if R.selectedItems.length > 0
+				R.commandManager.deferredAction(R.Command.SetParameter, R.selectedItems, @, value)
+			# itemsToUpdate = []
+			# for item in R.selectedItems
+			# 	# do not update if the value was never set (not even to null), update if it was set (even to null, for colors)
+			# 	if typeof item.data?[@name] isnt 'undefined'
+			# 		itemsToUpdate.push(item)
+			# 		# item.setParameterCommand(@, value)
 			return
 
 		getValue: ()->
@@ -480,13 +474,14 @@ define [ 'Utils/Utils' ], () ->
 		# 	return
 
 		remove: ()->
+			# $(@).triggerHandler('delete', [@])
 			@parameter.controller = null
 
 			if @defaultOnChange
 				@parameter.onChange = null
 
 			@folder.datFolder.remove(@datController)
-			@folder.datFolder.__controllers.remove(@datController)
+			Utils.Array.remove(@folder.datFolder.__controllers, @datController)
 
 			delete @folder.controllers[@name]
 			if Object.keys(@folder.controllers).length == 0

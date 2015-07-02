@@ -46,8 +46,6 @@
 
       SpeedPath.parameters = SpeedPath.initializeParameters();
 
-      SpeedPath.createTool(SpeedPath);
-
       SpeedPath.prototype.initializeDrawing = function(createCanvas) {
         if (createCanvas == null) {
           createCanvas = false;
@@ -194,14 +192,14 @@
           if (update) {
             this.update('speed');
           }
-          R.chatSocket.emit("bounce", {
+          R.socket.emit("bounce", {
             itemPk: this.pk,
             "function": "modifySpeed",
             "arguments": [this.speeds, false]
           });
         } else {
           if ((_ref = this.speedGroup) != null) {
-            _ref.visible = (this.selectionRectangle != null) && this.data.showSpeed;
+            _ref.visible = (this.selected != null) && this.data.showSpeed;
           }
         }
       };
@@ -357,19 +355,20 @@
         return true;
       };
 
-      SpeedPath.prototype.initializeSelection = function(event, hitResult) {
-        var _ref;
+      SpeedPath.prototype.hitTest = function(event) {
+        var hitResult, _ref;
         if ((_ref = this.speedSelectionHighlight) != null) {
           _ref.remove();
         }
         this.speedSelectionHighlight = null;
+        hitResult = this.speedPath.hitTest(point, this.constructor.hitOptions);
         if (hitResult.item.name === "speed handle") {
-          this.selectionState = {
-            speedHandle: hitResult.item
-          };
-          return;
+          this.selectedSpeedHandle = hitResult.item;
+          R.commandManager.beginAction(new Command.ModifySeed(this));
+          return true;
+        } else {
+          return SpeedPath.__super__.hitTest.call(this, event);
         }
-        SpeedPath.__super__.initializeSelection.call(this, event, hitResult);
       };
 
       SpeedPath.prototype.updateModifySpeed = function(event) {
@@ -423,7 +422,7 @@
           this.speedSelectionHighlight.add(handle.position.add(projection));
           this.speedSelectionHighlight.add(event.point);
           this.draw(true);
-          if (this.selectionRectangle != null) {
+          if (this.selected != null) {
             if ((_ref1 = this.selectionHighlight) != null) {
               _ref1.position = this.selectionState.segment.point;
             }
@@ -441,7 +440,7 @@
         }
         this.speedSelectionHighlight = null;
         if (!this.socketAction) {
-          R.chatSocket.emit("bounce", {
+          R.socket.emit("bounce", {
             itemPk: this.pk,
             "function": "modifySpeed",
             "arguments": [this.speeds, false]
@@ -461,5 +460,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=SpeedPath.map

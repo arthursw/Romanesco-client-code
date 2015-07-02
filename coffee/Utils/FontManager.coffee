@@ -4,8 +4,8 @@ define [ ], () ->
 
 		constructor: ()->
 
-			R.availableFonts = []
-			R.usedFonts = []
+			@availableFonts = []
+			@usedFonts = []
 			jQuery.support.cors = true
 
 			# $.getJSON("https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyD2ZjTQxVfi34-TMKjB5WYK3U8K6y-IQH0", initTextOptions)
@@ -32,9 +32,9 @@ define [ ], () ->
 
 			fontFamilyURL = fontFamily.split(" ").join("+")
 
-			# update R.usedFonts, check if the font is already
+			# update @usedFonts, check if the font is already
 			fontAlreadyUsed = false
-			for font in R.usedFonts
+			for font in @usedFonts
 				if font.family == fontFamilyURL
 					# if font.subsets.indexOf(subset) == -1 and subset != 'latin'
 					# 	font.subsets.push(subset)
@@ -53,17 +53,17 @@ define [ ], () ->
 					effects.push(effect)
 				if not fontFamilyURL or fontFamilyURL == ''
 					console.log 'ERROR: font family URL is null or empty'
-				R.usedFonts.push( family: fontFamilyURL, effects: effects )
+				@usedFonts.push( family: fontFamilyURL, effects: effects )
 			return
 
 		# todo: use google web api to update text font on load callback
 		# fonts could have multiple effects at once, but the gui does not allow this yet
 		# since having multiple effects would not be of great use
 		# must be improved!!
-		loadFonts: ()->
+		loadFonts: ()=>
 			$('head').remove("link.fonts")
 
-			for font in R.usedFonts
+			for font in @usedFonts
 				newFont = font.family
 				# if font.styles.length>0
 				# 	newFont += ":"
@@ -90,7 +90,7 @@ define [ ], () ->
 			return
 
 		# initialize typeahead font engine to quickly search for a font by typing its first letters
-		initTextOptions: (data, textStatus, jqXHR) ->
+		initTextOptions: (data, textStatus, jqXHR) =>
 
 			# gather all font names
 			fontFamilyNames = []
@@ -98,30 +98,30 @@ define [ ], () ->
 				fontFamilyNames.push({ value: item.family })
 
 			# initialize typeahead font engine
-			R.typeaheadFontEngine = new Bloodhound({
+			@typeaheadFontEngine = new Bloodhound({
 				name: 'Font families',
 				local: fontFamilyNames,
 				datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
 				queryTokenizer: Bloodhound.tokenizers.whitespace
 			})
-			promise = R.typeaheadFontEngine.initialize()
+			promise = @typeaheadFontEngine.initialize()
 
-			R.availableFonts = data.items
+			@availableFonts = data.items
 
 			# test
-			# R.familyPickerJ = R.textOptionsJ.find('#fontFamily')
-			# R.familyPickerJ.typeahead(
+			# @familyPickerJ = @textOptionsJ.find('#fontFamily')
+			# @familyPickerJ.typeahead(
 			# 	{ hint: true, highlight: true, minLength: 1 },
 			# 	{ valueKey: 'value', displayKey: 'value', source: typeaheadFontEngine.ttAdapter() }
 			# )
 
-			# R.fontSubmitJ = R.textOptionsJ.find('#fontSubmit')
+			# @fontSubmitJ = @textOptionsJ.find('#fontSubmit')
 
 
-			# R.fontSubmitJ.click( (event) ->
-			# 	R.setFontStyles()
+			# @fontSubmitJ.click( (event) ->
+			# 	@setFontStyles()
 			# )
 
 			return
 
-	return Font
+	return FontManager

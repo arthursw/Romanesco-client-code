@@ -14,7 +14,7 @@
         return Medusa.__super__.constructor.apply(this, arguments);
       }
 
-      Medusa.Shape = paper.P.Path.Rectangle;
+      Medusa.Shape = P.Path.Rectangle;
 
       Medusa.label = 'Medusa';
 
@@ -68,15 +68,15 @@
         this.data.pulsePeriod;
         this.data.elasticConstant;
         this.path = this.addPath();
-        topSegment = new Segment(this.rectangle.center.x, this.rectangle.top);
+        topSegment = new P.Segment(this.rectangle.center.x, this.rectangle.top);
         topSegment.handleIn = new P.Point(-this.rectangle.width / 3, 0);
         topSegment.handleOut = new P.Point(this.rectangle.width / 3, 0);
         this.path.add(topSegment);
-        this.leftSegment = new Segment(this.rectangle.left, this.rectangle.top + this.rectangle.height * 0.7);
+        this.leftSegment = new P.Segment(this.rectangle.left, this.rectangle.top + this.rectangle.height * 0.7);
         this.leftSegment.handleIn = new P.Point(0, -this.rectangle.height * 0.5);
         this.leftSegment.handleOut = new P.Point(0, this.rectangle.height * 0.3);
         this.path.add(this.leftSegment);
-        this.rightSegment = new Segment(this.rectangle.right, this.rectangle.top + this.rectangle.height * 0.7);
+        this.rightSegment = new P.Segment(this.rectangle.right, this.rectangle.top + this.rectangle.height * 0.7);
         this.rightSegment.handleIn = new P.Point(0, -this.rectangle.height * 0.5);
         this.rightSegment.handleOut = new P.Point(0, this.rectangle.height * 0.3);
         this.path.add(this.rightSegment);
@@ -137,5 +137,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Medusa.map

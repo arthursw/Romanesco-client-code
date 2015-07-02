@@ -49,7 +49,7 @@ define [ 'Items/Item' ], (Item) ->
 
 		onLiClick: (event)=>
 			if not event.shiftKey
-				Tool.Select.deselectAll()
+				R.tools.select.deselectAll()()
 				bounds = @getBounds()
 				if not P.view.bounds.intersects(bounds)
 					View.moveTo(bounds.center, 1000)
@@ -108,21 +108,30 @@ define [ 'Items/Item' ], (Item) ->
 		# 	@selectionRectangle.rotation = @rotation
 		# 	return
 
-		setRotation: (rotation, update=true)->
-			previousRotation = @rotation
-			@group.pivot = @rectangle.center
+		rotate: (rotation, center, update)->
+			@setRotation(@rotation+rotation, center)
+			return
+
+		setRotation: (rotation, center, update=true)->
+			deltaRotation = rotation-@rotation
+			previousPivot = @group.pivot
+			@group.pivot = center
 			@rotation = rotation
-			@group.rotate(rotation-previousRotation)
+			@group.rotate(deltaRotation)
+			@group.pivot = previousPivot
+
+			@rectangle = @group.bounds
+
 			# @rotation = rotation
 			# @selectionRectangle.rotation = rotation
 			if not @socketAction
 				if update then @update('rotation')
-				R.chatSocket.emit "bounce", itemPk: @pk, function: "setRotation", arguments: [@rotation, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "setRotation", arguments: [@rotation, false]
 			return
 
 		# updateSetRotation: (event)->
 		# 	rotation = event.point.subtract(@rectangle.center).angle + 90
-		# 	if event.modifiers.shift or R.specialKey(event) or Utils.Event.getSnap() > 1
+		# 	if event.modifiers.shift or R.specialKey(event) or Utils.Snap.getSnap() > 1
 		# 		rotation = Utils.roundToMultiple(rotation, if event.modifiers.shift then 10 else 5)
 		# 	@setRotation(rotation)
 		# 	Lock.highlightValidity(@)
@@ -219,8 +228,8 @@ define [ 'Items/Item' ], (Item) ->
 			@liJ.addClass('selected')
 
 			# update the global selection group (i.e. add this RPath to the group)
-			# if @group.parent != R.selectionLayer then @zindex = @group.index
-			# R.selectionLayer.addChild(@group)
+			# if @group.parent != R.view.selectionLayer then @zindex = @group.index
+			# R.view.selectionLayer.addChild(@group)
 
 			return true
 
@@ -246,7 +255,7 @@ define [ 'Items/Item' ], (Item) ->
 				@remove()
 				return false
 
-			locks = Lock.getLocksWhichIntersect(bounds)
+			locks = Item.Lock.getLocksWhichIntersect(bounds)
 
 			for lock in locks
 				if lock.rectangle.contains(bounds)

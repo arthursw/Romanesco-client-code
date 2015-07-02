@@ -3,7 +3,7 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 	# Checkpoint is a video game element:
 	# if placed on a video game area, it will be registered in it
 	class Checkpoint extends Shape
-		@Shape = paper.P.Path.Rectangle
+		@Shape = P.Path.Rectangle
 		@label = 'Checkpoint'
 		@description = """Draw checkpoints on a lock with a Racer to create a race
 		(the players must go through each checkpoint as fast as possible, with the car tool)."""
@@ -16,7 +16,7 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 
 		@parameters = @initializeParameters()
 		@createTool(@)
-
+		
 		# register the checkpoint if we are on a video game
 		initialize: ()->
 			@data.type = 'checkpoint'
@@ -35,7 +35,7 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 			@data.strokeColor = 'rgb(150,30,30)'
 			@data.fillColor = null
 			@shape = @addPath(new P.Path.Rectangle(@rectangle))
-			@text = @addPath(new PointText(@rectangle.center.add(0,4)))
+			@text = @addPath(new P.PointText(@rectangle.center.add(0,4)))
 			@text.content = if @data.checkpointNumber? then 'Checkpoint ' + @data.checkpointNumber else 'Checkpoint'
 			@text.justification = 'center'
 			return

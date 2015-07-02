@@ -123,5 +123,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=ShapePath.map

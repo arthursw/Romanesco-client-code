@@ -40,7 +40,7 @@
         } else {
           bounds = P.view.bounds.scale(0.25);
         }
-        color = color != null ? new Color(color) : Utils.Array.random(R.defaultColor);
+        color = color != null ? new P.Color(color) : Utils.Array.random(R.defaultColor);
         firstColor = color.clone();
         firstColor.alpha = 0.2;
         secondColor = color.clone();
@@ -88,7 +88,7 @@
         _ref2 = value.gradient.stops;
         for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
           stop = _ref2[_i];
-          color = new Color(stop.color != null ? stop.color : stop[0]);
+          color = new P.Color(stop.color != null ? stop.color : stop[0]);
           location = parseFloat(stop.rampPoint != null ? stop.rampPoint : stop[1]);
           position = origin.add(delta.multiply(location));
           handle = this.createHandle(position, location, color, true);
@@ -112,7 +112,7 @@
         this.line.sendToBack();
         this.line.strokeColor = R.selectionBlue;
         this.line.strokeWidth = 1;
-        R.selectionLayer.addChild(this.group);
+        R.view.selectionLayer.addChild(this.group);
         this.selectHandle(this.startHandle);
         if (updateGradient) {
           this.updateGradient(updateParameters);
@@ -292,10 +292,8 @@
       return GradientTool;
 
     })(Tool);
-    Tool.Gradient = GradientTool;
+    R.Tools.Gradient = GradientTool;
     return GradientTool;
   });
 
 }).call(this);
-
-//# sourceMappingURL=GradientTool.map

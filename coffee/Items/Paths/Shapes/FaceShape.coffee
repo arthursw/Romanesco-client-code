@@ -1,7 +1,7 @@
 
 
 	# class FaceShape extends RShape
-	# 	@Shape = paper.P.Path.Rectangle
+	# 	@Shape = P.Path.Rectangle
 	# 	@label = 'Face generator'
 	# 	# @iconURL = 'static/images/icons/inverted/spiral.png'
 	# 	# @iconAlt = 'spiral'

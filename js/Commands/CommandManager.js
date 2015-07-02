@@ -15,6 +15,7 @@
         this.itemToCommands = {};
         this.currentCommand = -1;
         this.historyJ = $("#History ul.history");
+        this.add(new Command('Loaded Romanesco'), true);
         return;
       }
 
@@ -99,39 +100,42 @@
         this.historyJ.empty();
         this.history = [];
         this.currentCommand = -1;
-        this.add(new R.Command("Load Romanesco"), true);
+        this.add(new Command("Load Romanesco"), true);
       };
 
       CommandManager.prototype.beginAction = function(command, event) {
-        if (this.currentCommand) {
+        if (this.actionCommand != null) {
+          clearTimeout(R.updateTimeout['addCurrentCommand-' + this.actionCommand.id]);
           this.endAction();
-          clearTimeout(R.updateTimeout['addCurrentCommand-' + this.currentCommand.id]);
         }
-        this.currentCommand = command;
-        this.currentCommand.begin(event);
+        this.actionCommand = command;
+        this.actionCommand.begin(event);
       };
 
       CommandManager.prototype.updateAction = function(event) {
-        this.currentCommand.update(event);
+        this.actionCommand.update(event);
       };
 
       CommandManager.prototype.endAction = function(event) {
-        this.currentCommand.end(event);
-        this.currentCommand = null;
+        this.actionCommand.end(event);
+        this.actionCommand = null;
       };
 
       CommandManager.prototype.deferredAction = function() {
         var ActionCommand, args, items;
         ActionCommand = arguments[0], items = arguments[1], args = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
-        if (!ActionCommand.prototype.isPrototypeOf(this.currentCommand)) {
+        if (!ActionCommand.prototype.isPrototypeOf(this.actionCommand)) {
           this.beginAction(new ActionCommand(items, args));
         }
-        this.updateAction.apply(args);
-        Utils.deferredExecution(this.endAction, 'addCurrentCommand-' + this.currentCommand.id);
+        this.updateAction.apply(this, args);
+        Utils.deferredExecution(this.endAction, 'addCurrentCommand-' + this.actionCommand.id);
       };
 
       CommandManager.prototype.mapItemsToCommand = function(command) {
         var item, _base, _i, _len, _name, _ref;
+        if (command.items == null) {
+          return;
+        }
         _ref = command.items;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           item = _ref[_i];
@@ -187,5 +191,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=CommandManager.map

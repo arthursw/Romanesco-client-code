@@ -40,7 +40,7 @@
           onChange: function(value) {
             var div, _j, _len, _ref;
             P.view.zoom = value / 100.0;
-            Grid.updateGrid();
+            R.view.grid.update();
             R.rasterizer.move();
             _ref = R.divs;
             for (_j = 0, _len = _ref.length; _j < _len; _j++) {
@@ -59,7 +59,7 @@
           permanent: true,
           onChange: function(value) {
             R.displayGrid = !R.displayGrid;
-            Grid.updateGrid();
+            R.view.grid.update();
           }
         };
         R.parameters['General'].ignoreSockets = {
@@ -80,7 +80,7 @@
           snap: 0,
           permanent: true,
           onChange: function() {
-            return Grid.updateGrid();
+            return R.view.grid.update();
           }
         };
         R.parameters["default"] = {};
@@ -567,6 +567,21 @@
         this.initializeControllers();
       };
 
+      ControllerManager.prototype.updateController = function(controllerName, value) {
+        var controller, folder, folderName, name, _ref, _ref1;
+        _ref = this.folders;
+        for (folderName in _ref) {
+          folder = _ref[folderName];
+          _ref1 = folder.controllers;
+          for (name in _ref1) {
+            controller = _ref1[name];
+            if (name === controllerName) {
+              controller.setValue(value);
+            }
+          }
+        }
+      };
+
       ControllerManager.prototype.updateParametersForSelectedItems = function() {
         Utils.callNextFrame(this.updateParametersForSelectedItemsCallback, 'updateParametersForSelectedItems');
       };
@@ -624,5 +639,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=ControllerManager.map

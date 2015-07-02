@@ -1,4 +1,4 @@
-define [ ], () ->
+define [ 'Tools/Tool' ], (Tool) ->
 
 	class Button
 
@@ -8,6 +8,7 @@ define [ ], () ->
 			favorite = parameters.favorite
 			category = parameters.category
 			@file = parameters.file
+
 			parentJ = R.sidebar.allToolsJ
 			if category? and category != ""
 				# split into sub categories
@@ -69,6 +70,35 @@ define [ ], () ->
 			if favorite
 				R.sidebar.toggleToolToFavorite(null, @btnJ)
 
+			if parameters.description? or parameters.popover
+				@addPopover(parameters)
+			return
+
+		addPopover: (parameters)->
+			# initialize the popover (help tooltip)
+			# popoverOptions =
+			# 	placement: 'right'
+			# 	container: 'body'
+			# 	trigger: 'hover'
+			# 	delay:
+			# 		show: 500
+			# 		hide: 100
+
+			@btnJ.attr('data-placement', 'right')
+			@btnJ.attr('data-container', 'body')
+			@btnJ.attr('data-trigger', 'hover')
+			@btnJ.attr('data-delay', {show: 500, hide: 100})
+
+			if not parameters.description? or parameters.description == ''
+				# popoverOptions.content = parameters.name
+				@btnJ.attr('data-content', parameters.name)
+			else
+				# popoverOptions.title = parameters.name
+				# popoverOptions.content = parameters.description
+				@btnJ.attr('data-title', parameters.name)
+				@btnJ.attr('data-content', parameters.description)
+
+			@btnJ.popover()
 			return
 
 		toggleCategory: (event)->
@@ -76,17 +106,17 @@ define [ ], () ->
 			return
 
 		fileLoaded: ()=>
+			@btnJ.off('click')
 			@btnJ.click(@onClickWhenLoaded)
 			@onClickWhenLoaded()
 			return
 
 		onClickWhenNotLoaded: (event)=>
 			require([@file], @fileLoaded)
-			# @btnJ.off('click')
 			return
 
-		onClickWhenLoaded: (event)->
-			toolName = $(this).attr("data-name")
+		onClickWhenLoaded: (event)=>
+			toolName = @btnJ.attr("data-name")
 			R.tools[toolName]?.select()
 			return
 

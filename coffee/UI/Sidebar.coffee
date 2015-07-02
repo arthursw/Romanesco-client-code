@@ -25,6 +25,9 @@ define [ 'Items/Item', 'jqueryUi', 'scrollbar' ], (Item) ->
 				$(this).parent().toggleClass('closed')
 				return
 
+			@sortedPaths = R.sortedPaths
+			@sortedDivs = R.sortedDivs
+
 			$(".mCustomScrollbar").mCustomScrollbar( keyboard: false )
 
 			return
@@ -44,7 +47,7 @@ define [ 'Items/Item', 'jqueryUi', 'scrollbar' ], (Item) ->
 				Utils.Array.pushIfAbsent(@favoriteTools, defaultFavoriteTools.pop().label)
 			return
 
-		toggleToolToFavorite: (event, btnJ)->
+		toggleToolToFavorite: (event, btnJ)=>
 			if not btnJ?
 				event.stopPropagation()
 				targetJ = $(event.target)
@@ -60,10 +63,12 @@ define [ 'Items/Item', 'jqueryUi', 'scrollbar' ], (Item) ->
 				btnJ.addClass("selected")
 				cloneJ = btnJ.clone()
 				@favoriteToolsJ.append(cloneJ)
-				cloneJ.click (event)->
-					toolName = $(this).attr("data-name")
-					R.tools[toolName]?.select()
-					return
+				cloneJ.click((event)->btnJ.click(event))
+				for attr in ['placement', 'container', 'trigger', 'delay', 'content', 'title']
+					attrName = 'data-' + attr
+					cloneJ.attr(attrName, btnJ.attr(attrName))
+					cloneJ.popover()
+
 				@favoriteTools.push(toolName)
 
 			if not localStorage? then return
@@ -76,21 +81,21 @@ define [ 'Items/Item', 'jqueryUi', 'scrollbar' ], (Item) ->
 
 		show: ()->
 			@sidebarJ.removeClass("r-hidden")
-			R.codeEditor.editorJ.removeClass("r-hidden")
-			R.alertsContainer.removeClass("r-sidebar-hidden")
+			R.codeEditor?.editorJ.removeClass("r-hidden")
+			R.alertManager.alertsContainer.removeClass("r-sidebar-hidden")
 			@handleJ.find("span").removeClass("glyphicon-chevron-right").addClass("glyphicon-chevron-left")
 			return
 
 		hide: ()->
 			@sidebarJ.addClass("r-hidden")
-			R.codeEditor.editorJ.addClass("r-hidden")
-			R.alertsContainer.addClass("r-sidebar-hidden")
+			R.codeEditor?.editorJ.addClass("r-hidden")
+			R.alertManager.alertsContainer.addClass("r-sidebar-hidden")
 			@handleJ.find("span").removeClass("glyphicon-chevron-left").addClass("glyphicon-chevron-right")
 			return
 
 		# Toggle (hide/show) sidebar (called when user clicks on the sidebar handle)
 		# @param show [Boolean] show the sidebar, defaults to the opposite of the current state (true if hidden, false if shown)
-		toggleSidebar: (show)->
+		toggleSidebar: (show)=>
 			show ?= not @sidebarJ.hasClass("r-hidden")
 			if show
 				@show()

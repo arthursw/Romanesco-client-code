@@ -30,11 +30,11 @@ define [ 'Items/Item' ], (Item) ->
 					when 'lock'
 						lock = new Lock(rectangle, data)
 					when 'website'
-						lock = new Lock.Website(rectangle, data)
+						lock = new Website(rectangle, data)
 					when 'video-game'
-						lock = new Lock.VideoGame(rectangle, data)
+						lock = new VideoGame(rectangle, data)
 					when 'link'
-						lock = new Lock.Link(rectangle, data)
+						lock = new Link(rectangle, data)
 				lock.save(true)
 				lock.update('rectangle') 	# update to add items which are under the lock
 				lock.select()
@@ -106,8 +106,6 @@ define [ 'Items/Item' ], (Item) ->
 		# @param bounds [Paper P.Rectangle] (optional) the bounds to consider, item's bounds are used if *bounds* is null
 		# @param highlight [boolean] (optional) whether to highlight or update the items
 		@validatePosition: (item, bounds=null, highlight=false)->
-			if R.RSelectionRectangle.prototype.isPrototypeOf(item)
-				return true
 
 			if item.getDrawingBounds?() > R.rasterizer.maxArea()
 				if highlight
@@ -125,7 +123,7 @@ define [ 'Items/Item' ], (Item) ->
 
 			@unhighlightStage()
 
-			if Grid.rectangleOverlapsTwoPlanets(bounds)
+			if R.view.grid.rectangleOverlapsTwoPlanets(bounds)
 				if highlight
 					R.limitPathV?.strokeColor = 'red'
 					R.limitPathH?.strokeColor = 'red'
@@ -243,7 +241,6 @@ define [ 'Items/Item' ], (Item) ->
 			return parameters
 
 		@parameters = @initializeParameters()
-		@createTool(@)
 
 		constructor: (@rectangle, @data=null, @pk=null, @owner=null, @date, @modulePk) ->
 			super(@data, @pk)
@@ -253,7 +250,7 @@ define [ 'Items/Item' ], (Item) ->
 			@group.name = 'lock group'
 
 			@draw()
-			R.lockLayer.addChild(@group)
+			R.view.lockLayer.addChild(@group)
 
 			# create special list to contains children paths
 			@sortedPaths = []
@@ -269,7 +266,7 @@ define [ 'Items/Item' ], (Item) ->
 			titleJ.click (event)=>
 				@itemListsJ.toggleClass('closed')
 				if not event.shiftKey
-					Tool.Select.deselectAll()
+					R.tools.select.deselectAll()()
 				@select()
 				return
 
@@ -283,8 +280,8 @@ define [ 'Items/Item' ], (Item) ->
 				@unhighlight()
 				return
 
-			R.itemListsJ.prepend(@itemListsJ)
-			@itemListsJ = R.itemListsJ.find(".layer:first")
+			R.sidebar.itemListsJ.prepend(@itemListsJ)
+			@itemListsJ = R.sidebar.itemListsJ.find(".layer:first")
 
 			# check if items are under this lock
 			for pk, item in R.items
@@ -317,7 +314,7 @@ define [ 'Items/Item' ], (Item) ->
 			@drawing.name = 'rlock background'
 			@drawing.strokeWidth = if @data.strokeWidth>0 then @data.strokeWidth else 1
 			@drawing.strokeColor = if @data.strokeColor? then @data.strokeColor else 'black'
-			@drawing.fillColor = @data.fillColor or new Color(255,255,255,0.5)
+			@drawing.fillColor = @data.fillColor or new P.Color(255,255,255,0.5)
 			@drawing.controller = @
 			@group.addChild(@drawing)
 			return
@@ -449,7 +446,7 @@ define [ 'Items/Item' ], (Item) ->
 			for item in @children()
 				item.rectangle.center.x += delta.x
 				item.rectangle.center.y += delta.y
-				if R.Div.prototype.isPrototypeOf(item)
+				if Item.Div.prototype.isPrototypeOf(item)
 					item.updateTransform()
 			super(position, update)
 			return
@@ -510,14 +507,14 @@ define [ 'Items/Item' ], (Item) ->
 			return
 
 		createSelectModuleModal: (result)->
-			R.codeEditor.createModuleEditorModal(result, @addModule)
-			R.RModal.modalJ.find("tr.module[data-pk='#{@modulePk}']").css('background-color': 'rgba(213, 18, 18, 0.54)')
+			# R.codeEditor.createModuleEditorModal(result, @addModule)
+			# R.RModal.modalJ.find("tr.module[data-pk='#{@modulePk}']").css('background-color': 'rgba(213, 18, 18, 0.54)')
 			return
 
 		addModule: ()->
-			@modulePk = $(this).attr("data-pk")
-			@data.moduleName = $(this).attr("data-name")
-			Dajaxice.draw.updateBox( R.loader.checkError, { pk: @pk, modulePk: @modulePk } )
+			# @modulePk = $(this).attr("data-pk")
+			# @data.moduleName = $(this).attr("data-name")
+			# Dajaxice.draw.updateBox( R.loader.checkError, { pk: @pk, modulePk: @modulePk } )
 			return
 
 	# RWebsite:
@@ -627,4 +624,8 @@ define [ 'Items/Item' ], (Item) ->
 				return
 			return
 
+	Item.Lock = Lock
+	Item.Link = Link
+	Item.Website = Website
+	Item.VideoGame = VideoGame
 	return Lock

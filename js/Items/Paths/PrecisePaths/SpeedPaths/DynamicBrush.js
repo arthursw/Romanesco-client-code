@@ -298,5 +298,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=DynamicBrush.map

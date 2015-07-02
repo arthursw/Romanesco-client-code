@@ -58,7 +58,7 @@ define [ 'Items/Paths/Path' ], (Path) ->
 		process: ()->
 			@initializeDrawing()
 			@createShape()
-			@drawing.rotation = @rotation
+			@shape.rotation = @rotation
 			return
 
 		# redefine {RPath#draw}
@@ -149,13 +149,13 @@ define [ 'Items/Paths/Path' ], (Path) ->
 			return
 
 		setRectangle: (rectangle, update=true)->
-			Utils.Rectangle.updatePathRectangle(@controlPath, @rectangle)
+			Utils.Rectangle.updatePathRectangle(@controlPath, rectangle)
 			super(rectangle, update)
 			return
 
 		# setRotation: (rotation, update=true)->
 		# 	super(rotation, update)
-		# 	@drawing.rotation = rotation
+		# 	@shape.rotation = rotation
 		# 	return
 
 		# overload {RPath#getData} and add rectangle to @data

@@ -24,37 +24,29 @@ define [ 'Tools/Tool', 'UI/Button' ], (Tool, Button) ->
 		# the icon will be made with the first two letters of the name if the name is in one word, or the first letter of each words of the name otherwise
 		# @param [RPath constructor] the RPath which will be created by this tool
 		# @param [Boolean] whether the tool was just created (with the code editor) or not
-		constructor: (@RPath, justCreated=false) ->
-			@name = @RPath.label
-			@constructor.description = @RPath.rdescription
-			@constructor.iconURL = @RPath.iconURL
-			@constructor.category = @RPath.category
+		constructor: (@Path, justCreated=false) ->
+			@name = @Path.label
+			if @Path.description then @constructor.description = @Path.rdescription
+			if @Path.iconURL then @constructor.iconURL = @Path.iconURL
+			if @Path.category then @constructor.category = @Path.category
+			if @Path.cursor then @constructor.cursor = @Path.cursor
 
 			# delete tool if it already exists (when user creates a tool)
 			if justCreated and R.tools[@name]?
-				g[@RPath.constructor.name] = @RPath
+				g[@Path.constructor.name] = @Path
 				R.tools[@name].remove()
 				delete R.tools[@name]
-				R.lastPathCreated = @RPath
+				R.lastPathCreated = @Path
+
+			R.tools[@name] = @
 
 			# check if a button already exists (when created fom a module)
-			@btnJ = R.allToolsJ.find('li[data-name="'+@name+'"]')
-
-			if @btnJ.length==0
-				favorite = justCreated or R.favoriteTools?.indexOf(@name)>=0
-				@btnJ = new Button(@name, @RPath.iconURL, favorite, @RPath.category)
-			else
-				@btnJ.off("click")
-
-			# must remove the icon of precise path otherwise all children class will inherit the same icon
-			if @name == 'Precise path' then @RPath.iconURL = null
-
-			@cursor = @RPath.cursor
-			super(@RPath.label, false)
+			@btnJ = R.sidebar.allToolsJ.find('li[data-name="'+@name+'"]')
+			# create button only if it does not exist
+			super(@btnJ.length==0)
 
 			if justCreated
 				@select()
-
 			return
 
 		# Remove tool button, useful when user create a tool which already existed (overwrite the tool)
@@ -70,18 +62,18 @@ define [ 'Tools/Tool', 'UI/Button' ], (Tool, Button) ->
 
 			super
 
-			R.tool.onMouseMove = @move
+			R.view.tool.onMouseMove = @move
 			return
 
 		updateParameters: ()->
-			R.controllerManager.setSelectedTool(@RPath)
+			R.controllerManager.setSelectedTool(@Path)
 			return
 
 		# Deselect: remove the mouse move listener
 		deselect: ()->
 			super()
 			@finish()
-			R.tool.onMouseMove = null
+			R.view.tool.onMouseMove = null
 			return
 
 		# Begin path action:
@@ -100,19 +92,19 @@ define [ 'Tools/Tool', 'UI/Button' ], (Tool, Button) ->
 
 			# deselect all and create new P.Path in all case except in polygonMode
 			if not (R.currentPaths[from]? and R.currentPaths[from].data?.polygonMode) 	# if not in polygon mode
-				Tool.Select.deselectAll()
-				R.currentPaths[from] = new @RPath(Date.now(), data)
+				R.tools.select.deselectAll()
+				R.currentPaths[from] = new @Path(Date.now(), data)
 				# R.currentPaths[from].select(false, false)
 
 			R.currentPaths[from].beginCreate(event.point, event, false)
 
 			# emit event on websocket (if user is the author of the event)
-			# if R.me? and from==R.me then R.chatSocket.emit( "begin", R.me, R.eventToObject(event), @name, R.currentPaths[from].data )
+			# if R.me? and from==R.me then R.socket.emit( "begin", R.me, R.eventToObject(event), @name, R.currentPaths[from].data )
 
 			if R.me? and from==R.me
 				data = R.currentPaths[from].data
 				data.id = R.currentPaths[from].id
-				R.chatSocket.emit "bounce", tool: @name, function: "begin", arguments: [event, R.me, data]
+				R.socket.emit "bounce", tool: @name, function: "begin", arguments: [event, R.me, data]
 			return
 
 		# Update path action:
@@ -122,8 +114,8 @@ define [ 'Tools/Tool', 'UI/Button' ], (Tool, Button) ->
 		update: (event, from=R.me) ->
 			R.currentPaths[from].updateCreate(event.point, event, false)
 			# R.currentPaths[from].group.visible = true
-			# if R.me? and from==R.me then R.chatSocket.emit( "update", R.me, R.eventToObject(event), @name)
-			if R.me? and from==R.me then R.chatSocket.emit "bounce", tool: @name, function: "update", arguments: [event, R.me]
+			# if R.me? and from==R.me then R.socket.emit( "update", R.me, R.eventToObject(event), @name)
+			if R.me? and from==R.me then R.socket.emit "bounce", tool: @name, function: "update", arguments: [event, R.me]
 			return
 
 		# Update path action (usually from a mouse move event, necessary for the polygon mode):
@@ -160,7 +152,7 @@ define [ 'Tools/Tool', 'UI/Button' ], (Tool, Button) ->
 				# 	delete R.currentPaths[from]
 				# 	return
 
-				if R.me? and from==R.me then R.chatSocket.emit "bounce", tool: @name, function: "createPath", arguments: [event, R.me]
+				if R.me? and from==R.me then R.socket.emit "bounce", tool: @name, function: "createPath", arguments: [event, R.me]
 
 				path.save(true)
 				path.select(false)
@@ -202,8 +194,8 @@ define [ 'Tools/Tool', 'UI/Button' ], (Tool, Button) ->
 				when 'escape'
 					finishingPath = @finish?()
 					if not finishingPath
-						Tool.Select.deselectAll()
+						R.tools.select.deselectAll()
 			return
 
-	Tool.Path = PathTool
+	R.Tools.Path = PathTool
 	return PathTool

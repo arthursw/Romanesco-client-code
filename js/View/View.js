@@ -2,7 +2,7 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  define(['View/Grid', 'mousewheel', 'tween'], function(Grid) {
+  define(['View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween'], function(Grid, Command, Div) {
     var View;
     View = (function() {
       function View() {
@@ -12,6 +12,12 @@
         this.mousedown = __bind(this.mousedown, this);
         this.onWindowResize = __bind(this.onWindowResize, this);
         this.onFrame = __bind(this.onFrame, this);
+        this.onKeyUp = __bind(this.onKeyUp, this);
+        this.onKeyDown = __bind(this.onKeyDown, this);
+        this.onMouseUp = __bind(this.onMouseUp, this);
+        this.onMouseDrag = __bind(this.onMouseDrag, this);
+        this.onMouseDown = __bind(this.onMouseDown, this);
+        this.onHashChange = __bind(this.onHashChange, this);
         R.stageJ = $("#stage");
         R.canvasJ = R.stageJ.find("#canvas");
         R.canvas = R.canvasJ[0];
@@ -65,6 +71,7 @@
         $(window).mousemove(this.mousemove);
         $(window).mouseup(this.mouseup);
         $(window).resize(this.onWindowResize);
+        window.onhashchange = this.onHashChange;
         this.mousePosition = new P.Point();
         this.previousMousePosition = null;
         this.initialMousePosition = null;
@@ -123,7 +130,7 @@
           div.updateTransform();
         }
         R.rasterizer.move();
-        Grid.updateGrid();
+        this.grid.update();
         newEntireArea = null;
         _ref1 = this.entireAreas;
         for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
@@ -139,7 +146,7 @@
           this.entireArea = null;
         }
         somethingToLoad = newEntireArea != null ? R.loader.load(this.entireArea) : R.loader.load();
-        R.chat.updateRoom();
+        R.socket.updateRoom();
         Utils.deferredExecution(this.updateHash, 'updateHash', 500);
         if (addCommand) {
           Utils.deferredExecution(this.addMoveCommand, 'add move command');
@@ -149,7 +156,7 @@
       };
 
       View.prototype.addMoveCommand = function() {
-        R.commandManager.add(new R.MoveViewCommand(this.previousPosition, P.view.center));
+        R.commandManager.add(new Command.MoveView(this.previousPosition, P.view.center));
         this.previousPosition = null;
       };
 
@@ -161,6 +168,33 @@
           prefix = R.city.owner + '/' + R.city.name + '/';
         }
         location.hash = prefix + P.view.center.x.toFixed(2) + ',' + P.view.center.y.toFixed(2);
+      };
+
+      View.prototype.onHashChange = function(event) {
+        var fields, name, owner, p, pos;
+        if (this.ignoreHashChange) {
+          this.ignoreHashChange = false;
+          return;
+        }
+        p = new P.Point();
+        fields = location.hash.substr(1).split('/');
+        if (fields.length >= 3) {
+          owner = fields[0];
+          name = fields[1];
+          if (R.city.name !== name || R.city.owner !== owner) {
+            R.loadCity(name, owner);
+          }
+        }
+        pos = _.last(fields).split(',');
+        p.x = parseFloat(pos[0]);
+        p.y = parseFloat(pos[1]);
+        if (!_.isFinite(p.x)) {
+          p.x = 0;
+        }
+        if (!_.isFinite(p.y)) {
+          p.y = 0;
+        }
+        this.moveTo(p);
       };
 
       View.prototype.initializePosition = function() {
@@ -195,7 +229,7 @@
         if (site.restrictedArea) {
           this.restrictedArea = boxRectangle;
         }
-        Tool.select.select();
+        R.tools.select.select();
         if (site.disableToolbar) {
           R.sidebar.hide();
         } else {
@@ -223,10 +257,10 @@
         return $(document.activeElement).is("body");
       };
 
-      View.onMouseDown = function(event) {
+      View.prototype.onMouseDown = function(event) {
         var _ref, _ref1;
         if ((_ref = R.wacomPenAPI) != null ? _ref.isEraser : void 0) {
-          View.tool.onKeyUp({
+          this.tool.onKeyUp({
             key: 'delete'
           });
           return;
@@ -237,7 +271,7 @@
         }
       };
 
-      View.onMouseDrag = function(event) {
+      View.prototype.onMouseDrag = function(event) {
         var _ref, _ref1;
         if ((_ref = R.wacomPenAPI) != null ? _ref.isEraser : void 0) {
           return;
@@ -250,7 +284,7 @@
         }
       };
 
-      View.onMouseUp = function(event) {
+      View.prototype.onMouseUp = function(event) {
         var _ref, _ref1;
         if ((_ref = R.wacomPenAPI) != null ? _ref.isEraser : void 0) {
           return;
@@ -263,9 +297,9 @@
         }
       };
 
-      View.onKeyDown = function(event) {
+      View.prototype.onKeyDown = function(event) {
         var _ref;
-        if (!View.focusIsOnCanvas()) {
+        if (!this.focusIsOnCanvas()) {
           return;
         }
         if (event.key === 'delete') {
@@ -273,13 +307,13 @@
           return false;
         }
         if (event.key === 'space' && ((_ref = R.selectedTool) != null ? _ref.name : void 0) !== 'Move') {
-          Tool.move.select();
+          R.tools.move.select();
         }
       };
 
-      View.onKeyUp = function(event) {
+      View.prototype.onKeyUp = function(event) {
         var _ref, _ref1;
-        if (!View.focusIsOnCanvas()) {
+        if (!this.focusIsOnCanvas()) {
           return;
         }
         if ((_ref = R.selectedTool) != null) {
@@ -292,7 +326,7 @@
             }
             break;
           case 'v':
-            Tool.select.select();
+            R.tools.select.select();
             break;
           case 't':
             R.showToolBox();
@@ -335,7 +369,7 @@
       };
 
       View.prototype.onWindowResize = function(event) {
-        this.grid.updateGrid();
+        this.grid.update();
         $(".mCustomScrollbar").mCustomScrollbar("update");
         P.view.update();
         R.canvasJ.width(window.innerWidth);
@@ -347,7 +381,7 @@
         var _ref, _ref1, _ref2;
         switch (event.which) {
           case 2:
-            Tool.move.select();
+            R.tools.move.select();
             break;
           case 3:
             if ((_ref = R.selectedTool) != null) {
@@ -374,7 +408,7 @@
           R.selectedTool.updateNative(event);
           return;
         }
-        R.Div.updateHiddenDivs(event);
+        Div.updateHiddenDivs(event);
         if ((_ref1 = R.codeEditor) != null) {
           _ref1.onMouseMove(event);
         }
@@ -420,35 +454,7 @@
       return View;
 
     })();
-    window.onhashchange = function(event) {
-      var fields, name, owner, p, pos;
-      if (this.ignoreHashChange) {
-        this.ignoreHashChange = false;
-        return;
-      }
-      p = new P.Point();
-      fields = location.hash.substr(1).split('/');
-      if (fields.length >= 3) {
-        owner = fields[0];
-        name = fields[1];
-        if (R.city.name !== name || R.city.owner !== owner) {
-          R.loadCity(name, owner);
-        }
-      }
-      pos = _.last(fields).split(',');
-      p.x = parseFloat(pos[0]);
-      p.y = parseFloat(pos[1]);
-      if (!_.isFinite(p.x)) {
-        p.x = 0;
-      }
-      if (!_.isFinite(p.y)) {
-        p.y = 0;
-      }
-      this.moveTo(p);
-    };
     return View;
   });
 
 }).call(this);
-
-//# sourceMappingURL=View.map

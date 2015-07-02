@@ -13,12 +13,13 @@
 
       Path.description = "The classic and basic pen tool";
 
-      Path.cursorPosition = {
-        x: 24,
-        y: 0
+      Path.cursor = {
+        position: {
+          x: 0,
+          y: 0
+        },
+        name: 'crosshair'
       };
-
-      Path.cursorDefault = "crosshair";
 
       Path.constructor.secureDistance = 2;
 
@@ -81,7 +82,7 @@
       Path.parameters = Path.initializeParameters();
 
       Path.createTool = function(Path) {
-        new PathTool(Path);
+        new R.Tools.Path(Path);
       };
 
       Path.create = function(duplicateData) {
@@ -93,7 +94,7 @@
         copy.draw();
         if (!this.socketAction) {
           copy.save(false);
-          R.chatSocket.emit("bounce", {
+          R.socket.emit("bounce", {
             itemClass: this.name,
             "function": "create",
             "arguments": [duplicateData]
@@ -214,14 +215,6 @@
           return false;
         }
         return true;
-      };
-
-      Path.prototype.beginAction = function(command) {
-        Path.__super__.beginAction.call(this, command);
-      };
-
-      Path.prototype.endAction = function() {
-        Path.__super__.endAction.call(this);
       };
 
       Path.prototype.updateSelect = function(event) {
@@ -470,7 +463,7 @@
         if (!this.group) {
           return;
         }
-        R.deregisterAnimation();
+        Utils.Animation.deregisterAnimation();
         this.controlPath = null;
         this.drawing = null;
         if (this.raster == null) {
@@ -526,5 +519,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Path.map

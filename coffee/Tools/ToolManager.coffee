@@ -9,6 +9,7 @@ define [
 	'Tools/TextTool'
 	'Tools/ScreenshotTool'
 	'Tools/GradientTool'
+	'Tools/CarTool'
 ], (Tool) ->
 
 	class ToolManager
@@ -16,7 +17,7 @@ define [
 		constructor: ()->
 
 			# init jQuery elements related to the tools
-			R.toolsJ = $(".tool-list")
+			R.ToolsJ = $(".tool-list")
 
 			R.favoriteToolsJ = $("#FavoriteTools .tool-list")
 			R.allToolsContainerJ = $("#AllTools")
@@ -30,14 +31,14 @@ define [
 				catch error
 					console.log error
 
-			Tool.car = new Tool.Car()
-			Tool.gradient = new Tool.Gradient()
-			Tool.lock = new Tool.Lock()
-			Tool.media = new Tool.Media()
-			Tool.move = new Tool.Move()
-			Tool.screenshot = new Tool.Screenshot()
-			Tool.select = new Tool.Select()
-			Tool.text = new Tool.Text()
+			R.tools.car = new R.Tools.Car()
+			R.tools.gradient = new R.Tools.Gradient()
+			R.tools.lock = new R.Tools.Lock()
+			R.tools.media = new R.Tools.Media()
+			R.tools.move = new R.Tools.Move()
+			R.tools.screenshot = new R.Tools.Screenshot()
+			R.tools.select = new R.Tools.Select()
+			R.tools.text = new R.Tools.Text()
 
 			defaultFavoriteTools = [] # [R.PrecisePath, R.ThicknessPath, R.Meander, R.GeometricLines, R.RectangleShape, R.EllipseShape, R.StarShape, R.SpiralShape]
 
@@ -122,7 +123,7 @@ define [
 			# 	delay: 250
 			# $( "#sortable1, #sortable2" ).sortable( sortableArgs ).disableSelection()
 
-			Tool.move.select() 		# select the move tool
+			R.tools.move.select() 		# select the move tool
 
 			# ---  init Wacom tablet API --- #
 

@@ -10,7 +10,6 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 		@label = 'Geometric lines'
 		@description = "Draws a line between pair of points which are close enough."
 		@iconURL = 'static/images/icons/inverted/links.png'
-		@iconAlt = 'links'
 
 		@initializeParameters: ()->
 			parameters = super()

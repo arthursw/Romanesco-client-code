@@ -24,8 +24,6 @@
 
       StarShape.iconURL = 'static/images/icons/inverted/star.png';
 
-      StarShape.iconAlt = 'star';
-
       StarShape.initializeParameters = function() {
         var parameters;
         parameters = StarShape.__super__.constructor.initializeParameters.call(this);
@@ -96,5 +94,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=StarShape.map

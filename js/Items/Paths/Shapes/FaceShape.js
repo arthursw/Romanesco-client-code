@@ -3,5 +3,3 @@
 
 
 }).call(this);
-
-//# sourceMappingURL=FaceShape.map

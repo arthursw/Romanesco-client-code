@@ -3,7 +3,7 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tools/Tool'], function(Tool) {
+  define(['Tools/Tool', 'Tools/ItemTool', 'Items/Divs/Media'], function(Tool, ItemTool, Media) {
     var TextTool;
     TextTool = (function(_super) {
       __extends(TextTool, _super);
@@ -46,11 +46,9 @@
 
       return TextTool;
 
-    })(Tool.Item);
-    Tool.Text = TextTool;
+    })(ItemTool);
+    R.Tools.Text = TextTool;
     return TextTool;
   });
 
 }).call(this);
-
-//# sourceMappingURL=TextTool.map

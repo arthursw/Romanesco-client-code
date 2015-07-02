@@ -44,7 +44,7 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 				permanent: true
 				onChange: (value)->
 					P.view.zoom = value/100.0
-					Grid.updateGrid()
+					R.view.grid.update()
 					R.rasterizer.move()
 					for div in R.divs
 						div.updateTransform()
@@ -59,7 +59,7 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 				permanent: true
 				onChange: (value)->
 					R.displayGrid = !R.displayGrid
-					Grid.updateGrid()
+					R.view.grid.update()
 					return
 			R.parameters['General'].ignoreSockets =
 				type: 'checkbox'
@@ -77,7 +77,7 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 				default: 0
 				snap: 0
 				permanent: true
-				onChange: ()-> Grid.updateGrid()
+				onChange: ()-> R.view.grid.update()
 			# R.parameters.fastMode =
 			# 	type: 'checkbox'
 			# 	label: 'Fast mode'
@@ -428,6 +428,13 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 			@removeUnusedControllers()
 			@initializeControllers()
 
+			return
+
+		updateController: (controllerName, value)->
+			for folderName, folder of @folders
+				for name, controller of folder.controllers
+					if name == controllerName
+						controller.setValue(value)
 			return
 
 		updateParametersForSelectedItems: ()->

@@ -12,7 +12,7 @@
         return EllipseShape.__super__.constructor.apply(this, arguments);
       }
 
-      EllipseShape.Shape = paper.P.Path.Ellipse;
+      EllipseShape.Shape = P.Path.Ellipse;
 
       EllipseShape.category = 'Shape';
 
@@ -21,8 +21,6 @@
       EllipseShape.description = "Simple ellipse, circle by default (use shift key to draw an ellipse).\nUse special key (command on a mac, control otherwise) to avoid the shape to be centered on the first point.";
 
       EllipseShape.iconURL = 'static/images/icons/inverted/circle.png';
-
-      EllipseShape.iconAlt = 'circle';
 
       EllipseShape.squareByDefault = true;
 
@@ -37,5 +35,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=EllipseShape.map

@@ -24,34 +24,33 @@
 
       PathTool.drawItems = true;
 
-      function PathTool(RPath, justCreated) {
-        var favorite, _ref;
-        this.RPath = RPath;
+      function PathTool(Path, justCreated) {
+        this.Path = Path;
         if (justCreated == null) {
           justCreated = false;
         }
-        this.name = this.RPath.label;
-        this.constructor.description = this.RPath.rdescription;
-        this.constructor.iconURL = this.RPath.iconURL;
-        this.constructor.category = this.RPath.category;
+        this.name = this.Path.label;
+        if (this.Path.description) {
+          this.constructor.description = this.Path.rdescription;
+        }
+        if (this.Path.iconURL) {
+          this.constructor.iconURL = this.Path.iconURL;
+        }
+        if (this.Path.category) {
+          this.constructor.category = this.Path.category;
+        }
+        if (this.Path.cursor) {
+          this.constructor.cursor = this.Path.cursor;
+        }
         if (justCreated && (R.tools[this.name] != null)) {
-          g[this.RPath.constructor.name] = this.RPath;
+          g[this.Path.constructor.name] = this.Path;
           R.tools[this.name].remove();
           delete R.tools[this.name];
-          R.lastPathCreated = this.RPath;
+          R.lastPathCreated = this.Path;
         }
-        this.btnJ = R.allToolsJ.find('li[data-name="' + this.name + '"]');
-        if (this.btnJ.length === 0) {
-          favorite = justCreated || ((_ref = R.favoriteTools) != null ? _ref.indexOf(this.name) : void 0) >= 0;
-          this.btnJ = new Button(this.name, this.RPath.iconURL, favorite, this.RPath.category);
-        } else {
-          this.btnJ.off("click");
-        }
-        if (this.name === 'Precise path') {
-          this.RPath.iconURL = null;
-        }
-        this.cursor = this.RPath.cursor;
-        PathTool.__super__.constructor.call(this, this.RPath.label, false);
+        R.tools[this.name] = this;
+        this.btnJ = R.sidebar.allToolsJ.find('li[data-name="' + this.name + '"]');
+        PathTool.__super__.constructor.call(this, this.btnJ.length === 0);
         if (justCreated) {
           this.select();
         }
@@ -71,17 +70,17 @@
         }
         R.rasterizer.drawItems();
         PathTool.__super__.select.apply(this, arguments);
-        R.tool.onMouseMove = this.move;
+        R.view.tool.onMouseMove = this.move;
       };
 
       PathTool.prototype.updateParameters = function() {
-        R.controllerManager.setSelectedTool(this.RPath);
+        R.controllerManager.setSelectedTool(this.Path);
       };
 
       PathTool.prototype.deselect = function() {
         PathTool.__super__.deselect.call(this);
         this.finish();
-        R.tool.onMouseMove = null;
+        R.view.tool.onMouseMove = null;
       };
 
       PathTool.prototype.begin = function(event, from, data) {
@@ -100,14 +99,14 @@
           return;
         }
         if (!((R.currentPaths[from] != null) && ((_ref = R.currentPaths[from].data) != null ? _ref.polygonMode : void 0))) {
-          Tool.Select.deselectAll();
-          R.currentPaths[from] = new this.RPath(Date.now(), data);
+          R.tools.select.deselectAll();
+          R.currentPaths[from] = new this.Path(Date.now(), data);
         }
         R.currentPaths[from].beginCreate(event.point, event, false);
         if ((R.me != null) && from === R.me) {
           data = R.currentPaths[from].data;
           data.id = R.currentPaths[from].id;
-          R.chatSocket.emit("bounce", {
+          R.socket.emit("bounce", {
             tool: this.name,
             "function": "begin",
             "arguments": [event, R.me, data]
@@ -121,7 +120,7 @@
         }
         R.currentPaths[from].updateCreate(event.point, event, false);
         if ((R.me != null) && from === R.me) {
-          R.chatSocket.emit("bounce", {
+          R.socket.emit("bounce", {
             tool: this.name,
             "function": "update",
             "arguments": [event, R.me]
@@ -146,7 +145,7 @@
         }
         if ((R.me != null) && from === R.me) {
           if ((R.me != null) && from === R.me) {
-            R.chatSocket.emit("bounce", {
+            R.socket.emit("bounce", {
               tool: this.name,
               "function": "createPath",
               "arguments": [event, R.me]
@@ -196,7 +195,7 @@
           case 'escape':
             finishingPath = typeof this.finish === "function" ? this.finish() : void 0;
             if (!finishingPath) {
-              Tool.Select.deselectAll();
+              R.tools.select.deselectAll();
             }
         }
       };
@@ -204,10 +203,8 @@
       return PathTool;
 
     })(Tool);
-    Tool.Path = PathTool;
+    R.Tools.Path = PathTool;
     return PathTool;
   });
 
 }).call(this);
-
-//# sourceMappingURL=PathTool.map

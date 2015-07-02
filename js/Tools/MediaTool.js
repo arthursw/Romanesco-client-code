@@ -3,7 +3,7 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tools/Tool'], function(Tool) {
+  define(['Tools/Tool', 'Tools/ItemTool', 'Items/Divs/Media'], function(Tool, ItemTool, Media) {
     var MediaTool;
     MediaTool = (function(_super) {
       __extends(MediaTool, _super);
@@ -28,7 +28,7 @@
       };
 
       function MediaTool() {
-        MediaTool.__super__.constructor.call(this, R.Media);
+        MediaTool.__super__.constructor.call(this, Media);
         return;
       }
 
@@ -44,11 +44,9 @@
 
       return MediaTool;
 
-    })(Tool.Item);
-    Tool.Media = MediaTool;
+    })(ItemTool);
+    R.Tools.Media = MediaTool;
     return MediaTool;
   });
 
 }).call(this);
-
-//# sourceMappingURL=MediaTool.map

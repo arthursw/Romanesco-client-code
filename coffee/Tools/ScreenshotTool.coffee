@@ -56,7 +56,7 @@ define [ 'Tools/Tool', 'zeroClipboard' ], (Tool, ZeroClipboard) ->
 			R.currentPaths[from].dashArray = [4, 10]
 			R.currentPaths[from].strokeColor = 'black'
 			R.currentPaths[from].strokeWidth = 1
-			R.selectionLayer.addChild(R.currentPaths[from])
+			R.view.selectionLayer.addChild(R.currentPaths[from])
 			return
 
 		# update selection rectangle
@@ -369,5 +369,5 @@ define [ 'Tools/Tool', 'zeroClipboard' ], (Tool, ZeroClipboard) ->
 		copyURL: ()->
 			return
 
-	Tool.Screenshot = ScreenshotTool
+	R.Tools.Screenshot = ScreenshotTool
 	return ScreenshotTool

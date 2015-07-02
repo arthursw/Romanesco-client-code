@@ -56,7 +56,7 @@
       Content.prototype.onLiClick = function(event) {
         var bounds;
         if (!event.shiftKey) {
-          Tool.Select.deselectAll();
+          R.tools.select.deselectAll()();
           bounds = this.getBounds();
           if (!P.view.bounds.intersects(bounds)) {
             View.moveTo(bounds.center, 1000);
@@ -76,20 +76,27 @@
         this.liJ.text(zindexLabel);
       };
 
-      Content.prototype.setRotation = function(rotation, update) {
-        var previousRotation;
+      Content.prototype.rotate = function(rotation, center, update) {
+        this.setRotation(this.rotation + rotation, center);
+      };
+
+      Content.prototype.setRotation = function(rotation, center, update) {
+        var deltaRotation, previousPivot;
         if (update == null) {
           update = true;
         }
-        previousRotation = this.rotation;
-        this.group.pivot = this.rectangle.center;
+        deltaRotation = rotation - this.rotation;
+        previousPivot = this.group.pivot;
+        this.group.pivot = center;
         this.rotation = rotation;
-        this.group.rotate(rotation - previousRotation);
+        this.group.rotate(deltaRotation);
+        this.group.pivot = previousPivot;
+        this.rectangle = this.group.bounds;
         if (!this.socketAction) {
           if (update) {
             this.update('rotation');
           }
-          R.chatSocket.emit("bounce", {
+          R.socket.emit("bounce", {
             itemPk: this.pk,
             "function": "setRotation",
             "arguments": [this.rotation, false]
@@ -226,7 +233,7 @@
           this.remove();
           return false;
         }
-        locks = Lock.getLocksWhichIntersect(bounds);
+        locks = Item.Lock.getLocksWhichIntersect(bounds);
         for (_i = 0, _len = locks.length; _i < _len; _i++) {
           lock = locks[_i];
           if (lock.rectangle.contains(bounds)) {
@@ -262,5 +269,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Content.map

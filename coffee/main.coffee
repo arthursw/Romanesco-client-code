@@ -1,5 +1,7 @@
 define [
 	'Utils/Utils'
+	'Utils/Global'
+	'Utils/FontManager'
 	'Loader'
 	'Socket'
 	'City'
@@ -13,7 +15,7 @@ define [
 	'Commands/CommandManager'
 	'View/View'
 	'Tools/ToolManager'
-], (Utils, Loader, Socket, City, RasterizerManager, Sidebar, Code, Modal, ModuleLoader, AlertManager, ControllerManager, CommandManager, View, ToolManager) ->
+], (Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, Modal, ModuleLoader, AlertManager, ControllerManager, CommandManager, View, ToolManager) ->
 
 
 	# R.rasterizerMode = window.rasterizerMode
@@ -260,11 +262,10 @@ define [
 
 		R.selectedItems = [] 					# the selectedItems
 
-
+		R.socket = new Socket()
 		R.sidebar = new Sidebar()
 		R.view = new View()
 		R.loader = new Loader()
-		R.socket = new Socket()
 		R.alertManager = new AlertManager()
 		R.controllerManager = new ControllerManager()
 		R.controllerManager.createGlobalControllers()
@@ -273,7 +274,9 @@ define [
 		R.commandManager = new CommandManager()
 		R.toolManager = new ToolManager()
 		R.fileManager = new FileManager()
+		R.fontManager = new FontManager()
 		R.view.initializePosition()
+		ModuleLoader.initialize()
 
 		window.setPageFullyLoaded?(true)
 

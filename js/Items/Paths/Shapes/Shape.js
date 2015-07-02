@@ -68,7 +68,7 @@
       Shape.prototype.process = function() {
         this.initializeDrawing();
         this.createShape();
-        this.drawing.rotation = this.rotation;
+        this.shape.rotation = this.rotation;
       };
 
       Shape.prototype.draw = function(simplified) {
@@ -158,7 +158,7 @@
         if (update == null) {
           update = true;
         }
-        Utils.Rectangle.updatePathRectangle(this.controlPath, this.rectangle);
+        Utils.Rectangle.updatePathRectangle(this.controlPath, rectangle);
         Shape.__super__.setRectangle.call(this, rectangle, update);
       };
 
@@ -181,5 +181,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Shape.map

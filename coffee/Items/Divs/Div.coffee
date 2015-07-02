@@ -1,4 +1,4 @@
-define [ 'Items/Content' ], (Content) ->
+define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 
 	# todo: change ownership through websocket?
 	# todo: change lock/link popover to romanesco alert?
@@ -34,7 +34,6 @@ define [ 'Items/Content' ], (Content) ->
 			return parameters
 
 		@parameters = @initializeParameters()
-		@createTool(@)
 
 		@updateHiddenDivs: (event)->
 			if @hiddenDivs.length > 0
@@ -106,9 +105,9 @@ define [ 'Items/Content' ], (Content) ->
 			if R.selectedTool.name == 'Move' then @disableInteraction()
 
 			@divJ.click (event)=>
-				if @selectionRectangle? then return
+				if @selected? then return
 				if not event.shiftKey
-					Tool.Select.deselectAll()
+					R.tools.select.deselectAll()()
 				@select()
 				return
 
@@ -290,7 +289,7 @@ define [ 'Items/Content' ], (Content) ->
 
 		select: (updateOptions, updateSelectionRectangle=true) =>
 			if not super(updateOptions, updateSelectionRectangle) or @divJ.hasClass("selected") then return false
-			if R.selectedTool != Tool.select then Tool.select.select()
+			if R.selectedTool != R.tools.select then R.tools.select.select()
 			@divJ.addClass("selected")
 			return true
 
@@ -348,4 +347,5 @@ define [ 'Items/Content' ], (Content) ->
 			super
 			return
 
+	Item.Div = Div
 	return Div

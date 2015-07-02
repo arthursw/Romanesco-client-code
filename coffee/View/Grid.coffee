@@ -5,7 +5,7 @@ define [], ()->
 		constructor: ()->
 			@grid = new P.Group() 					# Paper P.Group to append all grid items
 			@grid.name = 'grid group'
-			@updateGrid()
+			@update()
 			return
 
 		## Manage limits between planets
@@ -71,7 +71,7 @@ define [], ()->
 		# Draw planet limits, and draw the grid if *R.displayGrid*
 		# The grid size is equal to the snap, except when snap < 15, then it is set to 25
 		# one line every 4 lines is thick and darker
-		updateGrid: ()->
+		update: ()->
 
 			# draw planet limits (thick green lines)
 			@grid.removeChildren()
@@ -81,7 +81,7 @@ define [], ()->
 			if P.view.bounds.width > window.innerWidth or P.view.bounds.height > window.innerHeight
 				halfSize = new P.Point(window.innerWidth*0.5, window.innerHeight*0.5)
 				bounds = new P.Rectangle(P.view.center.subtract(halfSize), P.view.center.add(halfSize))
-				boundsCompoundPath = new CompoundPath( children: [ new P.Path.Rectangle(P.view.bounds), new P.Path.Rectangle(bounds) ] )
+				boundsCompoundPath = new P.CompoundPath( children: [ new P.Path.Rectangle(P.view.bounds), new P.Path.Rectangle(bounds) ] )
 				boundsCompoundPath.strokeScaling = false
 				boundsCompoundPath.fillColor = 'rgba(0,0,0,0.1)'
 				@grid.addChild(boundsCompoundPath)
@@ -90,7 +90,7 @@ define [], ()->
 				return
 
 			# draw grid
-			snap = Utils.Event.getSnap()
+			snap = Utils.Snap.getSnap()
 			bounds = Utils.Rectangle.expandRectangleToMultiple(P.view.bounds, snap)
 
 			left = bounds.left
@@ -137,7 +137,7 @@ define [], ()->
 
 			# debug = false
 
-			# snap = Utils.Event.getSnap()
+			# snap = Utils.Snap.getSnap()
 			# if snap < 15 then snap = 15
 			# if debug then snap = 250
 
@@ -197,13 +197,13 @@ define [], ()->
 			# 		x = i*R.scale
 			# 		y = j*R.scale
 
-			# 		planetText = new PointText(new P.Point(x-10,y-40))
+			# 		planetText = new P.PointText(new P.Point(x-10,y-40))
 			# 		planetText.justification = 'right'
 			# 		planetText.fillColor = 'black'
 			# 		p = projectToPlanet(new P.Point(i*R.scale,j*R.scale))
 			# 		planetText.content = 'px: ' + Math.floor(p.x) + ', py: ' + Math.floor(p.y)
 			# 		@grid.addChild(planetText)
-			# 		posText = new PointText(new P.Point(x-10,y-20))
+			# 		posText = new P.PointText(new P.Point(x-10,y-20))
 			# 		posText.justification = 'right'
 			# 		posText.fillColor = 'black'
 			# 		p = projectToPosOnPlanet(new P.Point(i*R.scale,j*R.scale))

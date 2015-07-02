@@ -55,8 +55,8 @@ define [ 'UI/Controllers/Controller', 'colorpickersliders' ], (Controller) ->
 		@initialize()
 
 		constructor: (@name, @parameter, @folder)->
-			@gradientTool = R.tools['Gradient']
-			@selectTool = Tool.select
+			@gradientTool = R.tools.gradient
+			@selectTool = R.tools.select
 			# @ignoreNextColorCounter = 0
 			super(@name, @parameter, @folder)
 			return
@@ -187,7 +187,7 @@ define [ 'UI/Controllers/Controller', 'colorpickersliders' ], (Controller) ->
 				@colorInputJ.val('Gradient')
 				colors = ''
 				for stop in @gradient.gradient.stops
-					c = new Color(if stop.color? then stop.color else stop[0])
+					c = new P.Color(if stop.color? then stop.color else stop[0])
 					colors += ', ' + c.toCSS()
 				@colorInputJ.css 'background-color': ''
 				@colorInputJ.css 'background-image': 'linear-gradient( to right' + colors + ')'

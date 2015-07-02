@@ -110,5 +110,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=CoordinateSystems.map

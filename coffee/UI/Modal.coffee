@@ -1,4 +1,4 @@
-define [ 'domReady!' ], (document) ->
+define [ 'Utils/Utils' ], () ->
 
 	class Modal
 

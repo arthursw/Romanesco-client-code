@@ -46,9 +46,10 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 	class Path extends Content
 		@label = 'Pen' 										# the name used in the gui (to create the button and for the tooltip/popover)
 		@description = "The classic and basic pen tool" 	# the path description
-		@cursorPosition = { x: 24, y: 0 } 					# the position of the cursor image (relative to the cursor position)+
-		@cursorDefault = "crosshair" 						# the cursor to use with this path
-
+		@cursor =
+			position:
+				x: 0, y: 0
+			name: 'crosshair'
 		@constructor.secureDistance = 2 					# the points of the flattened path must not be 5 pixels away from the recorded points
 
 		# parameters are defined as in {RTool}
@@ -100,7 +101,7 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 		@parameters = @initializeParameters()
 
 		@createTool: (Path)->
-			new PathTool(Path)
+			new R.Tools.Path(Path)
 			return
 
 		@create: (duplicateData)->
@@ -109,7 +110,7 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 			copy.draw()
 			if not @socketAction
 				copy.save(false)
-				R.chatSocket.emit "bounce", itemClass: @name, function: "create", arguments: [duplicateData]
+				R.socket.emit "bounce", itemClass: @name, function: "create", arguments: [duplicateData]
 			return copy
 
 		# Create the RPath and initialize the drawing creation if a user is creating it, or draw if the path is being loaded
@@ -230,18 +231,18 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 		deselect: ()->
 			if not super() then return false
 			return true
-
-		beginAction: (command)->
-			super(command)
-			# if not @selectionState.move?
-			# 	R.rasterizer.rasterize(@, true)
-			return
-
-		endAction: ()->
-			super()
-			# if not @selectionState.move?
-			# 	R.rasterizer.rasterizeItem(@)
-			return
+		#
+		# beginAction: (command)->
+		# 	super(command)
+		# 	# if not @selectionState.move?
+		# 	# 	R.rasterizer.rasterize(@, true)
+		# 	return
+		#
+		# endAction: ()->
+		# 	super()
+		# 	# if not @selectionState.move?
+		# 	# 	R.rasterizer.rasterizeItem(@)
+		# 	return
 
 		# common to all RItems
 		# update select action
@@ -422,7 +423,7 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 
 		# insert above given *path*
 		# @param path [RPath] path on which to insert this
-		# @param index [Number] the index at which to add the path in R.sortedPath
+		# @param index [Number] the index at which to add the path in R.sortedPaths
 		insertAbove: (path, index=null, update=false)->
 			@zindex = @group.index
 			# if update and not @drawing then R.updateView()
@@ -431,7 +432,7 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 
 		# insert below given *path*
 		# @param path [RPath] path under which to insert this
-		# @param index [Number] the index at which to add the path in R.sortedPath
+		# @param index [Number] the index at which to add the path in R.sortedPaths
 		insertBelow: (path, index=null, update=false)->
 			@zindex = @group.index
 			# if update and not @drawing then R.updateView()
@@ -564,7 +565,7 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 		# @remove() just removes visually
 		remove: ()->
 			if not @group then return
-			R.deregisterAnimation()
+			Utils.Animation.deregisterAnimation()
 			@controlPath = null
 			@drawing = null
 			@raster ?= null
@@ -591,7 +592,7 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 			super
 			return
 
-		# @param controlSegments [Array<Paper Segment>] the control path segments to convert in planet coordinates
+		# @param controlSegments [Array<Paper P.Segment>] the control path segments to convert in planet coordinates
 		# return [Array of Paper point] a list of point from the control path converted in the planet coordinate system
 		pathOnPlanet: (controlSegments=@controlPath.segments)->
 			points = []

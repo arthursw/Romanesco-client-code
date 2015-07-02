@@ -2,7 +2,7 @@
 (function() {
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
-  define(['Items/Items', 'bootstrap', 'tween', 'mousewheel', 'scrollbar'], function(Item) {
+  define(['Items/Item', 'bootstrap', 'tween', 'mousewheel', 'scrollbar'], function(Item) {
 
     /*
     	 * Global functions #
@@ -52,7 +52,7 @@
       };
       return paperEvent;
     };
-    Utils.Event.snap = function(event, from) {
+    Utils.Snap.snap = function(event, from) {
       var snap, snappedEvent;
       if (from == null) {
         from = R.me;
@@ -67,12 +67,12 @@
       if (snap !== 0) {
         snappedEvent = jQuery.extend({}, event);
         snappedEvent.modifiers = event.modifiers;
-        snappedEvent.point = Utils.Event.snap2D(event.point, snap);
+        snappedEvent.point = Utils.Snap.snap2D(event.point, snap);
         if (event.lastPoint != null) {
-          snappedEvent.lastPoint = Utils.Event.snap2D(event.lastPoint, snap);
+          snappedEvent.lastPoint = Utils.Snap.snap2D(event.lastPoint, snap);
         }
         if (event.downPoint != null) {
-          snappedEvent.downPoint = Utils.Event.snap2D(event.downPoint, snap);
+          snappedEvent.downPoint = Utils.Snap.snap2D(event.downPoint, snap);
         }
         if (event.lastPoint != null) {
           snappedEvent.middlePoint = snappedEvent.point.add(snappedEvent.lastPoint).multiply(0.5);
@@ -102,7 +102,7 @@
     };
     Utils.Snap.snap1D = function(value, snap) {
       if (snap == null) {
-        snap = Utils.Event.getSnap();
+        snap = Utils.Snap.getSnap();
       }
       if (snap !== 0) {
         return Math.round(value / snap) * snap;
@@ -112,10 +112,10 @@
     };
     Utils.Snap.snap2D = function(point, snap) {
       if (snap == null) {
-        snap = Utils.Event.getSnap();
+        snap = Utils.Snap.getSnap();
       }
       if (snap !== 0) {
-        return new P.Point(Utils.Event.snap1D(point.x, snap), Utils.Event.snap1D(point.y, snap));
+        return new P.Point(Utils.Snap.snap1D(point.x, snap), Utils.Snap.snap1D(point.y, snap));
       } else {
         return point;
       }
@@ -257,11 +257,6 @@
       });
     };
     R.startTime = Date.now();
-    R.logElapsedTime = function() {
-      var time;
-      time = (Date.now() - R.startTime) / 1000;
-      console.log("Time elapsed: " + time + " sec.");
-    };
     R.startTimer = function() {
       R.timerStartTime = Date.now();
     };
@@ -340,5 +335,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Global.map

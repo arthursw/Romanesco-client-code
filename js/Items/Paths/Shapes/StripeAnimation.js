@@ -158,8 +158,8 @@
         this.drawing.addChild(this.stripes);
         n = this.rasters.length;
         width = this.data.stripeWidth;
-        black = new Color(0, 0, 0);
-        transparent = new Color(0, 0, 0, 0);
+        black = new P.Color(0, 0, 0);
+        transparent = new P.Color(0, 0, 0, 0);
         nStripes = Math.floor(size.width / width);
         for (i = _k = 0; 0 <= nStripes ? _k <= nStripes : _k >= nStripes; i = 0 <= nStripes ? ++_k : --_k) {
           stripeData = this.rasters[i % n].getImageData(new P.Rectangle(i * width, 0, width, size.height));
@@ -197,5 +197,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=StripeAnimation.map

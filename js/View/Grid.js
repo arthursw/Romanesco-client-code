@@ -6,7 +6,7 @@
       function Grid() {
         this.grid = new P.Group();
         this.grid.name = 'grid group';
-        this.updateGrid();
+        this.update();
         return;
       }
 
@@ -44,14 +44,14 @@
         }
       };
 
-      Grid.prototype.updateGrid = function() {
+      Grid.prototype.update = function() {
         var bounds, boundsCompoundPath, halfSize, left, px, py, snap, top;
         this.grid.removeChildren();
         this.updateLimitPaths();
         if (P.view.bounds.width > window.innerWidth || P.view.bounds.height > window.innerHeight) {
           halfSize = new P.Point(window.innerWidth * 0.5, window.innerHeight * 0.5);
           bounds = new P.Rectangle(P.view.center.subtract(halfSize), P.view.center.add(halfSize));
-          boundsCompoundPath = new CompoundPath({
+          boundsCompoundPath = new P.CompoundPath({
             children: [new P.Path.Rectangle(P.view.bounds), new P.Path.Rectangle(bounds)]
           });
           boundsCompoundPath.strokeScaling = false;
@@ -61,7 +61,7 @@
         if (!R.displayGrid) {
           return;
         }
-        snap = Utils.Event.getSnap();
+        snap = Utils.Snap.getSnap();
         bounds = Utils.Rectangle.expandRectangleToMultiple(P.view.bounds, snap);
         left = bounds.left;
         top = bounds.top;
@@ -98,5 +98,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Grid.map

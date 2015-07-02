@@ -6,6 +6,9 @@ define [ 'socketio' ], (ioo) ->
 			@initialize()
 			return
 
+		emit: ()->
+			@socket.emit.apply(@socket, arguments)
+			return
 		# websocket communication
 		# websockets are only used to transfer user actions in real time, however every request which will change the database are made with ajax (at a lower frequency)
 		# this is due to historical and security reasons
@@ -15,7 +18,7 @@ define [ 'socketio' ], (ioo) ->
 		initialize: ()->
 
 			# initialize jQuery objects
-			@chatJ = R.sidebar.sidebarJ.find("#chatContent")
+			@chatJ = $("#chatContent")
 			@chatMainJ = @chatJ.find("#chatMain")
 			@chatRoomJ = @chatMainJ.find("#chatRoom")
 			@chatUsernamesJ = @chatMainJ.find("#chatUserNames")
@@ -186,7 +189,7 @@ define [ 'socketio' ], (ioo) ->
 			@submitChatUserName(username, false)
 			return
 
-		addMessage: (message, from=null) ->
+		addMessage: (message, from=null) =>
 			if from?
 				author = if from == R.me then "me" else from
 				@chatMessagesJ.append( $("<p>").append($("<b>").text(author + ": "), message) )
@@ -330,11 +333,11 @@ define [ 'socketio' ], (ioo) ->
 				P.view.update()
 			return
 
-			rasterizeItem: ()->
-				if not item.currentCommand then R.rasterizer.rasterize(item)
-				return
+		rasterizeItem: ()->
+			if not item.currentCommand then R.rasterizer.rasterize(item)
+			return
 
-			getChatRoom: ()->
-				return 'x: ' + Math.round(P.view.center.x / R.scale) + ', y: ' + Math.round(P.view.center.y / R.scale)
+		getChatRoom: ()->
+			return 'x: ' + Math.round(P.view.center.x / R.scale) + ', y: ' + Math.round(P.view.center.y / R.scale)
 
 	return Socket

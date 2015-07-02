@@ -50,7 +50,16 @@
       };
     }
     window.setInterval.isPolyfill = true;
-    R.specialKeys = {
+    Utils.LocalStorage = {};
+    Utils.LocalStorage.set = function(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    };
+    Utils.LocalStorage.get = function(key) {
+      var value;
+      value = localStorage.getItem(key);
+      return value && JSON.parse(value);
+    };
+    Utils.specialKeys = {
       8: 'backspace',
       9: 'tab',
       13: 'enter',
@@ -317,7 +326,7 @@
       delta = this.topLeft.subtract(center);
       delta = delta.multiply(scale.x, scale.y);
       topLeft = center.add(delta);
-      return new P.Rectangle(topLeft, new Size(this.width * scale.x, this.height * scale.y));
+      return new P.Rectangle(topLeft, new P.Size(this.width * scale.x, this.height * scale.y));
     };
     P.Rectangle.prototype.moveSide = function(sideName, destination) {
       switch (sideName) {
@@ -357,7 +366,7 @@
       this.x = destination.x - this.width * 0.5;
       this.y = destination.y - this.height * 0.5;
     };
-    Event.prototype.toJSON = function() {
+    P.Event.prototype.toJSON = function() {
       var event;
       event = {
         modifiers: this.modifiers,
@@ -373,7 +382,7 @@
       };
       return event;
     };
-    Event.prototype.fromJSON = function(event) {
+    P.Event.prototype.fromJSON = function(event) {
       if (event.point != null) {
         event.point = new P.Point(event.point);
       }
@@ -430,7 +439,20 @@
       };
       return paperEvent;
     };
-    Utils.Event.snap = function(event, from) {
+    R.specialKey = function(event) {
+      var specialKey;
+      if ((event.pageX != null) && (event.pageY != null)) {
+        specialKey = R.OSName === "MacOS" ? event.metaKey : event.ctrlKey;
+      } else {
+        specialKey = R.OSName === "MacOS" ? event.modifiers.command : event.modifiers.control;
+      }
+      return specialKey;
+    };
+    Utils.Snap = {};
+    Utils.Snap.getSnap = function() {
+      return R.parameters.General.snap.value;
+    };
+    Utils.Snap.snap = function(event, from) {
       var snap, snappedEvent;
       if (from == null) {
         from = R.me;
@@ -445,12 +467,12 @@
       if (snap !== 0) {
         snappedEvent = jQuery.extend({}, event);
         snappedEvent.modifiers = event.modifiers;
-        snappedEvent.point = Utils.Event.snap2D(event.point, snap);
+        snappedEvent.point = Utils.Snap.snap2D(event.point, snap);
         if (event.lastPoint != null) {
-          snappedEvent.lastPoint = Utils.Event.snap2D(event.lastPoint, snap);
+          snappedEvent.lastPoint = Utils.Snap.snap2D(event.lastPoint, snap);
         }
         if (event.downPoint != null) {
-          snappedEvent.downPoint = Utils.Event.snap2D(event.downPoint, snap);
+          snappedEvent.downPoint = Utils.Snap.snap2D(event.downPoint, snap);
         }
         if (event.lastPoint != null) {
           snappedEvent.middlePoint = snappedEvent.point.add(snappedEvent.lastPoint).multiply(0.5);
@@ -465,22 +487,9 @@
         return event;
       }
     };
-    R.specialKey = function(event) {
-      var specialKey;
-      if ((event.pageX != null) && (event.pageY != null)) {
-        specialKey = R.OSName === "MacOS" ? event.metaKey : event.ctrlKey;
-      } else {
-        specialKey = R.OSName === "MacOS" ? event.modifiers.command : event.modifiers.control;
-      }
-      return specialKey;
-    };
-    Utils.Snap = {};
-    Utils.Snap.getSnap = function() {
-      return R.parameters.General.snap.value;
-    };
     Utils.Snap.snap1D = function(value, snap) {
       if (snap == null) {
-        snap = Utils.Event.getSnap();
+        snap = Utils.Snap.getSnap();
       }
       if (snap !== 0) {
         return Math.round(value / snap) * snap;
@@ -490,10 +499,10 @@
     };
     Utils.Snap.snap2D = function(point, snap) {
       if (snap == null) {
-        snap = Utils.Event.getSnap();
+        snap = Utils.Snap.getSnap();
       }
       if (snap !== 0) {
-        return new P.Point(Utils.Event.snap1D(point.x, snap), Utils.Event.snap1D(point.y, snap));
+        return new P.Point(Utils.Snap.snap1D(point.x, snap), Utils.Snap.snap1D(point.y, snap));
       } else {
         return point;
       }
@@ -505,10 +514,13 @@
     Utils.Animation.deregisterAnimation = function(item) {
       Utils.Array.remove(R.animatedItems, item);
     };
+    Utils.logElapsedTime = function() {
+      var time;
+      time = (Date.now() - R.startTime) / 1000;
+      console.log("Time elapsed: " + time + " sec.");
+    };
     window.Utils = Utils;
     return Utils;
   });
 
 }).call(this);
-
-//# sourceMappingURL=Utils.map

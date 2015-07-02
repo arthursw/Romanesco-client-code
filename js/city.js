@@ -143,5 +143,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=City.map

@@ -34,7 +34,6 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 			return parameters
 
 		@parameters = @initializeParameters()
-		@createTool(@)
 
 		# overloads {PrecisePath#initializeDrawing}
 		initializeDrawing: (createCanvas=false)->
@@ -186,9 +185,9 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 			@draw()
 			if not @socketAction
 				if update then @update('speed')
-				R.chatSocket.emit "bounce", itemPk: @pk, function: "modifySpeed", arguments: [@speeds, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "modifySpeed", arguments: [@speeds, false]
 			else
-				@speedGroup?.visible = @selectionRectangle? and @data.showSpeed
+				@speedGroup?.visible = @selected? and @data.showSpeed
 			return
 
 		# update the speed group (curve and handles to visualize and edit the speeds)
@@ -339,17 +338,29 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 			@speedGroup?.visible = false
 			return true
 
-		# overload {PrecisePath#initializeSelection} but add the possibility to select speed handles
-		initializeSelection: (event, hitResult) ->
+		# # overload {PrecisePath#initializeSelection} but add the possibility to select speed handles
+		# initializeSelection: (event, hitResult) ->
+		# 	@speedSelectionHighlight?.remove()
+		# 	@speedSelectionHighlight = null
+		#
+		# 	if hitResult.item.name == "speed handle"
+		# 		@selectionState = speedHandle: hitResult.item
+		# 		return
+		# 	super(event, hitResult)
+		# 	return
+
+		hitTest: (event)->
 			@speedSelectionHighlight?.remove()
 			@speedSelectionHighlight = null
 
-			if hitResult.item.name == "speed handle"
-				@selectionState = speedHandle: hitResult.item
-				return
-			super(event, hitResult)
-			return
+			hitResult = @speedPath.hitTest(point, @constructor.hitOptions)
 
+			if hitResult.item.name == "speed handle"
+				@selectedSpeedHandle =  hitResult.item
+				R.commandManager.beginAction(new Command.ModifySeed(@))
+				return true
+			else
+				return super(event)
 
 		updateModifySpeed: (event)->
 			if @selectionState.speedHandle?
@@ -414,7 +425,7 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 
 				@draw(true)
 
-				if @selectionRectangle? then @selectionHighlight?.position = @selectionState.segment.point
+				if @selected? then @selectionHighlight?.position = @selectionState.segment.point
 			return
 
 		endModifySpeed: ()->
@@ -423,7 +434,7 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 			@update('speed')
 			@speedSelectionHighlight?.remove()
 			@speedSelectionHighlight = null
-			if not @socketAction then R.chatSocket.emit "bounce", itemPk: @pk, function: "modifySpeed", arguments: [@speeds, false]
+			if not @socketAction then R.socket.emit "bounce", itemPk: @pk, function: "modifySpeed", arguments: [@speeds, false]
 			return
 
 		# overload {PrecisePath#remove} and remove speed group

@@ -16,9 +16,7 @@
 
       Meander.description = "As Karl Kerenyi pointed out, \"the meander is the figure of a labyrinth in linear form\".\nA meander or meandros (Greek: Μαίανδρος) is a decorative border constructed from a continuous line, shaped into a repeated motif.\nSuch a design is also called the Greek fret or Greek key design, although these are modern designations.\n(source: http://en.wikipedia.org/wiki/Meander_(art))";
 
-      Meander.iconURL = 'static/images/icons/inverted/squareSpiral.png';
-
-      Meander.iconAlt = 'square spiral';
+      Meander.iconURL = "static/images/icons/inverted/squareSpiral.png";
 
       Meander.initializeParameters = function() {
         var parameters;
@@ -105,5 +103,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Meader.map

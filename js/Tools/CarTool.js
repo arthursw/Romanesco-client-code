@@ -46,7 +46,7 @@
               onChange: function(value) {
                 var sound;
                 if (R.selectedTool.constructor.name === "CarTool") {
-                  sound = Tool.car.sound;
+                  sound = R.Tools.car.sound;
                   if ((sound != null) && value > 0) {
                     if (!sound.isPlaying) {
                       sound.play();
@@ -82,7 +82,7 @@
         }
         CarTool.__super__.select.apply(this, arguments);
         this.car = new P.Raster("/static/images/car.png");
-        R.carLayer.addChild(this.car);
+        R.view.carLayer.addChild(this.car);
         this.car.position = P.view.center;
         this.car.speed = 0;
         this.car.direction = new P.Point(0, -1);
@@ -145,7 +145,7 @@
         }
         if (Date.now() - this.lastUpdate > 150) {
           if (R.me != null) {
-            R.chatSocket.emit("car move", R.me, this.car.position, this.car.rotation, this.car.speed);
+            R.socket.emit("car move", R.me, this.car.position, this.car.rotation, this.car.speed);
           }
           this.lastUpdate = Date.now();
         }
@@ -154,17 +154,15 @@
       CarTool.prototype.keyUp = function(event) {
         switch (event.key) {
           case 'escape':
-            Tool.move.select();
+            R.Tools.move.select();
         }
       };
 
       return CarTool;
 
     })(Tool);
-    Tool.Car = CarTool;
+    R.Tools.Car = CarTool;
     return CarTool;
   });
 
 }).call(this);
-
-//# sourceMappingURL=Car.map

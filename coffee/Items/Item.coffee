@@ -1,4 +1,4 @@
-define [ 'Commands/Command' ], (Command) ->
+define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 	console.log 'Item'
 
 	class Item
@@ -45,7 +45,7 @@ define [ 'Commands/Command' ], (Command) ->
 
 		@zIndexSortStop: (event, ui)->
 			previouslySelectedItems = R.selectedItems
-			Tool.Select.deselectAll()
+			R.tools.select.deselectAll()()
 			rItem = R.items[ui.item.attr("data-pk")]
 			nextItemJ = ui.item.next()
 			if nextItemJ.length>0
@@ -69,8 +69,8 @@ define [ 'Commands/Command' ], (Command) ->
 			group.addChild(item.group)
 			item.lock = lock
 			Utils.Array.remove(item.sortedItems, item)
-			parent = lock or R
-			if R.Div.prototype.isPrototypeOf(item)
+			parent = lock or R.sidebar
+			if Item.Div.prototype.isPrototypeOf(item)
 				item.sortedItems = parent.sortedDivs
 				parent.itemListsJ.find(".rDiv-list").append(item.liJ)
 			else if R.RPath.prototype.isPrototypeOf(item)
@@ -174,7 +174,7 @@ define [ 'Commands/Command' ], (Command) ->
 			copy = new @(duplicateData)
 			if not @socketAction
 				copy.save(false)
-				R.chatSocket.emit "bounce", itemClass: @name, function: "create", arguments: [duplicateData]
+				R.socket.emit "bounce", itemClass: @name, function: "create", arguments: [duplicateData]
 			return copy
 
 		constructor: (@data, @pk)->
@@ -197,7 +197,7 @@ define [ 'Commands/Command' ], (Command) ->
 			@rectangle ?= null
 
 			@selectionState = null
-			@selectionRectangle = null
+			# @selectionRectangle = null
 
 			@group = new P.Group()
 			@group.name = "group"
@@ -217,44 +217,43 @@ define [ 'Commands/Command' ], (Command) ->
 							@data[name] = Utils.clamp(parameter.min, value, parameter.max)
 			return
 
-		setParameterCommand: (controller, value)->
-			@deferredAction(R.SetParameterCommand, controller, value)
-			# if @data[name] == value then return
-			# @setCurrentCommand(new SetParameterCommand(@, name))
-			# @setParameter(name, value)
-			# Utils.deferredExecution(@addCurrentCommand, 'addCurrentCommand-' + (@id or @pk) )
-			return
+		# setParameterCommand: (controller, value)->
+		# 	@deferredAction(Command.SetParameter, controller, value)
+		# 	# if @data[name] == value then return
+		# 	# @setCurrentCommand(new SetParameterCommand(@, name))
+		# 	# @setParameter(name, value)
+		# 	# Utils.deferredExecution(@addCurrentCommand, 'addCurrentCommand-' + (@id or @pk) )
+		# 	return
 
 		# @param name [String] the name of the value to change
 		# @param value [Anything] the new value
 		setParameter: (name, value, update)->
+			if @data[name] is 'undefined' then return
 			@data[name] = value
 			@changed = name
 			if not @socketAction
 				if update
 					@update(name)
-				R.chatSocket.emit "bounce", itemPk: @pk, function: "setParameter", arguments: [name, value, false, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "setParameter", arguments: [name, value, false, false]
 			return
 
 		# # set path items (control path, drawing, etc.) to the right state before performing hitTest
 		# # store the current state of items, and change their state (the original states will be restored in @finishHitTest())
 		# # @param fullySelected [Boolean] (optional) whether the control path must be fully selected before performing the hit test (it must be if we want to test over control path handles)
 		# # @param strokeWidth [Number] (optional) contorl path width will be set to *strokeWidth* if it is provided
-		# prepareHitTest: ()->
-		# 	@selectionRectangle?.strokeColor = R.selectionBlue
-		# 	return
+		prepareHitTest: ()->
+			return
 
 		# # restore path items orginial states (same as before @prepareHitTest())
 		# # @param fullySelected [Boolean] (optional) whether the control path must be fully selected before performing the hit test (it must be if we want to test over control path handles)
-		# finishHitTest: ()->
-		# 	@selectionRectangle?.strokeColor = null
-		# 	return
+		finishHitTest: ()->
+			return
 
 		# # perform hit test to check if the point hits the selection rectangle
 		# # @param point [P.Point] the point to test
 		# # @param hitOptions [Object] the [paper hit test options](http://paperjs.org/reference/item/#hittest-point)
 		# performHitTest: (point, hitOptions)->
-		# 	return @selectionRectangle.hitTest(point)
+		# 	return @group.hitTest(point)
 
 		# # when hit through websocket, must be (fully)Selected to hitTest
 		# # perform hit test on control path and selection rectangle with a stroke width of 1
@@ -302,7 +301,7 @@ define [ 'Commands/Command' ], (Command) ->
 
 		# 	@selectionState = move: true
 		# 	if not @isSelected()
-		# 		R.commandManager.add(updateActionR.SelectCommand([@]), true)
+		# 		R.commandManager.add(updateAction, R.SelectCommand([@]), true)
 		# 	else
 		# 		hitResult = @performHitTest(event.point, @constructor.hitOptions)
 		# 		if hitResult? then @initializeSelection(event, hitResult)
@@ -402,12 +401,14 @@ define [ 'Commands/Command' ], (Command) ->
 			# if @selectionRectangle then @updateSelectionRectangle()
 			if not @socketAction
 				if update then @update('rectangle')
-				R.chatSocket.emit "bounce", itemPk: @pk, function: "setRectangle", arguments: [@rectangle, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "setRectangle", arguments: [@rectangle, false]
 			return
 
+		validatePosition: ()->
+			return Item.Lock.validatePosition(@)
 		# updateSetRectangle: (event)->
 
-		# 	event.point = Utils.Event.snap2D(event.point)
+		# 	event.point = Utils.Snap.snap2D(event.point)
 
 		# 	rotation = @rotation or 0
 		# 	rectangle = @rectangle.clone()
@@ -462,25 +463,29 @@ define [ 'Commands/Command' ], (Command) ->
 
 			if not @socketAction
 				if update then @update('position')
-				R.chatSocket.emit "bounce", itemPk: @pk, function: "moveTo", arguments: [position, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "moveTo", arguments: [position, false]
 			return
 
-		moveBy: (delta, update)->
+		translate: (delta, update)->
 			@moveTo(@rectangle.center.add(delta), update)
 			return
 
+		scale: (scale, center, update)->
+			@setRectangle(@rectangle.scaleFromCenter(scale, center), update)
+			return
+
 		# updateMove: (event)->
-		# 	if Utils.Event.getSnap() > 1
+		# 	if Utils.Snap.getSnap() > 1
 		# 		if @selectionState.move != true
 		# 			cornerName = @selectionState.move
 		# 			rectangle = @rectangle.clone()
 		# 			@dragOffset ?= rectangle[cornerName].subtract(event.downPoint)
-		# 			destination = Utils.Event.snap2D(event.point.add(@dragOffset))
+		# 			destination = Utils.Snap.snap2D(event.point.add(@dragOffset))
 		# 			rectangle.moveCorner(cornerName, destination)
 		# 			@moveTo(rectangle.center)
 		# 		else
 		# 			@dragOffset ?= @rectangle.center.subtract(event.downPoint)
-		# 			destination = Utils.Event.snap2D(event.point.add(@dragOffset))
+		# 			destination = Utils.Snap.snap2D(event.point.add(@dragOffset))
 		# 			@moveTo(destination)
 		# 	else
 		# 		@moveBy(event.delta)
@@ -530,7 +535,7 @@ define [ 'Commands/Command' ], (Command) ->
 			@highlightRectangle.strokeColor = R.selectionBlue
 			@highlightRectangle.strokeScaling = false
 			@highlightRectangle.dashArray = [4, 10]
-			R.selectionLayer.addChild(@highlightRectangle)
+			R.view.selectionLayer.addChild(@highlightRectangle)
 			return
 
 		# common to all RItems
@@ -548,7 +553,7 @@ define [ 'Commands/Command' ], (Command) ->
 			if @id? then R.commandManager.setItemPk(@id, @pk)
 			R.items[@pk] = @
 			delete R.items[@id]
-			if not loading and not @socketAction then R.chatSocket.emit "bounce", itemPk: @id, function: "setPK", arguments: [@pk]
+			if not loading and not @socketAction then R.socket.emit "bounce", itemPk: @id, function: "setPK", arguments: [@pk]
 			return
 
 		# @return true if Item is selected
@@ -560,8 +565,8 @@ define [ 'Commands/Command' ], (Command) ->
 		# - (optionally) update controller in the gui accordingly
 		# @return whether the ritem was selected or not
 		select: ()->
-			if @selectionRectangle? then return false
-
+			if @selected then return false
+			@selected = true
 
 			@lock?.deselect()
 
@@ -570,23 +575,27 @@ define [ 'Commands/Command' ], (Command) ->
 
 			R.s = @
 
-			@updateSelectionRectangle(true)
+			# @updateSelectionRectangle(true)
 			R.selectedItems.push(@)
+			R.tools.select.updateSelectionRectangle()
 			R.controllerManager.updateParametersForSelectedItems()
 
 			R.rasterizer.selectItem(@)
 
 			@zindex = @group.index
-			R.selectionLayer.addChild(@group)
+			R.view.selectionLayer.addChild(@group)
 
 			return true
 
 		deselect: ()->
-			if not @selectionRectangle? then return false
+			if not @selected then return false
+			@selected = false
 
-			@selectionRectangle?.remove()
-			@selectionRectangle = null
+			# @selectionRectangle?.remove()
+			# @selectionRectangle = null
 			Utils.Array.remove(R.selectedItems, @)
+
+			R.tools.select.updateSelectionRectangle()
 			R.controllerManager.updateParametersForSelectedItems()
 
 			if @group? 	# @group is null when item is removed (called from @remove())
@@ -597,8 +606,6 @@ define [ 'Commands/Command' ], (Command) ->
 					@group = R.view.mainLayer.insertChild(@zindex, @group)
 				else
 					@group = @lock.group.insertChild(@zindex, @group)
-
-			R.Div.showDivs()
 
 			return true
 
@@ -626,7 +633,7 @@ define [ 'Commands/Command' ], (Command) ->
 			return true
 
 		save: (addCreateCommand)->
-			if addCreateCommand then R.commandManager.add(new R.CreateItemCommand(@))
+			if addCreateCommand then R.commandManager.add(new Command.CreateItem(@))
 			return
 
 		saveCallback: ()->
@@ -637,19 +644,19 @@ define [ 'Commands/Command' ], (Command) ->
 			return
 
 		delete: ()->
-			if not @socketAction then R.chatSocket.emit "bounce", itemPk: @pk, function: "delete", arguments: []
+			if not @socketAction then R.socket.emit "bounce", itemPk: @pk, function: "delete", arguments: []
 			@pk = null
 			return
 
 		deleteCommand: ()->
-			R.commandManager.add(new R.DeleteItemCommand(@), true)
+			R.commandManager.add(new Command.DeleteItem(@), true)
 			return
 
 		getDuplicateData: ()->
 			return data: @getData(), rectangle: @rectangle, pk: @getPk()
 
 		duplicateCommand: ()->
-			R.commandManager.add(new R.DuplicateItemCommand(@), true)
+			R.commandManager.add(new Command.DuplicateItem(@), true)
 			return
 
 		removeDrawing: ()->

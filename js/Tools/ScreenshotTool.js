@@ -98,7 +98,7 @@
         R.currentPaths[from].dashArray = [4, 10];
         R.currentPaths[from].strokeColor = 'black';
         R.currentPaths[from].strokeWidth = 1;
-        R.selectionLayer.addChild(R.currentPaths[from]);
+        R.view.selectionLayer.addChild(R.currentPaths[from]);
       };
 
       ScreenshotTool.prototype.update = function(event) {
@@ -319,10 +319,8 @@
       return ScreenshotTool;
 
     })(Tool);
-    Tool.Screenshot = ScreenshotTool;
+    R.Tools.Screenshot = ScreenshotTool;
     return ScreenshotTool;
   });
 
 }).call(this);
-
-//# sourceMappingURL=ScreenshotTool.map

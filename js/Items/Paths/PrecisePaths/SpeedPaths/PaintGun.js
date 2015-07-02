@@ -145,5 +145,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=PaintGun.map

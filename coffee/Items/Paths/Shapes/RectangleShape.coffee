@@ -4,11 +4,10 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 	class RectangleShape extends Shape
 		@Shape = P.Path.Rectangle
 		@category = 'Shape'
-		@label = 'P.Rectangle'
+		@label = 'Rectangle'
 		@description = """Simple rectangle, square by default (use shift key to draw a rectangle) which can have rounded corners.
 		Use special key (command on a mac, control otherwise) to center the shape on the first point."""
 		@iconURL = 'static/images/icons/inverted/rectangle.png'
-		@iconAlt = 'rectangle'
 
 		@initializeParameters: ()->
 			parameters = super()

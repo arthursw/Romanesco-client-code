@@ -154,5 +154,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=RasterizerManager.map

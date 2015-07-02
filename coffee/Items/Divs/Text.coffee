@@ -1,4 +1,4 @@
-define [ 'Items/Divs/Div' ], (Div) ->
+define [ 'Items/Item', 'Items/Divs/Div' ], (Item, Div) ->
 
 	# Text: a textarea to write some text.
 	# The text can have any google font, any effect, but all the text has the same formating.
@@ -193,7 +193,7 @@ define [ 'Items/Divs/Div' ], (Div) ->
 		# @param event [jQuery Event] the key event
 		textChanged: (event) =>
 			newText = @contentJ.val()
-			@deferredAction(R.ModifyTextCommand, newText)
+			@deferredAction(Command.ModifyText, newText)
 			# Utils.deferredExecution(@update, 'update', 1000, ['text'], @)
 			return
 
@@ -202,7 +202,7 @@ define [ 'Items/Divs/Div' ], (Div) ->
 			@contentJ.val(newText)
 			if not @socketAction
 				if update then @update('text')
-				R.chatSocket.emit "bounce", itemPk: @pk, function: "setText", arguments: [newText, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "setText", arguments: [newText, false]
 			return
 
 		# set the font family for the text
@@ -227,14 +227,14 @@ define [ 'Items/Divs/Div' ], (Div) ->
 
 			# WebFont.load( google: {	families: ['Droid Sans', 'Droid Serif']	} )
 
-			R.addFont(fontFamily, @data.effect)
-			R.loadFonts()
+			R.fontManager.addFont(fontFamily, @data.effect)
+			R.fontManager.loadFonts()
 
 			@contentJ.css( "font-family": "'" + fontFamily + "', 'Helvetica Neue', Helvetica, Arial, sans-serif")
 
 			if update
 				@update()
-				# R.chatSocket.emit( "parameter change", R.me, @pk, "fontFamily", @data.fontFamily)
+				# R.socket.emit( "parameter change", R.me, @pk, "fontFamily", @data.fontFamily)
 
 			return
 
@@ -279,7 +279,7 @@ define [ 'Items/Divs/Div' ], (Div) ->
 
 			# only called when user modifies GUI
 			@setFontStyle(true)
-			# R.chatSocket.emit( "parameter change", R.me, @pk, "fontStyle", @data.fontStyle)
+			# R.socket.emit( "parameter change", R.me, @pk, "fontStyle", @data.fontStyle)
 			return
 
 		# set the font style of the text (update the css)
@@ -315,7 +315,7 @@ define [ 'Items/Divs/Div' ], (Div) ->
 		setFontEffect: (fontEffect, update=true)->
 			if not fontEffect? then return
 
-			R.addFont(@data.fontFamily, fontEffect)
+			R.fontManager.addFont(@data.fontFamily, fontEffect)
 
 			i = @contentJ[0].classList.length-1
 			while i>=0
@@ -324,7 +324,7 @@ define [ 'Items/Divs/Div' ], (Div) ->
 					@contentJ.removeClass(className)
 				i--
 
-			R.loadFonts()
+			R.fontManager.loadFonts()
 
 			@contentJ.addClass( "font-effect-" + fontEffect)
 			if update
@@ -368,4 +368,5 @@ define [ 'Items/Divs/Div' ], (Div) ->
 			super()
 			return
 
+	Item.Text = Text
 	return Text

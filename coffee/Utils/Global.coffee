@@ -1,4 +1,4 @@
-define [ 'Items/Items', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], (Item) ->
+define [ 'Items/Item', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], (Item) ->
 
 	###
 	# Global functions #
@@ -76,7 +76,7 @@ define [ 'Items/Items', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], (Item
 	# @param event [Paper Event] event to snap
 	# @param from [String] (optional) username of the one who emitted of the event
 	# @return [Paper event] snapped event
-	Utils.Event.snap = (event, from=R.me)->
+	Utils.Snap.snap = (event, from=R.me)->
 		if from!=R.me then return event
 		if R.selectedTool.disableSnap() then return event
 		snap = R.parameters.General.snap.value
@@ -84,9 +84,9 @@ define [ 'Items/Items', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], (Item
 		if snap != 0
 			snappedEvent = jQuery.extend({}, event)
 			snappedEvent.modifiers = event.modifiers
-			snappedEvent.point = Utils.Event.snap2D(event.point, snap)
-			if event.lastPoint? then snappedEvent.lastPoint = Utils.Event.snap2D(event.lastPoint, snap)
-			if event.downPoint? then snappedEvent.downPoint = Utils.Event.snap2D(event.downPoint, snap)
+			snappedEvent.point = Utils.Snap.snap2D(event.point, snap)
+			if event.lastPoint? then snappedEvent.lastPoint = Utils.Snap.snap2D(event.lastPoint, snap)
+			if event.downPoint? then snappedEvent.downPoint = Utils.Snap.snap2D(event.downPoint, snap)
 			if event.lastPoint? then snappedEvent.middlePoint = snappedEvent.point.add(snappedEvent.lastPoint).multiply(0.5)
 			if event.type != 'mouseup' and event.lastPoint?
 				snappedEvent.delta = snappedEvent.point.subtract(snappedEvent.lastPoint)
@@ -128,7 +128,7 @@ define [ 'Items/Items', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], (Item
 	# @param snap [Number] optional snap, default is getSnap()
 	# @return [Number] snapped value
 	Utils.Snap.snap1D = (value, snap)->
-		snap ?= Utils.Event.getSnap()
+		snap ?= Utils.Snap.getSnap()
 		if snap != 0
 			return Math.round(value/snap)*snap
 		else
@@ -140,9 +140,9 @@ define [ 'Items/Items', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], (Item
 	# @param snap [Number] optional snap, default is getSnap()
 	# @return [Paper point] snapped point
 	Utils.Snap.snap2D = (point, snap)->
-		snap ?= Utils.Event.getSnap()
+		snap ?= Utils.Snap.getSnap()
 		if snap != 0
-			return new P.Point(Utils.Event.snap1D(point.x, snap), Utils.Event.snap1D(point.y, snap))
+			return new P.Point(Utils.Snap.snap1D(point.x, snap), Utils.Snap.snap1D(point.y, snap))
 		else
 			return point
 
@@ -603,10 +603,6 @@ define [ 'Items/Items', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], (Item
 
 	R.startTime = Date.now()
 
-	R.logElapsedTime = ()->
-		time = (Date.now() - R.startTime) / 1000
-		console.log "Time elapsed: " + time + " sec."
-		return
 
 	R.startTimer = ()->
 		R.timerStartTime = Date.now()

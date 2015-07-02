@@ -1,4 +1,4 @@
-define [ 'Tools/Tool' ], (Tool) ->
+define [ 'Tools/Tool', 'Items/Lock', 'Commands/Command', 'View/SelectionRectangle' ], (Tool, Lock, Command, SelectionRectangle) ->
 
 	# Enables to select RItems
 	class SelectTool extends Tool
@@ -9,8 +9,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 		@cursor =
 			position:
 				x: 0, y: 0
-			name: 'crosshair'
-			icon: 'cursor'
+			name: 'default'
 		@drawItems = false
 
 		# Paper hitOptions for hitTest function to check which items (corresponding to those criterias) are under a point
@@ -23,18 +22,32 @@ define [ 'Tools/Tool' ], (Tool) ->
 			selected: true
 			tolerance: 5
 
-		@selectionRectangle = null
-
-		# Deselect all RItems (and paper items)
-		@deselectAll: ()->
-			if R.selectedItems.length>0
-				R.commandManager.add(new R.DeselectCommand(), true)
-			P.project.activeLayer.selected = false
-			return
-
 		constructor: () ->
 			super(true)
 			@selectedItem = null 		# should be deprecated
+			@selectionRectangle = null
+			return
+
+		# Deselect all RItems (and paper items)
+		deselectAll: ()->
+			if R.selectedItems.length>0
+				R.commandManager.add(new Command.Deselect(), true)
+				@selectionRectangle?.remove()
+				@selectionRectangle = null
+			P.project.activeLayer.selected = false
+			return
+
+		updateSelectionRectangle: (rotation)->
+			Utils.callNextFrame(@updateSelectionRectangleCallback, 'updateSelectionRectangleCallback', [rotation])
+			return
+
+		updateSelectionRectangleCallback: ()=>
+			if R.selectedItems.length > 0
+				@selectionRectangle ?= SelectionRectangle.create()
+				@selectionRectangle.update()
+			else
+				@selectionRectangle?.remove()
+				@selectionRectangle = null
 			return
 
 		select: (deselectItems=false, updateParameters=true)->
@@ -77,19 +90,15 @@ define [ 'Tools/Tool' ], (Tool) ->
 			highlightPath.strokeScaling = false
 			highlightPath.dashArray = [10, 4]
 
-			R.selectionLayer.addChild(highlightPath)
+			R.view.selectionLayer.addChild(highlightPath)
 			R.currentPaths[R.me] = highlightPath
 			@highlightItemsUnderRectangle(rectangle)
 			return
 
-		updateSelectionHighlight: ()->
+		updateSelectionHighlight: (event)->
 			rectangle = new P.Rectangle(event.downPoint, event.point)
 			Utils.Rectangle.updatePathRectangle(R.currentPaths[R.me], rectangle)
 			@highlightItemsUnderRectangle(rectangle)
-			return
-
-		createCurrentCommand: (hitResult, event)->
-			g.commandManager.beginAction(new Command[@transformState.type](R.selectedItems), event)
 			return
 
 		populateItemsToSelect: (itemsToSelect, locksToSelect, rectangle)->
@@ -142,8 +151,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 				# if the user just clicked (not dragged a selection rectangle): just select the first item
 				if rectangle.area == 0 then itemsToSelect = [itemsToSelect[0]]
 
-				R.commandManager.add(new R.SelectCommand(itemsToSelect), true)
-				@constructor.selectionRectangle = new SelectionRectangle(itemsToSelect)
+				R.commandManager.add(new Command.Select(itemsToSelect), true)
 			return
 
 		# Begin selection:
@@ -154,25 +162,26 @@ define [ 'Tools/Tool' ], (Tool) ->
 		begin: (event) ->
 			if event.event.which == 2 then return 		# if the wheel button was clicked: return
 
-			hitResult = null
+			itemWasHit = false
 
-			if @constructor.selectionRectangle?
-				hitResult = @constructor.selectionRectangle.hitTest()
+			if @selectionRectangle?
+				itemWasHit = @selectionRectangle.hitTest(event)
 
-			if not hitResult?
+			if not itemWasHit
 				path.prepareHitTest() for name, path of R.paths
 				hitResult = P.project.hitTest(event.point, @constructor.hitOptions)
 				path.finishHitTest() for name, path of R.paths
+				controller = hitResult?.item.controller
+				controller?.hitTest?(event)
+				itemWasHit = controller?
 
-			if hitResult and hitResult.item.controller? 		# if user hits a path: select it
-				@createCurrentCommand(hitResult, event)
-			else
-				@constructor.deselectAll()
+			if not itemWasHit
+				@deselectAll()
 				@createSelectionHighlight(event)
 			return
 
 
-			# # project = if R.selectionLayer.children.length == 0 then R.project else R.selectionProject
+			# # project = if R.view.selectionLayer.children.length == 0 then R.project else R.selectionProject
 
 			# # perform hit test to see if there is any item under the mouse
 			# path.prepareHitTest() for name, path of R.paths
@@ -189,14 +198,14 @@ define [ 'Tools/Tool' ], (Tool) ->
 			# 		# else
 			# 		# 	if R.selectedDivs.length>0 then SelectTool.deselectAll()
 			# 	else
-			# 		R.tools['Screenshot'].checkRemoveScreenshotRectangle(hitResult.item.controller)
+			# 		R.Tools['Screenshot'].checkRemoveScreenshotRectangle(hitResult.item.controller)
 
 			# 	hitResult.item.controller.beginSelect?(event)
 			# else 												# otherwise: remove selection group and create selection rectangle
 			# 	SelectTool.deselectAll()
 			# 	@createSelectionRectangle(event)
 
-			# R.logElapsedTime()
+			# Utils.logElapsedTime()
 
 			# return
 
@@ -204,7 +213,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 		# - update selected RItems if there is no selection rectangle
 		# - update selection rectangle if there is one
 		update: (event) ->
-			if @constructor.selectionRectangle?
+			if @selectionRectangle?
 				R.commandManager.updateAction(event)
 			else if R.currentPaths[R.me]?
 				@updateSelectionHighlight(event)
@@ -226,7 +235,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 		# - create selection group is there is a selection rectangle
 		#   update parameters from selected RItems and remove selection rectangle
 		end: (event) ->
-			if @constructor.selectionRectangle?
+			if @selectionRectangle?
 				R.commandManager.endAction(event)
 			else if R.currentPaths[R.me]?
 				@selectItems(event)
@@ -317,7 +326,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 			# 		item.unhighlight()
 
 			# console.log 'end select'
-			# R.logElapsedTime()
+			# Utils.logElapsedTime()
 			# return
 
 		# Double click handler: send event to selected RItems
@@ -348,7 +357,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 				when 'down'
 					item.moveBy(new P.Point(0,delta), true) for item in R.selectedItems
 				when 'escape'
-					SelectTool.deselectAll()
+					@deselectAll()
 				when 'delete', 'backspace'
 					selectedItems = R.selectedItems.slice()
 					for item in selectedItems
@@ -359,5 +368,5 @@ define [ 'Tools/Tool' ], (Tool) ->
 
 			return
 
-	Tool.Select = SelectTool
+	R.Tools.Select = SelectTool
 	return SelectTool

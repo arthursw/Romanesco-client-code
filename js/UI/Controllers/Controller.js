@@ -28,26 +28,10 @@
         }
       };
 
-      Controller.prototype.listen = function(command) {
-        $(command).on('do', this.itemChanged);
-        $(command).on('undo', this.itemChanged);
-      };
-
-      Controller.prototype.itemChanged = function() {
-        var item;
-        item = R.selectedItems[0];
-        this.setValue(item.data[this.name]);
-      };
-
       Controller.prototype.onChange = function(value) {
-        var item, _i, _len, _ref, _ref1;
         R.c = this;
-        _ref = R.selectedItems;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
-          if (typeof ((_ref1 = item.data) != null ? _ref1[this.name] : void 0) !== 'undefined') {
-            item.setParameterCommand(this, value);
-          }
+        if (R.selectedItems.length > 0) {
+          R.commandManager.deferredAction(R.Command.SetParameter, R.selectedItems, this, value);
         }
       };
 
@@ -70,7 +54,7 @@
           this.parameter.onChange = null;
         }
         this.folder.datFolder.remove(this.datController);
-        this.folder.datFolder.__controllers.remove(this.datController);
+        Utils.Array.remove(this.folder.datFolder.__controllers, this.datController);
         delete this.folder.controllers[this.name];
         if (Object.keys(this.folder.controllers).length === 0) {
           this.folder.remove();
@@ -86,5 +70,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Controller.map

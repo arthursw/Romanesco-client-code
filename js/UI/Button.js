@@ -2,10 +2,11 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  define([], function() {
+  define(['Tools/Tool'], function(Tool) {
     var Button;
     Button = (function() {
       function Button(parameters) {
+        this.onClickWhenLoaded = __bind(this.onClickWhenLoaded, this);
         this.onClickWhenNotLoaded = __bind(this.onClickWhenNotLoaded, this);
         this.fileLoaded = __bind(this.fileLoaded, this);
         var categories, category, favorite, favoriteBtnJ, hJ, iconURL, liJ, name, parentJ, shortName, shortNameJ, toolNameJ, ulJ, word, words, _i, _j, _len, _len1;
@@ -69,14 +70,35 @@
         if (favorite) {
           R.sidebar.toggleToolToFavorite(null, this.btnJ);
         }
+        if ((parameters.description != null) || parameters.popover) {
+          this.addPopover(parameters);
+        }
         return;
       }
+
+      Button.prototype.addPopover = function(parameters) {
+        this.btnJ.attr('data-placement', 'right');
+        this.btnJ.attr('data-container', 'body');
+        this.btnJ.attr('data-trigger', 'hover');
+        this.btnJ.attr('data-delay', {
+          show: 500,
+          hide: 100
+        });
+        if ((parameters.description == null) || parameters.description === '') {
+          this.btnJ.attr('data-content', parameters.name);
+        } else {
+          this.btnJ.attr('data-title', parameters.name);
+          this.btnJ.attr('data-content', parameters.description);
+        }
+        this.btnJ.popover();
+      };
 
       Button.prototype.toggleCategory = function(event) {
         $(this).parent().toggleClass('closed');
       };
 
       Button.prototype.fileLoaded = function() {
+        this.btnJ.off('click');
         this.btnJ.click(this.onClickWhenLoaded);
         this.onClickWhenLoaded();
       };
@@ -87,7 +109,7 @@
 
       Button.prototype.onClickWhenLoaded = function(event) {
         var toolName, _ref;
-        toolName = $(this).attr("data-name");
+        toolName = this.btnJ.attr("data-name");
         if ((_ref = R.tools[toolName]) != null) {
           _ref.select();
         }
@@ -100,5 +122,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Button.map

@@ -62,7 +62,16 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 
 	window.setInterval.isPolyfill = true
 
-	R.specialKeys = {
+	Utils.LocalStorage = {}
+	Utils.LocalStorage.set = (key, value)->
+		localStorage.setItem(key, JSON.stringify(value))
+		return
+
+	Utils.LocalStorage.get = (key)->
+		value = localStorage.getItem(key)
+		return value && JSON.parse(value)
+
+	Utils.specialKeys = {
 		8: 'backspace',
 		9: 'tab',
 		13: 'enter',
@@ -321,7 +330,7 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 		delta = this.topLeft.subtract(center)
 		delta = delta.multiply(scale.x, scale.y)
 		topLeft = center.add(delta)
-		return new P.Rectangle(topLeft, new Size(this.width * scale.x, this.height * scale.y))
+		return new P.Rectangle(topLeft, new P.Size(this.width * scale.x, this.height * scale.y))
 	P.Rectangle.prototype.moveSide = (sideName, destination)->
 		switch sideName
 			when 'left'
@@ -353,7 +362,7 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 		this.y = destination.y - this.height * 0.5
 		return
 
-	Event.prototype.toJSON = ()->
+	P.Event.prototype.toJSON = ()->
 		event =
 			modifiers: this.modifiers
 			event: which: this.event.which
@@ -364,7 +373,7 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 			type: this.type
 			count: this.count
 		return event
-	Event.prototype.fromJSON = (event)->
+	P.Event.prototype.fromJSON = (event)->
 		if event.point? then event.point = new P.Point(event.point)
 		if event.downPoint? then event.downPoint = new P.Point(event.downPoint)
 		if event.delta? then event.delta = new P.Point(event.delta)
@@ -436,32 +445,6 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 			count: count
 		return paperEvent
 
-	# Returns snapped event
-	#
-	# @param event [Paper Event] event to snap
-	# @param from [String] (optional) username of the one who emitted of the event
-	# @return [Paper event] snapped event
-	Utils.Event.snap = (event, from=R.me)->
-		if from!=R.me then return event
-		if R.selectedTool.disableSnap() then return event
-		snap = R.parameters.General.snap.value
-		# snap = snap-snap%R.parameters.General.snap.step
-		if snap != 0
-			snappedEvent = jQuery.extend({}, event)
-			snappedEvent.modifiers = event.modifiers
-			snappedEvent.point = Utils.Event.snap2D(event.point, snap)
-			if event.lastPoint? then snappedEvent.lastPoint = Utils.Event.snap2D(event.lastPoint, snap)
-			if event.downPoint? then snappedEvent.downPoint = Utils.Event.snap2D(event.downPoint, snap)
-			if event.lastPoint? then snappedEvent.middlePoint = snappedEvent.point.add(snappedEvent.lastPoint).multiply(0.5)
-			if event.type != 'mouseup' and event.lastPoint?
-				snappedEvent.delta = snappedEvent.point.subtract(snappedEvent.lastPoint)
-			else if event.downPoint?
-				snappedEvent.delta = snappedEvent.point.subtract(snappedEvent.downPoint)
-			return snappedEvent
-		else
-			return event
-
-
 	# Test if the special key is pressed. Special key is command key on a mac, and control key on other systems.
 	#
 	# @param event [jQuery or Paper.js event] key event
@@ -487,13 +470,38 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 		# return snap-snap%R.parameters.snap.step
 		return R.parameters.General.snap.value
 
+	# Returns snapped event
+	#
+	# @param event [Paper Event] event to snap
+	# @param from [String] (optional) username of the one who emitted of the event
+	# @return [Paper event] snapped event
+	Utils.Snap.snap = (event, from=R.me)->
+		if from!=R.me then return event
+		if R.selectedTool.disableSnap() then return event
+		snap = R.parameters.General.snap.value
+		# snap = snap-snap%R.parameters.General.snap.step
+		if snap != 0
+			snappedEvent = jQuery.extend({}, event)
+			snappedEvent.modifiers = event.modifiers
+			snappedEvent.point = Utils.Snap.snap2D(event.point, snap)
+			if event.lastPoint? then snappedEvent.lastPoint = Utils.Snap.snap2D(event.lastPoint, snap)
+			if event.downPoint? then snappedEvent.downPoint = Utils.Snap.snap2D(event.downPoint, snap)
+			if event.lastPoint? then snappedEvent.middlePoint = snappedEvent.point.add(snappedEvent.lastPoint).multiply(0.5)
+			if event.type != 'mouseup' and event.lastPoint?
+				snappedEvent.delta = snappedEvent.point.subtract(snappedEvent.lastPoint)
+			else if event.downPoint?
+				snappedEvent.delta = snappedEvent.point.subtract(snappedEvent.downPoint)
+			return snappedEvent
+		else
+			return event
+
 	# Returns snapped value
 	#
 	# @param value [Number] value to snap
 	# @param snap [Number] optional snap, default is getSnap()
 	# @return [Number] snapped value
 	Utils.Snap.snap1D = (value, snap)->
-		snap ?= Utils.Event.getSnap()
+		snap ?= Utils.Snap.getSnap()
 		if snap != 0
 			return Math.round(value/snap)*snap
 		else
@@ -505,9 +513,9 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 	# @param snap [Number] optional snap, default is getSnap()
 	# @return [Paper point] snapped point
 	Utils.Snap.snap2D = (point, snap)->
-		snap ?= Utils.Event.getSnap()
+		snap ?= Utils.Snap.getSnap()
 		if snap != 0
-			return new P.Point(Utils.Event.snap1D(point.x, snap), Utils.Event.snap1D(point.y, snap))
+			return new P.Point(Utils.Snap.snap1D(point.x, snap), Utils.Snap.snap1D(point.y, snap))
 		else
 			return point
 
@@ -557,6 +565,11 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 	# 	while prototype != ParentClass.prototype
 	# 		prototype = prototype.constructor.__super__
 	# 	return prototype
+
+	Utils.logElapsedTime = ()->
+		time = (Date.now() - R.startTime) / 1000
+		console.log "Time elapsed: " + time + " sec."
+		return
 
 	window.Utils = Utils
 	return Utils

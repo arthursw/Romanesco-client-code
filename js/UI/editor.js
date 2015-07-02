@@ -142,8 +142,11 @@
         this.nextCommand = __bind(this.nextCommand, this);
         this.previousCommand = __bind(this.previousCommand, this);
         this.executeCommand = __bind(this.executeCommand, this);
-        this.editorJ = $(document.body).find("#codeEditor");
+        this.editorJ = $("#codeEditor");
         this.editorJ.bind("transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd", this.onEditorResize);
+        if (this.sidebarJ.hasClass("r-hidden")) {
+          this.editorJ.addClass("r-hidden");
+        }
         this.handleJ = this.editorJ.find(".editor-handle");
         this.handleJ.mousedown(this.onHandleDown);
         this.fileNameJ = this.editorJ.find(".header .fileName input");
@@ -430,5 +433,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=Editor.map

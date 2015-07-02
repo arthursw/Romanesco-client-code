@@ -2,10 +2,11 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  define(['jqtree'], function() {
-    var FileManager, ModuleCreator;
+  define(['coffee', 'jqtree'], function(CoffeeScript) {
+    var FileManager;
     FileManager = (function() {
       function FileManager() {
+        this.registerModuleInModuleLoader = __bind(this.registerModuleInModuleLoader, this);
         this.onFileMoved = __bind(this.onFileMoved, this);
         this.loadAndOpenFile = __bind(this.loadAndOpenFile, this);
         this.readTree = __bind(this.readTree, this);
@@ -108,12 +109,13 @@
             return target_node.type === 'tree' || position !== 'inside';
           }
         });
-        this.fileBrowserJ.bind('tree.select', this.loadAndOpenFile);
+        this.fileBrowserJ.bind('tree.click', this.loadAndOpenFile);
         this.fileBrowserJ.bind('tree.move', this.onFileMoved);
       };
 
       FileManager.prototype.loadAndOpenFile = function(event) {
         if (event.node.type === 'tree') {
+          this.fileBrowserJ.tree('toggle', event.node);
           return;
         }
         this.loadFile(event.node.path, this.openFile);
@@ -134,34 +136,58 @@
         this.request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/coffee/' + path, callback);
       };
 
-      return FileManager;
-
-    })();
-    ModuleCreator = (function() {
-      function ModuleCreator() {
-        this.registerModuleInModuleLoader = __bind(this.registerModuleInModuleLoader, this);
-        return;
-      }
-
-      ModuleCreator.prototype.createButton = function(content) {
-        var description, descriptionResult, iconResult, iconURL, label, labelResult, source;
+      FileManager.prototype.createButton = function(content) {
+        var category, description, expressions, file, iconURL, label, name, properties, property, source, value, _i, _len, _ref, _ref1, _ref10, _ref11, _ref12, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
         source = atob(content.content);
-        iconResult = /@iconURL = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source);
-        if ((iconResult != null) && iconResult.length >= 2) {
-          iconURL = iconResult[2];
+        expressions = CoffeeScript.nodes(source).expressions;
+        properties = (_ref = expressions[0]) != null ? (_ref1 = _ref.args) != null ? (_ref2 = _ref1[1]) != null ? (_ref3 = _ref2.body) != null ? (_ref4 = _ref3.expressions) != null ? (_ref5 = _ref4[0]) != null ? (_ref6 = _ref5.body) != null ? _ref6.expressions : void 0 : void 0 : void 0 : void 0 : void 0 : void 0 : void 0;
+        if (properties == null) {
+          return;
         }
-        descriptionResult = /@description = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source);
-        if ((descriptionResult != null) && descriptionResult.length >= 2) {
-          description = descriptionResult[2];
+        for (_i = 0, _len = properties.length; _i < _len; _i++) {
+          property = properties[_i];
+          name = (_ref7 = property.variable) != null ? (_ref8 = _ref7.properties) != null ? (_ref9 = _ref8[0]) != null ? (_ref10 = _ref9.name) != null ? _ref10.value : void 0 : void 0 : void 0 : void 0;
+          value = (_ref11 = property.value) != null ? (_ref12 = _ref11.base) != null ? _ref12.value : void 0 : void 0;
+          if (!((value != null) && (name != null))) {
+            continue;
+          }
+          switch (name) {
+            case 'label':
+              label = value;
+              break;
+            case 'description':
+              description = value;
+              break;
+            case 'iconURL':
+              iconURL = value;
+              break;
+            case 'category':
+              category = value;
+          }
         }
-        labelResult = /@label = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source);
-        if ((labelResult != null) && labelResult.length >= 2) {
-          label = labelResult[2];
-        }
-        console.log('{ label: ' + label + ', description: ' + description + ', iconURL: ' + iconURL + ', file: ' + content.name + ' }');
+
+        /*
+        			iconResult = /@iconURL = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source)
+        
+        			if iconResult? and iconResult.length>=2
+        				iconURL = iconResult[2]
+        
+        			descriptionResult = /@description = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source)
+        
+        			if descriptionResult? and descriptionResult.length>=2
+        				description = descriptionResult[2]
+        
+        			labelResult = /@label = (\'|\"|\"\"\")(.*)(\'|\"|\"\"\")/.exec(source)
+        
+        			if labelResult? and labelResult.length>=2
+        				label = labelResult[2]
+         */
+        file = content.path.replace('coffee/', '');
+        file = '"' + file.replace('.coffee', '') + '"';
+        console.log('{ name: ' + label + ', popoverContent: ' + description + ', iconURL: ' + iconURL + ', file: ' + file + ', category: ' + category + ' }');
       };
 
-      ModuleCreator.prototype.createButtons = function(pathDirectory) {
+      FileManager.prototype.createButtons = function(pathDirectory) {
         var name, node, _ref;
         _ref = pathDirectory.children;
         for (name in _ref) {
@@ -174,22 +200,22 @@
         }
       };
 
-      ModuleCreator.prototype.loadButtons = function() {
+      FileManager.prototype.loadButtons = function() {
         this.createButtons(this.tree.children['Items'].children['Paths']);
       };
 
-      ModuleCreator.prototype.registerModule = function(module) {
+      FileManager.prototype.registerModule = function(module) {
         this.module = module;
         this.loadFile(this.tree.children['ModuleLoader'].path, this.registerModuleInModuleLoader);
       };
 
-      ModuleCreator.prototype.insertModule = function(source, module, position) {
+      FileManager.prototype.insertModule = function(source, module, position) {
         var line;
         line = JSON.stringify(module);
         source.insert(line, position);
       };
 
-      ModuleCreator.prototype.registerModuleInModuleLoader = function(content) {
+      FileManager.prototype.registerModuleInModuleLoader = function(content) {
         var buttonsResult, source;
         source = atob(content.content);
         buttonsResult = /buttons = \[/.exec(source);
@@ -198,12 +224,10 @@
         }
       };
 
-      return ModuleCreator;
+      return FileManager;
 
     })();
     return FileManager;
   });
 
 }).call(this);
-
-//# sourceMappingURL=Code.map

@@ -33,7 +33,7 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 
 		@parameters = @initializeParameters()
 		@createTool(@)
-
+		
 		# animted paths must be initialized
 		initialize: ()->
 			@data.animate = true
@@ -167,8 +167,8 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 			n = @rasters.length
 			width = @data.stripeWidth
 
-			black = new Color(0, 0, 0)
-			transparent = new Color(0, 0, 0, 0)
+			black = new P.Color(0, 0, 0)
+			transparent = new P.Color(0, 0, 0, 0)
 
 			# for x in [0 .. (2*size.width)-1]
 			# 	for y in [0 .. size.height-1]

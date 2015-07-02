@@ -22,13 +22,13 @@
               lock = new Lock(rectangle, data);
               break;
             case 'website':
-              lock = new Lock.Website(rectangle, data);
+              lock = new Website(rectangle, data);
               break;
             case 'video-game':
-              lock = new Lock.VideoGame(rectangle, data);
+              lock = new VideoGame(rectangle, data);
               break;
             case 'link':
-              lock = new Lock.Link(rectangle, data);
+              lock = new Link(rectangle, data);
           }
           lock.save(true);
           lock.update('rectangle');
@@ -115,9 +115,6 @@
         if (highlight == null) {
           highlight = false;
         }
-        if (R.RSelectionRectangle.prototype.isPrototypeOf(item)) {
-          return true;
-        }
         if ((typeof item.getDrawingBounds === "function" ? item.getDrawingBounds() : void 0) > R.rasterizer.maxArea()) {
           if (highlight) {
             R.alertManager.alert('The path is too big.', 'Warning');
@@ -140,7 +137,7 @@
           lock.unhighlight();
         }
         this.unhighlightStage();
-        if (Grid.rectangleOverlapsTwoPlanets(bounds)) {
+        if (R.view.grid.rectangleOverlapsTwoPlanets(bounds)) {
           if (highlight) {
             if ((_ref3 = R.limitPathV) != null) {
               _ref3.strokeColor = 'red';
@@ -270,8 +267,6 @@
 
       Lock.parameters = Lock.initializeParameters();
 
-      Lock.createTool(Lock);
-
       function Lock(rectangle, data, pk, owner, date, modulePk) {
         var item, pkString, title, titleJ, _i, _len, _ref, _ref1;
         this.rectangle = rectangle;
@@ -287,7 +282,7 @@
         R.locks.push(this);
         this.group.name = 'lock group';
         this.draw();
-        R.lockLayer.addChild(this.group);
+        R.view.lockLayer.addChild(this.group);
         this.sortedPaths = [];
         this.sortedDivs = [];
         this.itemListsJ = R.templatesJ.find(".layer").clone();
@@ -303,7 +298,7 @@
           return function(event) {
             _this.itemListsJ.toggleClass('closed');
             if (!event.shiftKey) {
-              Tool.Select.deselectAll();
+              R.tools.select.deselectAll()();
             }
             _this.select();
           };
@@ -326,8 +321,8 @@
             _this.unhighlight();
           };
         })(this));
-        R.itemListsJ.prepend(this.itemListsJ);
-        this.itemListsJ = R.itemListsJ.find(".layer:first");
+        R.sidebar.itemListsJ.prepend(this.itemListsJ);
+        this.itemListsJ = R.sidebar.itemListsJ.find(".layer:first");
         _ref = R.items;
         for (item = _i = 0, _len = _ref.length; _i < _len; item = ++_i) {
           pk = _ref[item];
@@ -372,7 +367,7 @@
         this.drawing.name = 'rlock background';
         this.drawing.strokeWidth = this.data.strokeWidth > 0 ? this.data.strokeWidth : 1;
         this.drawing.strokeColor = this.data.strokeColor != null ? this.data.strokeColor : 'black';
-        this.drawing.fillColor = this.data.fillColor || new Color(255, 255, 255, 0.5);
+        this.drawing.fillColor = this.data.fillColor || new P.Color(255, 255, 255, 0.5);
         this.drawing.controller = this;
         this.group.addChild(this.drawing);
       };
@@ -533,7 +528,7 @@
           item = _ref[_i];
           item.rectangle.center.x += delta.x;
           item.rectangle.center.y += delta.y;
-          if (R.Div.prototype.isPrototypeOf(item)) {
+          if (Item.Div.prototype.isPrototypeOf(item)) {
             item.updateTransform();
           }
         }
@@ -620,21 +615,9 @@
         Dajaxice.draw.getModuleList(this.createSelectModuleModal);
       };
 
-      Lock.prototype.createSelectModuleModal = function(result) {
-        R.codeEditor.createModuleEditorModal(result, this.addModule);
-        R.RModal.modalJ.find("tr.module[data-pk='" + this.modulePk + "']").css({
-          'background-color': 'rgba(213, 18, 18, 0.54)'
-        });
-      };
+      Lock.prototype.createSelectModuleModal = function(result) {};
 
-      Lock.prototype.addModule = function() {
-        this.modulePk = $(this).attr("data-pk");
-        this.data.moduleName = $(this).attr("data-name");
-        Dajaxice.draw.updateBox(R.loader.checkError, {
-          pk: this.pk,
-          modulePk: this.modulePk
-        });
-      };
+      Lock.prototype.addModule = function() {};
 
       return Lock;
 
@@ -782,9 +765,11 @@
       return Link;
 
     })(Lock);
+    Item.Lock = Lock;
+    Item.Link = Link;
+    Item.Website = Website;
+    Item.VideoGame = VideoGame;
     return Lock;
   });
 
 }).call(this);
-
-//# sourceMappingURL=Lock.map

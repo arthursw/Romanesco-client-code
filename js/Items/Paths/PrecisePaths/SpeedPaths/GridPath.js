@@ -199,5 +199,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=GridPath.map

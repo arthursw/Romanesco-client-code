@@ -1,4 +1,4 @@
-define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
+define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween' ], (Grid, Command, Div)->
 
 	class View
 
@@ -24,7 +24,7 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 			@lockLayer = new P.Layer()	 			# Paper layer to keep all locked items
 			@lockLayer.name = 'lock layer'
 			@selectionLayer = new P.Layer() 			# Paper layer to keep all selected items
-			# R.selectionLayer = R.selectionProject.activeLayer
+			# R.view.selectionLayer = R.selectionProject.activeLayer
 			@selectionLayer.name = 'selection layer'
 			@areasToUpdateLayer = new P.Layer() 		# Paper layer to show areas to update
 			@areasToUpdateLayer.name = 'areasToUpdateLayer'
@@ -65,10 +65,12 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 			$(window).mouseup( @mouseup )
 			$(window).resize(@onWindowResize)
 
+			window.onhashchange = @onHashChange
 
 			@mousePosition = new P.Point() 			# the mouse position in window coordinates (updated everytime the mouse moves)
 			@previousMousePosition = null 			# the previous position of the mouse in the mousedown/move/up
 			@initialMousePosition = null 			# the initial position of the mouse in the mousedown/move/up
+
 
 			return
 
@@ -142,7 +144,7 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 				div.updateTransform()
 
 			R.rasterizer.move()
-			Grid.updateGrid() 											# update grid
+			@grid.update() 											# update grid
 
 			# update @entireArea (the area which must be kept loaded, in a video game or website)
 			# if the loaded entire areas contain the center of the view, it is the current entire area
@@ -163,7 +165,7 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 
 			somethingToLoad = if newEntireArea? then R.loader.load(@entireArea) else R.loader.load()
 
-			R.chat.updateRoom() 											# update websocket room
+			R.socket.updateRoom() 											# update websocket room
 
 			Utils.deferredExecution(@updateHash, 'updateHash', 500) 					# update hash in 500 milliseconds
 
@@ -185,7 +187,7 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 
 
 		addMoveCommand: ()->
-			R.commandManager.add(new R.MoveViewCommand(@previousPosition, P.view.center))
+			R.commandManager.add(new Command.MoveView(@previousPosition, P.view.center))
 			@previousPosition = null
 			return
 
@@ -199,6 +201,32 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 			if R.city.owner? and R.city.name? and R.city.owner != 'RomanescoOrg' and R.city.name != 'Romanesco'
 				prefix = R.city.owner + '/' + R.city.name + '/'
 			location.hash = prefix + P.view.center.x.toFixed(2) + ',' + P.view.center.y.toFixed(2)
+			return
+
+		# Update hash (the string after '#' in the url bar) according to the location of the (center of the) view
+		# set *@ignoreHashChange* flag to ignore this change in *window.onhashchange* callback
+		onHashChange: (event)=>
+			if @ignoreHashChange
+				@ignoreHashChange = false
+				return
+
+			p = new P.Point()
+
+			fields = location.hash.substr(1).split('/')
+
+			if fields.length>=3
+				owner = fields[0]
+				name = fields[1]
+				if R.city.name != name or R.city.owner != owner
+					R.loadCity(name, owner)
+
+			pos = _.last(fields).split(',')
+			p.x = parseFloat(pos[0])
+			p.y = parseFloat(pos[1])
+
+			if not _.isFinite(p.x) then p.x = 0
+			if not _.isFinite(p.y) then p.y = 0
+			@moveTo(p)
 			return
 
 		## Init position
@@ -249,7 +277,7 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 			if site.restrictedArea
 				@restrictedArea = boxRectangle
 
-			Tool.select.select() 		# select 'Select' tool by default when loading a website
+			R.tools.select.select() 		# select 'Select' tool by default when loading a website
 											# since a click on an Lock will activate the drag (temporarily select the 'Move' tool)
 											# and the user must be able to select text
 
@@ -287,20 +315,20 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 
 
 		# Paper listeners
-		@onMouseDown: (event) =>
+		onMouseDown: (event) =>
 
 			if R.wacomPenAPI?.isEraser
 				@tool.onKeyUp( key: 'delete' )
 				return
 			$(document.activeElement).blur() # prevent to keep focus on the chat when we interact with the canvas
-			# event = Utils.Event.snap(event) 		# snapping mouseDown event causes some problems
+			# event = Utils.Snap.snap(event) 		# snapping mouseDown event causes some problems
 			R.selectedTool?.begin(event)
 			return
 
-		@onMouseDrag: (event) =>
+		onMouseDrag: (event) =>
 			if R.wacomPenAPI?.isEraser then return
 			if R.currentDiv? then return
-			# event = Utils.Event.snap(event)
+			# event = Utils.Snap.snap(event)
 			R.selectedTool?.update(event)
 			return
 
@@ -309,14 +337,14 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 		# 		event.item?.controller?.highlight()
 		# 	return
 
-		@onMouseUp: (event) =>
+		onMouseUp: (event) =>
 			if R.wacomPenAPI?.isEraser then return
 			if R.currentDiv? then return
-			# event = Utils.Event.snap(event)
+			# event = Utils.Snap.snap(event)
 			R.selectedTool?.end(event)
 			return
 
-		@onKeyDown: (event) =>
+		onKeyDown: (event) =>
 
 			# if the focus is on anything in the sidebar or is a textarea or in parameters bar: ignore the event
 			if not @focusIsOnCanvas() then return
@@ -327,11 +355,11 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 
 			# select 'Move' tool when user press space key (and reselect previous tool after)
 			if event.key == 'space' and R.selectedTool?.name != 'Move'
-				Tool.move.select()
+				R.tools.move.select()
 
 			return
 
-		@onKeyUp: (event) =>
+		onKeyUp: (event) =>
 			# if the focus is on anything in the sidebar or is a textarea or in parameters bar: ignore the event
 			if not @focusIsOnCanvas() then return
 
@@ -341,7 +369,7 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 				when 'space'
 					R.previousTool?.select()
 				when 'v'
-					Tool.select.select()
+					R.tools.select.select()
 				when 't'
 					R.showToolBox()
 				when 'r'
@@ -381,7 +409,7 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 			# R.backgroundCanvas.height = window.innerHeight
 			# R.backgroundCanvasJ.width(window.innerWidth)
 			# R.backgroundCanvasJ.height(window.innerHeight)
-			@grid.updateGrid()
+			@grid.update()
 			$(".mCustomScrollbar").mCustomScrollbar("update")
 			P.view.update()
 
@@ -399,7 +427,7 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 
 			switch event.which						# switch on mouse button number (left, middle or right click)
 				when 2
-					Tool.move.select()		# select move tool if middle mouse button
+					R.tools.move.select()		# select move tool if middle mouse button
 				when 3
 					R.selectedTool?.finish?() 	# finish current path (in polygon mode) if right click
 
@@ -429,7 +457,7 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 				R.selectedTool.updateNative(event)
 				return
 
-			R.Div.updateHiddenDivs(event)
+			Div.updateHiddenDivs(event)
 
 			# update selected RDivs
 			# if R.previousPoint?
@@ -489,31 +517,5 @@ define [ 'View/Grid', 'mousewheel', 'tween' ], (Grid)->
 		mousewheel: (event)=>
 			@moveBy(new P.Point(-event.deltaX, event.deltaY))
 			return
-
-	# Update hash (the string after '#' in the url bar) according to the location of the (center of the) view
-	# set *@ignoreHashChange* flag to ignore this change in *window.onhashchange* callback
-	window.onhashchange = (event)->
-		if @ignoreHashChange
-			@ignoreHashChange = false
-			return
-
-		p = new P.Point()
-
-		fields = location.hash.substr(1).split('/')
-
-		if fields.length>=3
-			owner = fields[0]
-			name = fields[1]
-			if R.city.name != name or R.city.owner != owner
-				R.loadCity(name, owner)
-
-		pos = _.last(fields).split(',')
-		p.x = parseFloat(pos[0])
-		p.y = parseFloat(pos[1])
-
-		if not _.isFinite(p.x) then p.x = 0
-		if not _.isFinite(p.y) then p.y = 0
-		@moveTo(p)
-		return
 
 	return View

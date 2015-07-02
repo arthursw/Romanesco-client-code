@@ -30,16 +30,16 @@ define [ 'Tools/Tool' ], (Tool) ->
 		begin: (event, from=R.me) ->
 			point = event.point
 
-			Tool.Select.deselectAll()
+			R.tools.select.deselectAll()
 
 			R.currentPaths[from] = new P.Path.Rectangle(point, point)
 			R.currentPaths[from].name = 'div tool rectangle'
 			R.currentPaths[from].dashArray = [4, 10]
 			R.currentPaths[from].strokeColor = 'black'
-			R.selectionLayer.addChild(R.currentPaths[from])
+			R.view.selectionLayer.addChild(R.currentPaths[from])
 
-			# if R.me? and from==R.me then R.chatSocket.emit( "begin", R.me, R.eventToObject(event), @name, R.currentPaths[from].data )
-			if R.me? and from==R.me then R.chatSocket.emit "bounce", tool: @name, function: "begin", arguments: [event, R.me, R.currentPaths[from].data]
+			# if R.me? and from==R.me then R.socket.emit( "begin", R.me, R.eventToObject(event), @name, R.currentPaths[from].data )
+			if R.me? and from==R.me then R.socket.emit "bounce", tool: @name, function: "begin", arguments: [event, R.me, R.currentPaths[from].data]
 			return
 
 		# Update div action:
@@ -64,8 +64,8 @@ define [ 'Tools/Tool' ], (Tool) ->
 			if Grid.rectangleOverlapsTwoPlanets(bounds)
 				R.currentPaths[from].fillColor = 'red'
 
-			# if R.me? and from==R.me then R.chatSocket.emit( "update", R.me, point, @name )
-			if R.me? and from==R.me then R.chatSocket.emit "bounce", tool: @name, function: "update", arguments: [event, R.me]
+			# if R.me? and from==R.me then R.socket.emit( "update", R.me, point, @name )
+			if R.me? and from==R.me then R.socket.emit "bounce", tool: @name, function: "update", arguments: [event, R.me]
 			return
 
 		# End div action:
@@ -101,10 +101,10 @@ define [ 'Tools/Tool' ], (Tool) ->
 				R.currentPaths[from].width = 10
 				R.currentPaths[from].height = 10
 
-			# if R.me? and from==R.me then R.chatSocket.emit( "end", R.me, point, @name )
-			if R.me? and from==R.me then R.chatSocket.emit "bounce", tool: @name, function: "end", arguments: [event, R.me]
+			# if R.me? and from==R.me then R.socket.emit( "end", R.me, point, @name )
+			if R.me? and from==R.me then R.socket.emit "bounce", tool: @name, function: "end", arguments: [event, R.me]
 
 			return true
 
-	Tool.Item = ItemTool
+	R.Tools.Item = ItemTool
 	return ItemTool

@@ -23,12 +23,12 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 
 		do: ()->
 			@superDo()
-			$(@).triggerHandler('do')
+			# $(@).triggerHandler('do')
 			return
 
 		undo: ()->
 			@superUndo()
-			$(@).triggerHandler('undo')
+			# $(@).triggerHandler('undo')
 			return
 
 		click: ()=>
@@ -39,7 +39,11 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			return if @done then @undo() else @do()
 
 		delete: ()->
+			# $(@).triggerHandler('delete', [@])
 			@liJ.remove()
+			return
+
+		begin: ()->
 			return
 
 		update: ()->
@@ -49,13 +53,11 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			@superDo()
 			return
 
-	R.Command = Command
-
-	class Command.Items extends Command
+	class ItemsCommand extends Command
 
 		constructor: (name, items)->
 			super(name)
-			@items = mapItems(items)
+			@items = @mapItems(items)
 			return
 
 		mapItems: (items)->
@@ -86,7 +88,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 		positionIsValid: ()->
 			if @constructor.disablePositionCheck then return true
 			for pk, item of @items
-				if not Lock.validatePosition(item) then return false
+				if not item.validatePosition() then return false
 			return true
 
 		unloadItem: (item)->
@@ -103,11 +105,11 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 
 		delete: ()->
 			for pk, item of @items
-				_.remove(R.commandManager.itemToCommands[pk], @)
+				Utils.Array.remove(R.commandManager.itemToCommands[pk], @)
 			super()
 			return
 
-	class Command.Item extends Command.Items
+	class ItemCommand extends ItemsCommand
 
 		constructor: (name, items)->
 			items = if Utils.Array.isArray(items) then items else [items]
@@ -130,7 +132,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			super(pk, item)
 			return
 
-	class Command.Deferred extends Command.Item
+	class DeferredCommand extends ItemCommand
 
 		@initialize: (method)->
 			@method = method
@@ -150,9 +152,6 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 		end: ()->
 			super()
 			if not @commandChanged() then return
-
-			@apply(@constructor.endMethod, [])
-
 			R.commandManager.add(@)
 			@updateItems()
 			return
@@ -187,166 +186,242 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 	# 		super()
 	# 		return
 
-	class Command.SelectionRectangle extends Command.Deferred
+	class SelectionRectangleCommand extends DeferredCommand
 
 		constructor: (items)->
-			super(@Method + ' items', items)
+			super(@constructor.Method + ' items', items)
 			return
 
 		begin: (event)->
-			Tool.Select.selectionRectangle[@constructor.beginMethod](event)
+			R.tools.select.selectionRectangle[@constructor.beginMethod](event)
 			return
 
 		update: (event)->
-			Tool.Select.selectionRectangle[@constructor.updateMethod](event)
+			R.tools.select.selectionRectangle[@constructor.updateMethod](event)
 			super(event)
+			return
+
+		updateSelectionRectangle: (rotation)->
+			R.tools.select.updateSelectionRectangle(rotation)
 			return
 
 		end: (event)->
-			@args = Tool.Select.selectionRectangle[@constructor.endMethod](event)
+			@state = R.tools.select.selectionRectangle[@constructor.endMethod](event)
 			super(event)
 			return
 
 		do: ()->
-			@apply(@constructor.method, @args)
+			@apply(@constructor.method, @newState())
+			@updateSelectionRectangle()
 			super()
 			return
 
 		undo: ()->
-			@apply(@constructor.method, @negate(@args))
+			@apply(@constructor.method, @previousState())
+			@updateSelectionRectangle()
 			super()
 			return
 
-		negate: (args)->
-			args[0].multiply(-1)
-			return args
-
-		commandChanged: ()->
-			delta = args[0]
-			return delta.x != 0 and delta.y != 0
-
-	class Command.Scale extends Command.SelectionRectangle
+	class ScaleCommand extends SelectionRectangleCommand
 
 		@initialize('scale')
+		@method = 'setRectangle'
 
-	class Command.Rotation extends Command.SelectionRectangle
+		getItemArray: ()->
+			if @itemsArray? then return @itemsArray
+			@itemsArray = []
+			for pk, item of @items
+				@itemsArray.push(item)
+			return @itemsArray
+
+		do: ()->
+			R.tools.select.selectionRectangle.constructor.setRectangle(@getItemArray(), @state.previous, @state.new, @state.rotation)
+			@updateSelectionRectangle(@state.rotation)
+			@superDo()
+			return
+
+		undo: ()->
+			R.tools.select.selectionRectangle.constructor.setRectangle(@getItemArray(), @state.new, @state.previous, @state.rotation)
+			@updateSelectionRectangle(@state.rotation)
+			@superUndo()
+			return
+
+		commandChanged: ()->
+			return not @state.new.equals(@state.previous)
+
+	class RotateCommand extends SelectionRectangleCommand
 
 		@initialize('rotate')
 
-		negate: (args)->
-			args[0] *= -1
-			return args
+		newState: ()->
+			return [@state.delta, @state.center]
+
+		previousState: ()->
+			return [-@state.delta, @state.center]
 
 		commandChanged: ()->
-			return args[0] != 0
+			return @state.delta != 0
 
-	class Command.Translate extends Command.SelectionRectangle
+	class TranslateCommand extends SelectionRectangleCommand
 
 		@initialize('translate')
 
-	class Command.BeforeAfter extends Command.Deferred
+		newState: ()->
+			return [@state.delta]
 
-		@initialize: (method, @name)->
-			super(method)
-			return
-
-		constructor: (name, item)->
-			super(name or @constructor.name, item)
-			@beforeArgs = @getState()
-			return
-
-		getState: ()->
-			return
-
-		update: ()->
-			@apply(@constructor.updateMethod, arguments)
-			return
+		previousState: ()->
+			return [@state.delta.multiply(-1)]
 
 		commandChanged: ()->
-			for beforeArg, i in @beforeArgs
-				if beforeArg != @afterArgs[i] then return false
-			return true
+			return !@state.delta.isZero()
+	###
+		class BeforeAfterCommand extends DeferredCommand
+
+			@initialize: (method, @name)->
+				super(method)
+				return
+
+			constructor: (name, item)->
+				super(name or @constructor.name, item)
+				@beforeArgs = @getState()
+				return
+
+			getState: ()->
+				return
+
+			update: ()->
+				@apply(@constructor.updateMethod, arguments.push(true))
+				return
+
+			commandChanged: ()->
+				for beforeArg, i in @beforeArgs
+					if beforeArg != @afterArgs[i] then return false
+				return true
+
+			do: ()->
+				@apply(@constructor.method, @afterArgs)
+				super()
+				return
+
+			undo: ()->
+				@afterArgs = @getState()
+				@apply(@constructor.method, @beforeArgs)
+				super()
+				return
+	###
+	class ModifyPointCommand extends DeferredCommand
+
+		constructor: (item)->
+			super('Modify point', item)
+			@index = @item.selectedSegment.index
+			@previousPoint = @getPoint()
+			return
+
+		update: (event)->
+			@item.updateModifyPoint(event)
+			return
+
+		end: (event)->
+			@item.endModifyPoint(event)
+			@newPoint = @getPoint()
+			super(event)
+			return
 
 		do: ()->
-			@apply(@constructor.method, @afterArgs)
+			@item.modifyPoint.apply(@item, @newPoint)
 			super()
 			return
 
 		undo: ()->
-			@afterArgs = @getState()
-			@apply(@constructor.method, @beforeArgs)
+			@item.modifyPoint.apply(@item, @previousPoint)
 			super()
 			return
 
-	class Command.ModifyPoint extends Command.BeforeAfter
+		getPoint: ()->
+			segment = @item.controlPath.segments[@index]
+			return [segment, segment.point.clone(), segment.handleIn.clone(), segment.handleOut.clone(), true]
 
-		@initialize('modifiyPoint', 'Modify point')
+		commandChanged: ()->
+			for i in [1 .. 3]
+				if not @previousPoint[i].equals(@newPoint[i])
+					return false
+			return true
 
-		getState: ()->
-			segment = @item.selectionState.segment
-			return [segment.point.clone(), segment.handleIn.clone(), segment.handleOut.clone()]
+	class ModifySpeedCommand extends DeferredCommand
 
+		constructor: (item)->
+			super('Modify speed', item)
+			@previousSpeeds = @item.speeds.slice()
+			return
 
-	class Command.ModifySpeed extends Command.BeforeAfter
+		update: (event)->
+			@item.updateModifySpeed(event)
+			return
 
-		@disablePositionCheck = true
+		end: (event)->
+			@item.endModifySpeed(event)
+			super(event)
+			return
 
-		@initialize('modifiySpeed', 'Modify speed')
+		do: ()->
+			@item.modifySpeed(@newSpeeds, true)
+			@updateItems('speed')
+			super()
+			return
 
-		getState: ()->
-			return [@item.speeds.slice()]
+		undo: ()->
+			@newSpeeds ?= @item.speeds.slice()
+			@item.modifySpeed(@previousSpeeds, true)
+			@updateItems('speed')
+			super()
+			return
 
 		commandChanged: ()->
 			return true
 
-	class Command.SetParameter extends Command.BeforeAfter
+	class SetParameterCommand extends DeferredCommand
 
-		@initialize('modifiyParameter')
-
-		constructor: (item, controller)->
-			controller.listen(@)
-			@name = controller.name
-			super('Change item parameter "' + @name + '"', item)
+		constructor: (items, @name)->
+			super('Change item parameter "' + @name + '"', items)
+			@previousValues = {}
+			for pk, item of @items
+				@previousValues[pk] = item.data[@name]
 			return
 
-		getState: ()->
-			return [@name, @item.data[@name]]
+		do: ()->
+			for pk, value of @newValues
+				@items[pk].setParameter(@name, value)
+			R.controllerManager.updateController(@name, @newValue)
+			@updateItems(@name)
+			super()
+			return
 
+		undo: ()->
+			for pk, value of @previousValues
+				@items[pk].setParameter(@name, value)
+			R.controllerManager.updateController(@name, @previousValue)
+			@updateItems(@name)
+			super()
+			return
 
-		# constructor: (@item, args)->
-		# 	@controller = args[0]
-		# 	@previousValue = @item.data[@controller.name]
-		# 	super('Change item parameter "' + @controller.name + '"')
-		# 	return
+		update: (name, value)->
+			for pk, item in @items
+				item.setParameter(name, value)
+			return
 
-		# do: ()->
-		# 	@item.setParameter(@controller, @value, true)
-		# 	super()
-		# 	return
-
-		# undo: ()->
-		# 	@item.setParameter(@controller, @previousValue, true)
-		# 	super()
-		# 	return
-
-		# update: (controller, value)->
-		# 	@item.setParameter(controller, value)
-		# 	return
-
-		# end: (valid)->
-		# 	@value = @item.data[@controller.name]
-		# 	if @value == @previousValue then return false
-		# 	if not valid then return
-		# 	@item.update(@controller.name)
-		# 	super()
-		# 	return true
+		end: (event)->
+			@newValues = {}
+			for pk, item of @items
+				@newValues[pk] = item.data[@name]
+			super(event)
+			return
 
 	# ---- # # ---- # # ---- # # ---- #
 	# ---- # # ---- # # ---- # # ---- #
 	# ---- # # ---- # # ---- # # ---- #
 	# ---- # # ---- # # ---- # # ---- #
 
-	class Command.AddPoint extends Command.Item
+	class AddPointCommand extends ItemCommand
 
 		constructor: (item, @location, name='Add point on item')->
 			super(name, [item])
@@ -370,7 +445,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			super()
 			return
 
-	class Command.DeletePoint extends Command.AddPoint
+	class DeletePointCommand extends AddPointCommand
 
 		constructor: (item, @segment)-> super(item, @segment, 'Delete point on item')
 
@@ -388,7 +463,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			@superUndo()
 			return
 
-	class Command.ModifyPointType extends Command.Item
+	class ModifyPointTypeCommand extends ItemCommand
 
 		constructor: (item, @segment, @rtype)->
 			@previousRType = @segment.rtype
@@ -411,10 +486,10 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 
 	### --- Custom command for all kinds of command which modifiy the path --- ###
 
-	class Command.ModifyControlPath extends Command.Item
+	class ModifyControlPathCommand extends ItemCommand
 
 		constructor: (item, @previousPointsAndPlanet, @newPointsAndPlanet)->
-			super('Modify path', [item])
+			super('Modify path', item)
 			@superDo()
 			return
 
@@ -428,7 +503,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			super()
 			return
 
-	class Command.MoveView extends Command
+	class MoveViewCommand extends Command
 		constructor: (@previousPosition, @newPosition)->
 			super("Move view")
 			@superDo()
@@ -483,22 +558,20 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 
 	# @MoveCommand = MoveCommand
 
-	class Command.Select extends Command
+	class SelectCommand extends ItemsCommand
+
 		constructor: (items, name)->
-			@items = @mapItems(items)
-			super(name or "Select items")
+			super(name or "Select items", items)
 			return
 
 		selectItems: ()->
 			for pk, item of @items
 				item.select()
-			R.controllerManager.updateParametersForSelectedItems()
 			return
 
 		deselectItems: ()->
 			for pk, item of @items
 				item.deselect()
-			R.controllerManager.updateParametersForSelectedItems()
 			return
 
 		do: ()->
@@ -511,7 +584,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			super()
 			return
 
-	class Command.Deselect extends Command.Select
+	class DeselectCommand extends SelectCommand
 
 		constructor: (items)->
 			super(items or R.selectedItems.slice(), 'Deselect items')
@@ -587,7 +660,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 
 	# @DeselectCommand = DeselectCommand
 
-	class Command.CreateItem extends Command.Item
+	class CreateItemCommand extends ItemCommand
 
 		constructor: (item, name='Create item')->
 			@itemConstructor = item.constructor
@@ -640,7 +713,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			super()
 			return
 
-	class Command.DeleteItem extends Command.CreateItem
+	class DeleteItemCommand extends CreateItemCommand
 		constructor: (item)-> super(item, 'Delete item')
 
 		do: ()->
@@ -653,12 +726,12 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			@superUndo()
 			return
 
-	class Command.DuplicateItem extends Command.CreateItem
+	class DuplicateItemCommand extends CreateItemCommand
 		constructor: (item)->
 			@duplicateData = item.getDuplicateData()
 			super(item, 'Duplicate item')
 
-	class Command.ModifyText extends Command.Item
+	class ModifyTextCommand extends ItemCommand
 
 		constructor: (item, args)->
 			super("Change text", item)
@@ -828,5 +901,30 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 	# 		return
 
 	# @ResizeCommand = ResizeCommand
+
+	R.Command = Command
+	Command.Scale = ScaleCommand
+	Command.Rotate = RotateCommand
+	Command.Translate = TranslateCommand
+
+	Command.ModifyPoint = ModifyPointCommand
+	Command.ModifySpeed = ModifySpeedCommand
+
+	Command.AddPoint = AddPointCommand
+	Command.DeletePoint = DeletePointCommand
+	Command.ModifyPointType = ModifyPointTypeCommand
+	Command.ModifyControlPath = ModifyControlPathCommand
+
+	Command.SetParameter = SetParameterCommand
+	Command.ModifyText = ModifyTextCommand
+
+	Command.CreateItem = CreateItemCommand
+	Command.DeleteItem = DeleteItemCommand
+	Command.DuplicateItem = DuplicateItemCommand
+
+	Command.Select = SelectCommand
+	Command.Deselect = DeselectCommand
+
+	Command.MoveView = MoveViewCommand
 
 	return Command

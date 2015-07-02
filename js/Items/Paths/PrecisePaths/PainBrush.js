@@ -18,8 +18,6 @@
 
       PaintBrush.iconURL = 'static/images/icons/inverted/brush.png';
 
-      PaintBrush.iconAlt = 'brush';
-
       PaintBrush.initializeParameters = function() {
         var parameters;
         parameters = PaintBrush.__super__.constructor.initializeParameters.call(this);
@@ -80,9 +78,9 @@
         innerRadius = this.data.size * (1 - this.data.blur / 100);
         outerRadius = this.data.size;
         radialGradient = this.context.createRadialGradient(point.x, point.y, innerRadius, point.x, point.y, outerRadius);
-        midColor = new Color(this.data.strokeColor);
+        midColor = new P.Color(this.data.strokeColor);
         midColor.alpha = 0.5;
-        endColor = new Color(this.data.strokeColor);
+        endColor = new P.Color(this.data.strokeColor);
         endColor.alpha = 0;
         radialGradient.addColorStop(0, this.data.strokeColor);
         radialGradient.addColorStop(0.5, midColor.toCSS());
@@ -100,5 +98,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=PainBrush.map

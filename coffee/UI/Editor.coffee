@@ -102,8 +102,11 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-lan
 		constructor: ()->
 
 			# editor
-			@editorJ = $(document.body).find("#codeEditor")
+			@editorJ = $("#codeEditor")
 			@editorJ.bind "transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd", @onEditorResize
+
+			if @sidebarJ.hasClass("r-hidden")
+				@editorJ.addClass("r-hidden")
 
 			# handle
 			@handleJ = @editorJ.find(".editor-handle")
@@ -169,7 +172,7 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-lan
 				""", 1)
 
 			# @editorJ.keyup (event)->
-			# 	switch R.specialKeys[event.keyCode]
+			# 	switch Utils.specialKeys[event.keyCode]
 			# 		when 'up'
 			# 		when 'down'
 			# 	return

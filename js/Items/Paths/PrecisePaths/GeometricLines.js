@@ -18,8 +18,6 @@
 
       GeometricLines.iconURL = 'static/images/icons/inverted/links.png';
 
-      GeometricLines.iconAlt = 'links';
-
       GeometricLines.initializeParameters = function() {
         var parameters;
         parameters = GeometricLines.__super__.constructor.initializeParameters.call(this);
@@ -89,5 +87,3 @@
   });
 
 }).call(this);
-
-//# sourceMappingURL=GeometricLines.map

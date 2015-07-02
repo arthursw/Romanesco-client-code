@@ -55,5 +55,3 @@
   })(document, "script", "facebook-jssdk");
 
 }).call(this);
-
-//# sourceMappingURL=Facebook.map

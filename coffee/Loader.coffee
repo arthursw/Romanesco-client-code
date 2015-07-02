@@ -1,4 +1,4 @@
-define [], () ->
+define [ 'Commands/Command', 'Items/Item', 'Items/Lock', 'Items/Divs/Div', 'Items/Divs/Media', 'Items/Divs/Text' ], (Command, Item) ->
 
 	# --- load --- #
 
@@ -56,7 +56,7 @@ define [], () ->
 					return new P.Rectangle(P.view.center.subtract(halfSize), P.view.center.add(halfSize))
 			return area
 
-		unloadAreas: (area, qZoom)->
+		unloadAreas: (area, limit, qZoom)->
 
 			itemsOutsideLimit = []
 
@@ -98,7 +98,7 @@ define [], () ->
 							itemsOutsideLimit.splice(j,1)
 			return
 
-		getAreasToLoad: (scale, t, l, b, r)->
+		getAreasToLoad: (scale, qZoom, t, l, b, r)->
 			areasToLoad = []
 			for x in [l .. r] by scale
 				for y in [t .. b] by scale
@@ -118,7 +118,7 @@ define [], () ->
 						if not @areaIsLoaded(pos, planet)
 							@loadedAreas.push(area)
 					else
-						if not R.areaIsLoaded(pos, planet, qZoom)
+						if not @areaIsLoaded(pos, planet, qZoom)
 
 							area = { pos: pos, planet: planet }
 
@@ -167,7 +167,7 @@ define [], () ->
 			qZoom = Utils.CS.quantizeZoom(1.0 / P.view.zoom)
 
 			# remove areas which are outside the limit
-			@unloadAreas(area, qZoom)
+			@unloadAreas(area, limit, qZoom)
 
 			scale = R.scale * qZoom
 
@@ -180,7 +180,7 @@ define [], () ->
 			if @debug then @updateDebugPaths(limit, bounds, t, l, b, r)
 
 			# add areas to load
-			areasToLoad = @getAreasToLoad(scale, t, l, b, r)
+			areasToLoad = @getAreasToLoad(scale, qZoom, t, l, b, r)
 
 			if not R.rasterizerMode and areasToLoad.length<=0 	# return if there is nothing to load
 				return false
@@ -190,10 +190,10 @@ define [], () ->
 
 			if not R.rasterizerMode
 				rectangle = { left: l / 1000.0, top: t / 1000.0, right: r / 1000.0, bottom: b / 1000.0 }
-				Dajaxice.draw.load(loadCallback, { rectangle: rectangle, areasToLoad: areasToLoad, qZoom: qZoom, city: R.city })
+				Dajaxice.draw.load(@loadCallback, { rectangle: rectangle, areasToLoad: areasToLoad, qZoom: qZoom, city: R.city })
 			else
 				itemsDates = R.createItemsDates(bounds)
-				Dajaxice.draw.loadRasterizer(loadCallback, { areasToLoad: areasToLoad, itemsDates: itemsDates, cityPk: R.city })
+				Dajaxice.draw.loadRasterizer(@loadCallback, { areasToLoad: areasToLoad, itemsDates: itemsDates, cityPk: R.city })
 
 			return true
 
@@ -237,7 +237,7 @@ define [], () ->
 				else
 					itemsToLoad.push(item)
 
-			return
+			return itemsToLoad
 
 		createNewItems: (itemsToLoad)->
 			for item in itemsToLoad
@@ -256,13 +256,13 @@ define [], () ->
 						lock = null
 						switch box.object_type
 							when 'lock'
-								lock = new Lock(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
+								lock = new Item.Lock(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
 							when 'link'
-								lock = new Link(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
+								lock = new Item.Link(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
 							when 'website'
-								lock = new Website(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
+								lock = new Item.Website(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
 							when 'video-game'
-								lock = new VideoGame(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
+								lock = new Item.VideoGame(Utils.CS.rectangleFromBox(box), data, box._id.$oid, box.owner, date, box.module?.$oid)
 
 						lock.lastUpdateDate = box.lastUpdate.$date
 
@@ -277,9 +277,9 @@ define [], () ->
 
 						switch div.object_type
 							when 'text'
-								rdiv = new Text(Utils.CS.rectangleFromBox(div), data, pk, date, lock)
+								rdiv = new Item.Text(Utils.CS.rectangleFromBox(div), data, pk, date, lock)
 							when 'media'
-								rdiv = new Media(Utils.CS.rectangleFromBox(div), data, pk, date, lock)
+								rdiv = new Item.Media(Utils.CS.rectangleFromBox(div), data, pk, date, lock)
 
 						rdiv.lastUpdateDate = div.lastUpdate.$date
 
@@ -312,14 +312,14 @@ define [], () ->
 						# areaToUpdate.strokeColor = 'rgba(255,50,50,0.5)'
 						# areaToUpdate.strokeWidth = 3
 						# areaToUpdate.getBounds = ()-> return areaToUpdate.bounds
-						# R.areasToUpdateLayer.addChild(areaToUpdate)
+						# R.view.areasToUpdateLayer.addChild(areaToUpdate)
 						# R.view.mainLayer.activate()
 					else
 						continue
 			return
 
 		# load callback: add loaded RItems
-		loadCallback: (results)->
+		loadCallback: (results)=>
 			console.log "load callback"
 			console.log P.project.activeLayer.name
 
@@ -329,7 +329,7 @@ define [], () ->
 				@dispatchLoadFinished()
 				return
 
-			@setMe(result.user)
+			@setMe(results.user)
 
 			if results.rasters? then R.rasterizer.load(results.rasters, results.qZoom)
 
@@ -347,7 +347,7 @@ define [], () ->
 			if not results.rasters? or results.rasters.length==0
 				R.rasterizer.rasterizeAreasToUpdate()
 
-			R.Div.updateZIndex(R.sortedDivs)
+			Item.Div.updateZIndex(R.sortedDivs)
 
 			if not R.rasterizerMode
 
@@ -400,14 +400,14 @@ define [], () ->
 			@unloadRectangle.strokeWidth = 1
 			@unloadRectangle.strokeColor = 'red'
 			@unloadRectangle.dashArray = [10, 4]
-			R.debugLayer.addChild(@unloadRectangle)
+			R.view.debugLayer.addChild(@unloadRectangle)
 
 			@viewRectangle?.remove()
 			@viewRectangle = new P.Path.Rectangle(bounds)
 			@viewRectangle.name = '@debug load view rectangle'
 			@viewRectangle.strokeWidth = 1
 			@viewRectangle.strokeColor = 'blue'
-			R.debugLayer.addChild(@viewRectangle)
+			R.view.debugLayer.addChild(@viewRectangle)
 
 			@limitRectangle?.remove()
 			@limitRectangle = new P.Path.Rectangle(new P.Point(l, t), new P.Point(r, b))
@@ -415,7 +415,7 @@ define [], () ->
 			@limitRectangle.strokeWidth = 2
 			@limitRectangle.strokeColor = 'blue'
 			@limitRectangle.dashArray = [10, 4]
-			R.debugLayer.addChild(@limitRectangle)
+			R.view.debugLayer.addChild(@limitRectangle)
 			return
 
 		updateDebugArea: (area)->
@@ -433,7 +433,7 @@ define [], () ->
 			areaRectangle.name = '@debug load area rectangle'
 			areaRectangle.strokeWidth = 1
 			areaRectangle.strokeColor = 'green'
-			R.debugLayer.addChild(areaRectangle)
+			R.view.debugLayer.addChild(areaRectangle)
 			area.rectangle = areaRectangle
 			return
 

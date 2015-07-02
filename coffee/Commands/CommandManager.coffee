@@ -8,6 +8,7 @@ define [ 'Commands/Command' ], (Command) ->
 			@itemToCommands = {}
 			@currentCommand = -1
 			@historyJ = $("#History ul.history")
+			@add(new Command('Loaded Romanesco'), true)
 			return
 
 		add: (command, execute=false)->
@@ -74,38 +75,39 @@ define [ 'Commands/Command' ], (Command) ->
 			@historyJ.empty()
 			@history = []
 			@currentCommand = -1
-			@add(new R.Command("Load Romanesco"), true)
+			@add(new Command("Load Romanesco"), true)
 			return
 
 		# manage actions
 
 		beginAction: (command, event)->
-			if @currentCommand
+			if @actionCommand?
+				clearTimeout(R.updateTimeout['addCurrentCommand-' + @actionCommand.id])
 				@endAction()
-				clearTimeout(R.updateTimeout['addCurrentCommand-' + @currentCommand.id])
-			@currentCommand = command
-			@currentCommand.begin(event)
+			@actionCommand = command
+			@actionCommand.begin(event)
 			return
 
 		updateAction: (event)->
-			@currentCommand.update(event)
+			@actionCommand.update(event)
 			return
 
 		endAction: (event)=>
-			@currentCommand.end(event)
-			@currentCommand = null
+			@actionCommand.end(event)
+			@actionCommand = null
 			return
 
 		deferredAction: (ActionCommand, items, args...)->
-			if not ActionCommand.prototype.isPrototypeOf(@currentCommand)
+			if not ActionCommand.prototype.isPrototypeOf(@actionCommand)
 				@beginAction(new ActionCommand(items, args))
-			@updateAction.apply(args)
-			Utils.deferredExecution(@endAction, 'addCurrentCommand-' + @currentCommand.id )
+			@updateAction.apply(@, args)
+			Utils.deferredExecution(@endAction, 'addCurrentCommand-' + @actionCommand.id )
 			return
 
 		# manage items
 
 		mapItemsToCommand: (command)->
+			if not command.items? then return
 			for item in command.items
 				@itemToCommands[item.getPk()] ?= []
 				@itemToCommands[item.getPk()].push(command)
