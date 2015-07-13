@@ -13,6 +13,7 @@ define [ 'Tools/Tool', 'Tools/ItemTool', 'Items/Divs/Media' ], (Tool, ItemTool, 
 				x: 0, y:0
 			name: 'default'
 			icon: 'image'
+		@order = 6
 
 		constructor: () ->
 			super(Media)
@@ -25,7 +26,7 @@ define [ 'Tools/Tool', 'Tools/ItemTool', 'Items/Divs/Media' ], (Tool, ItemTool, 
 		# @param [String] author (username) of the event
 		end: (event, from=R.me) ->
 			if super(event, from)
-				R.Media.initialize(R.currentPaths[from].bounds)
+				Media.initialize(R.currentPaths[from].bounds)
 				delete R.currentPaths[from]
 			return
 

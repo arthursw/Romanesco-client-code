@@ -1,4 +1,4 @@
-define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools', required?
+define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ext-language_tools', required?
 
 	class Console
 
@@ -103,9 +103,9 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-lan
 
 			# editor
 			@editorJ = $("#codeEditor")
-			@editorJ.bind "transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd", @onEditorResize
+			@editorJ.bind "transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd", @resize
 
-			if @sidebarJ.hasClass("r-hidden")
+			if R.sidebar.sidebarJ.hasClass("r-hidden")
 				@editorJ.addClass("r-hidden")
 
 			# handle
@@ -142,6 +142,8 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-lan
 				enableSnippets: true
 				enableLiveAutocompletion: false
 			)
+			ace.config.set("packaged", true)
+			ace.config.set("basePath", require.toUrl("ace"))
 			@editor.setTheme("ace/theme/monokai")
 			# @editor.setShowInvisibles(true)
 			# @editor.getSession().setTabSize(4)
@@ -265,7 +267,7 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-lan
 			$("body").css( 'user-select': 'none' )
 			return
 
-		onEditorResize: ()=>
+		resize: ()=>
 			@editor.resize()
 			return
 

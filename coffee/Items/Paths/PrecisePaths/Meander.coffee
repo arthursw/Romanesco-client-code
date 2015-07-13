@@ -1,10 +1,10 @@
-define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
+define [ 'Items/Paths/PrecisePaths/StepPath' ], (StepPath) ->
 
 
 	# Meander makes use of both the tangent and the normal of the control path to draw a spiral at each step
 	# Many different versions can be derived from this one (some inspiration can be found here:
 	# http://www.dreamstime.com/photos-images/meander-wave-ancient-greek-ornament.html )
-	class Meander extends PrecisePath
+	class Meander extends StepPath
 		@label = 'Meander'
 		@description = """As Karl Kerenyi pointed out, "the meander is the figure of a labyrinth in linear form".
 		A meander or meandros (Greek: Μαίανδρος) is a decorative border constructed from a continuous line, shaped into a repeated motif.

@@ -86,7 +86,7 @@
         return new P.Point(x.rotate(rotation).dot(d), y.rotate(rotation).dot(d));
       };
 
-      SelectionRectangle.setRectangle = function(items, previousRectangle, rectangle, rotation) {
+      SelectionRectangle.setRectangle = function(items, previousRectangle, rectangle, rotation, update) {
         var delta, item, itemRectangle, previousCenter, scale, _i, _len;
         scale = new P.Point(rectangle.size.divide(previousRectangle.size));
         previousCenter = previousRectangle.center;
@@ -96,13 +96,16 @@
           delta = this.getDelta(previousCenter, itemRectangle.center, rotation);
           itemRectangle.center = rectangle.center.add(delta.multiply(scale).rotate(rotation));
           itemRectangle = itemRectangle.scale(scale.x, scale.y);
-          item.setRectangle(itemRectangle);
+          item.setRectangle(itemRectangle, update);
         }
       };
 
-      function SelectionRectangle() {
-        this.items = R.selectedItems;
-        this.rectangle = this.getBoundingRectangle(this.items);
+      function SelectionRectangle(rectangle) {
+        this.rectangle = rectangle;
+        this.items = this.rectangle == null ? R.selectedItems : [];
+        if (this.rectangle == null) {
+          this.rectangle = this.getBoundingRectangle(this.items);
+        }
         this.transformState = null;
         this.group = new P.Group();
         this.group.name = "selection rectangle group";
@@ -123,12 +126,15 @@
 
       SelectionRectangle.prototype.getBoundingRectangle = function(items) {
         var bounds, item, _i, _len;
+        if (items.length === 0) {
+          return;
+        }
         bounds = items[0].getBounds();
         for (_i = 0, _len = items.length; _i < _len; _i++) {
           item = items[_i];
           bounds = bounds.unite(item.getBounds());
         }
-        return bounds;
+        return bounds.expand(5);
       };
 
       SelectionRectangle.prototype.addHandles = function(bounds) {
@@ -208,6 +214,24 @@
         this.path.rotation = this.rotation || 0;
       };
 
+      SelectionRectangle.prototype.show = function() {
+        this.group.visible = true;
+        this.path.visible = true;
+      };
+
+      SelectionRectangle.prototype.hide = function() {
+        this.group.visible = false;
+        this.path.visible = false;
+      };
+
+      SelectionRectangle.prototype.setVisibility = function(show) {
+        if (show) {
+          this.show();
+        } else {
+          this.hide();
+        }
+      };
+
       SelectionRectangle.prototype.remove = function() {
         this.group.remove();
         this.rectangle = null;
@@ -223,7 +247,7 @@
         _ref = this.items;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           item = _ref[_i];
-          item.translate(delta);
+          item.translate(delta, false);
         }
       };
 
@@ -330,7 +354,7 @@
           this.adjustPosition(rectangle, center);
         }
         this.cancelNegativeSize(rectangle, center);
-        this.constructor.setRectangle(this.items, this.rectangle, rectangle, rotation);
+        this.constructor.setRectangle(this.items, this.rectangle, rectangle, rotation, false);
         this.rectangle = rectangle;
         this.updatePath();
       };
@@ -420,7 +444,7 @@
         _ref = this.items;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           item = _ref[_i];
-          item.rotate(angle, this.rectangle.center);
+          item.rotate(angle, this.rectangle.center, false);
         }
       };
 
@@ -524,6 +548,7 @@
       return ScreenshotRectangle;
 
     })(SelectionRectangle);
+    R.SelectionRectangle = SelectionRectangle;
     return SelectionRectangle;
   });
 

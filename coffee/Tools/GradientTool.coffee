@@ -4,7 +4,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 
 		@label = 'Gradient'
 		@description = ''
-		@favorite = true
+		@favorite = false
 		@category = ''
 		@cursor =
 			position:

@@ -3,10 +3,27 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 	class FileManager
 
 		constructor: ()->
-			@fileBrowserJ = $('#Code').find('.files')
+			@codeJ = $('#Code')
+
+			@loadMainRepoBtnJ = @codeJ.find('button.main-repository')
+			@loadOwnForkBtnJ = @codeJ.find('li.user-fork > a')
+			@listForksBtnJ = @codeJ.find('li.list-forks > a')
+			@loadCustomForkBtnJ = @codeJ.find('li.custom-fork > a')
+			@createForkBtnJ = @codeJ.find('li.create-fork > a')
+			@loadOwnForkBtnJ.hide()
+			@createForkBtnJ.hide()
+			@getForks(@getUserFork)
+
+			@loadMainRepoBtnJ.click @loadMainRepo
+			@loadOwnForkBtnJ.click @loadOwnFork
+			@loadCustomForkBtnJ.click @loadCustomFork
+			@listForksBtnJ.click @listForks
+			@createForkBtnJ.click @createFork
+
+			@fileBrowserJ = @codeJ.find('.files')
 			@files = []
 			@nDirsToLoad = 1
-			@request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', @loadTree)
+			@loadMainRepo()
 			# $.get('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', @loadFiles)
 			# @state = '' + Math.random()
 			# parameters =
@@ -17,7 +34,75 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 			# $.get( { url: 'https://github.com/login/oauth/authorize', data: parameters }, (result)-> console.log result; return)
 			return
 
-		request: (request, callback)->
+		getUserFork: (forks)=>
+			hasFork = false
+			for fork in forks
+				if fork.owner.login == R.me
+					@loadOwnForkBtnJ.show()
+					@createForkBtnJ.hide()
+					hasFork = true
+					break
+			if not hasFork
+				@loadOwnForkBtnJ.hide()
+				@createForkBtnJ.show()
+			return
+
+		getForks: (callback)->
+			@request('https://api.github.com/repos/arthursw/romanesco-client-code/forks/', callback)
+			return
+
+		forkRowClicked: (event)=>
+			@loadFork($(event.target.attr('full_name')))
+			return
+
+		displayForks: (forks)=>
+			modal = Modal.createModal( title: 'Forks', submit: null )
+			modal.initializeTable()
+			for fork in forks
+				modal.addTableRow(fork.full_name, click: forkRowClicked)
+			modal.show()
+			return
+
+		listForks: (event)=>
+			event?.preventDefault()
+			@getForks(@displayForks)
+			return
+
+		loadMainRepo: (event)=>
+			event?.preventDefault()
+			@request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', @loadTree)
+			return
+
+		loadOwnFork: (event)=>
+			event?.preventDefault()
+			@request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', @loadTree)
+			return
+
+		loadFork: (data)=>
+			@request('https://api.github.com/repos/' + data.user + '/romanesco-client-code/contents/', @loadTree)
+			return
+
+		loadCustomFork: (event)=>
+			event?.preventDefault()
+			modal = Modal.createModal( title: 'Load repository', submit: @loadFork )
+			modal.addTextInput(name: 'user', placeholder: 'The login name of the fork owner (ex: george)', label: 'Owner', required: true)
+			modal.show()
+			return
+
+		forkCreationResponse: (response)=>
+			if response.status == 202
+				message = 'Congratulation, you just made a new fork!'
+				message += 'It should be available in a few seconds at this adress:' + response.url
+				message += 'You will then be able to improve or customize it.'
+				R.alertManager.alert message, 'success'
+			return
+
+		createFork: (event)=>
+			event?.preventDefault()
+			@request('https://api.github.com/repos/' + R.user.githubLogin + '/romanesco-client-code/forks/', @forkCreationResponse, 'post')
+			return
+
+		request: (request, callback, method, params, headers)->
 			Dajaxice.draw.githubRequest(callback, {githubRequest: request})
 			return
 

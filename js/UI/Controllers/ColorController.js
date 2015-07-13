@@ -100,7 +100,7 @@
         this.colorInputJ.on('hide.bs.popover', this.popoverOnHide);
         this.colorInputJ.on('hide.bs.popover', this.popoverOnHidden);
         this.enableCheckboxJ.change(this.enableCheckboxChanged);
-        this.setColor(value, false);
+        this.setColor(value, false, this.parameter.defaultCheck);
       };
 
       ColorController.prototype.popoverOnShow = function(event) {
@@ -201,12 +201,15 @@
         }
       };
 
-      ColorController.prototype.setColor = function(color, updateColorPicker) {
+      ColorController.prototype.setColor = function(color, updateColorPicker, defaultCheck) {
         var c, colors, stop, _i, _len, _ref, _ref1;
         if (updateColorPicker == null) {
           updateColorPicker = true;
         }
-        this.enableCheckboxJ[0].checked = color != null;
+        if (defaultCheck == null) {
+          defaultCheck = null;
+        }
+        this.enableCheckboxJ[0].checked = defaultCheck != null ? defaultCheck : color != null;
         if (this.gradient) {
           this.colorInputJ.val('Gradient');
           colors = '';

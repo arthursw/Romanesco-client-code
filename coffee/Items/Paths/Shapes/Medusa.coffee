@@ -33,7 +33,7 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 
 		@parameters = @initializeParameters()
 		@createTool(@)
-		
+
 		# animted paths must be initialized
 		initialize: ()->
 			@data.animate = true

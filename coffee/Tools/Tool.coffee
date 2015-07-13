@@ -76,6 +76,7 @@ define [ 'UI/Button' ], (Button) ->
 		# - initialize the popover (help tooltip)
 		constructor: (createButton) ->
 			if createButton then @createButton()
+			@name = @constructor.label
 			return
 
 		createButton: ()->
@@ -87,6 +88,7 @@ define [ 'UI/Button' ], (Button) ->
 				category: @constructor.category
 				description: @constructor.description
 				popover: true
+				order: @constructor.order
 			)
 
 			@btn.btnJ.click( @select )

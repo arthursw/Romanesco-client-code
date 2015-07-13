@@ -1,4 +1,4 @@
-define ['Items/Item', 'Items/Divs/Div', 'oembed'], (Item, Div) ->
+define ['Items/Item', 'Items/Divs/Div', 'UI/Modal', 'oembed'], (Item, Div, Modal) ->
 
 	# todo: remove @url? duplicated in @data.url or remove data.url
 	# todo: websocket the url change
@@ -19,15 +19,17 @@ define ['Items/Item', 'Items/Divs/Div', 'oembed'], (Item, Div) ->
 
 		@initialize: (rectangle)->
 			submit = (data)->
-				div = new R.Media(rectangle, data)
+				div = new Media(rectangle)
+				div.setURL(data.url)
 				div.finish()
 				if not div.group then return
 				div.save()
 				div.select()
 				return
-			R.RModal.initialize('Add media', submit)
-			R.RModal.addTextInput('url', 'http:// or <iframe>', 'url', 'url', 'URL', true)
-			R.RModal.show()
+
+			modal = Modal.createModal( title: 'Add media', submit: submit )
+			modal.addTextInput(name: 'url', placeholder: 'http:// or <iframe>', type: 'url', class: 'url', label: 'URL', required: true)
+			modal.show()
 			return
 
 		@initializeParameters: ()->
@@ -52,8 +54,7 @@ define ['Items/Item', 'Items/Divs/Div', 'oembed'], (Item, Div) ->
 			super(bounds, @data, @pk, @date, @lock)
 			@url = @data.url
 			if @url? and @url.length>0
-				@urlChanged(@url, false)
-
+				@setURL(@url, false)
 			return
 
 		dispatchLoadedEvent: ()->
@@ -106,11 +107,11 @@ define ['Items/Item', 'Items/Divs/Div', 'oembed'], (Item, Div) ->
 		# toggle fit image if required
 		setParameter: (name, value)->
 			super(name, value)
-			switch controller.name
+			switch name
 				when 'fitImage'
 					@toggleFitImage()
 				when 'url'
-					@urlChanged(value, false)
+					@setURL(value, false)
 			return
 
 		# return [Boolean] true if the url ends with an image extension: "jpeg", "jpg", "gif" or "png"
@@ -200,8 +201,8 @@ define ['Items/Item', 'Items/Divs/Div', 'oembed'], (Item, Div) ->
 		# update the Media if *updateDiv*
 		# @param url [String] the url of the media to embed
 		# @param updateDiv [Boolean] whether to update the Media
-		urlChanged: (url, updateDiv=false) =>
-			console.log 'urlChanged, updateDiv: ' + updateDiv + ', ' + @pk
+		setURL: (url, updateDiv=false) =>
+			console.log 'setURL, updateDiv: ' + updateDiv + ', ' + @pk
 			@url = url
 
 			if @contentJ?

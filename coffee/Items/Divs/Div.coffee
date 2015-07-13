@@ -39,7 +39,10 @@ define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 			if @hiddenDivs.length > 0
 				point = new P.Point(event.pageX, event.pageY)
 				projectPoint = P.view.viewToProject(point)
-				for div in @hiddenDivs
+				hiddenDivs = @hiddenDivs.slice() 	# hidden divs will be modified:
+													# (divs are removed from hiddenDivs when shown)
+													# copy the array to iterate on it
+				for div in hiddenDivs
 					if not div.getBounds().contains(projectPoint)
 						div.show()
 			return
@@ -49,10 +52,18 @@ define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 				@hiddenDivs[0].show()
 			return
 
-		@updateZIndex: (sortedDivs)->
+		@updateZindex: (sortedDivs)->
 			for div, i in sortedDivs
-				div.divJ.css( 'z-index': i )
+				div.divJ.css( 'z-index': i + @zIndexMin )
 			return
+
+		@create: (duplicateData)->
+			duplicateData ?= @getDuplicateData()
+			copy = new @(duplicateData.bounds, duplicateData.data, null, null, R.items[duplicateData.lock])
+			if not @socketAction
+				copy.save(false)
+				R.socket.emit "bounce", itemClass: @name, function: "create", arguments: [duplicateData]
+			return copy
 
 		# add the div jQuery element (@divJ) on top of the canvas and intialize it
 		# initialize @data
@@ -74,15 +85,10 @@ define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 			separatorJ = R.stageJ.find("." + @object_type + "-separator")
 			@divJ = R.templatesJ.find(".custom-div").clone().insertAfter(separatorJ)
 
-			@divJ.mouseenter (event)=>
-				for item in R.selectedItems
-					if item != @ and item.getBounds().intersects(@getBounds())
-						@hide()
-						break
-				return
+			@divJ.mouseenter @onMouseEnter
 
 			if not @lock
-				super(@data, @pk, @date, R.divList, R.sortedDivs)
+				super(@data, @pk, @date, R.sidebar.divListJ, R.sortedDivs)
 			else
 				super(@data, @pk, @date, @lock.itemListsJ.find('.rDiv-list'), @lock.sortedDivs)
 
@@ -104,17 +110,27 @@ define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 
 			if R.selectedTool.name == 'Move' then @disableInteraction()
 
-			@divJ.click (event)=>
-				if @selected? then return
-				if not event.shiftKey
-					R.tools.select.deselectAll()()
-				@select()
-				return
+			@divJ.click @onClick
 
 			if not bounds.contains(@rectangle.expand(-1))
 				console.log "Error: invalid div"
 				@remove()
 
+			return
+
+		onMouseEnter: (event)=>
+			# hide me if I am in front of others (to be able to select a curve under me)
+			for item in R.selectedItems
+				if item != @ and item.getBounds().intersects(@getBounds())
+					@hide()
+					break
+			return
+
+		onClick: (event)=>
+			if @selected? then return
+			if not event.shiftKey
+				R.tools.select.deselectAll()
+			@select()
 			return
 
 		hide: ()->
@@ -128,7 +144,7 @@ define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 			return
 
 		save: (addCreateCommand=true) ->
-			if Grid.rectangleOverlapsTwoPlanets(@rectangle)
+			if R.view.grid.rectangleOverlapsTwoPlanets(@rectangle)
 				return
 
 			if @rectangle.area == 0
@@ -170,8 +186,8 @@ define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 			@updateTransform()
 			return
 
-		setRotation: (rotation, update=true)->
-			super(rotation, update)
+		setRotation: (rotation, center, update=true)->
+			super(rotation, center, update)
 			@updateTransform()
 			return
 
@@ -203,20 +219,8 @@ define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 
 			return
 
-		# insert above given *div*
-		# @param div [Div] div on which to insert this
-		# @param index [Number] the index at which to add the div in R.sortedDivs
-		insertAbove: (div, index=null, update=false)->
-			super(div, index, update)
-			if not index then @constructor.updateZIndex(@sortedItems)
-			return
-
-		# insert below given *div*
-		# @param div [Div] div under which to insert this
-		# @param index [Number] the index at which to add the div in R.sortedDivs
-		insertBelow: (div, index=null, update=false)->
-			super(div, index, update)
-			if not index then @constructor.updateZIndex(@sortedItems)
+		setZindex: ()->
+			@constructor.updateZindex(@sortedItems)
 			return
 
 		beginSelect: (event) =>
@@ -276,7 +280,7 @@ define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 			bounds = @getBounds()
 
 			# check if position is valid
-			if Grid.rectangleOverlapsTwoPlanets(bounds)
+			if R.view.grid.rectangleOverlapsTwoPlanets(bounds)
 				return
 
 			Dajaxice.draw.updateDiv( @updateCallback, @getUpdateArguments(type) )
@@ -339,12 +343,8 @@ define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 		# called when user deletes the item by pressing delete key or from the gui
 		# @delete() removes the path and delete it in the database
 		# @remove() just removes visually
-		delete: () ->
-			if @lock? and @lock.owner != R.me then return
-			@remove()
-			if not @pk? then return
-			if not @socketAction then Dajaxice.draw.deleteDiv( R.loader.checkError, { 'pk': @pk } )
-			super
+		deleteFromDatabase: () ->
+			Dajaxice.draw.deleteDiv( R.loader.checkError, { 'pk': @pk } )
 			return
 
 	Item.Div = Div

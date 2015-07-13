@@ -1,4 +1,4 @@
-define ['Utils/Utils'], () ->
+define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 
 	class CityManager
 
@@ -14,7 +14,7 @@ define ['Utils/Utils'], () ->
 			return
 
 		createCityModal: ()->
-			modal = R.RModal.createModal( title: 'Create city', submit: @createCity, postSubmit: 'load' )
+			modal = Modal.createModal( title: 'Create city', submit: @createCity, postSubmit: 'load' )
 			modal.addTextInput( label: "City name", name: 'name', required: true, submitShortcut: true, placeholder: 'Paris' )
 			modal.addCheckbox( label: "Public", name: 'public', helpMessage: "Public cities will be accessible by anyone.", defaultValue: true )
 			modal.show()
@@ -46,7 +46,7 @@ define ['Utils/Utils'], () ->
 				name: name
 				site: null
 			R.loader.load()
-			View.updateHash()
+			R.view.updateHash()
 			return
 
 		openCitySettings: ()->
@@ -59,7 +59,7 @@ define ['Utils/Utils'], () ->
 			isPublic = parseInt(parentJ.attr('data-public'))
 			pk = parentJ.attr('data-pk')
 
-			modal = R.RModal.createModal(title: 'Modify city', submit: @updateCity, data: { pk: pk }, postSubmit: 'load' )
+			modal = Modal.createModal(title: 'Modify city', submit: @updateCity, data: { pk: pk }, postSubmit: 'load' )
 			modal.addTextInput( name: 'name', label: 'Name', defaultValue: name, required: true, submitShortcut: true )
 			modal.addCheckbox( name: 'public', label: 'Public', helpMessage: "Public cities will be accessible by anyone.", defaultValue: isPublic )
 			modal.show()
@@ -70,12 +70,12 @@ define ['Utils/Utils'], () ->
 			return
 
 		updateCityCallback: ()->
-			modal = R.RModal.getModalByTitle('Modify city')
+			modal = Modal.getModalByTitle('Modify city')
 			modal.hide()
 			if not R.loader.checkError(result) then return
 			city = JSON.parse(result.city)
 			R.alertManager.alert "City successfully renamed to: " + city.name, "info"
-			modalBodyJ = R.RModal.getModalByTitle('Open city').modalBodyJ
+			modalBodyJ = Modal.getModalByTitle('Open city').modalBodyJ
 			rowJ = modalBodyJ.find('[data-pk="' + city._id.$oid + '"]')
 			rowJ.attr('data-name', city.name)
 			rowJ.attr('data-public', Number(city.public or 0))
@@ -91,14 +91,14 @@ define ['Utils/Utils'], () ->
 	# 		submit = (data)->
 	# 			Dajaxice.draw.createCity(R.loadCityFromServer, name: data.name, public: data.public)
 	# 			return
-	# 		modal = R.RModal.createModal( title: 'Create city', submit: submit, postSubmit: 'load' )
+	# 		modal = Modal.createModal( title: 'Create city', submit: submit, postSubmit: 'load' )
 	# 		modal.addTextInput( label: "City name", name: 'name', required: true, submitShortcut: true, placeholder: 'Paris' )
 	# 		modal.addCheckbox( label: "Public", name: 'public', helpMessage: "Public cities will be accessible by anyone.", defaultValue: true )
 	# 		modal.show()
 	# 		return
 
 	# 	R.toolsJ.find("[data-name='Open']").click ()->
-	# 		modal = R.RModal.createModal( title: 'Open city', name: 'open-city' )
+	# 		modal = Modal.createModal( title: 'Open city', name: 'open-city' )
 	# 		modal.modalBodyJ.find('.modal-footer').hide()
 	# 		modal.addProgressBar()
 	# 		modal.show()
@@ -118,12 +118,12 @@ define ['Utils/Utils'], () ->
 	# 	updateCity = (data)->
 
 	# 		callback = (result)->
-	# 			modal = R.RModal.getModalByTitle('Modify city')
+	# 			modal = Modal.getModalByTitle('Modify city')
 	# 			modal.hide()
 	# 			if not R.loader.checkError(result) then return
 	# 			city = JSON.parse(result.city)
 	# 			R.alertManager.alert "City successfully renamed to: " + city.name, "info"
-	# 			modalBodyJ = R.RModal.getModalByTitle('Open city').modalBodyJ
+	# 			modalBodyJ = Modal.getModalByTitle('Open city').modalBodyJ
 	# 			rowJ = modalBodyJ.find('[data-pk="' + city._id.$oid + '"]')
 	# 			rowJ.attr('data-name', city.name)
 	# 			rowJ.attr('data-public', Number(city.public or 0))
@@ -134,7 +134,7 @@ define ['Utils/Utils'], () ->
 	# 		Dajaxice.draw.updateCity(callback, pk: data.data.pk, name: data.name, public: data.public )
 	# 		return
 
-	# 	modal = R.RModal.createModal(title: 'Modify city', submit: updateCity, data: { pk: pk }, postSubmit: 'load' )
+	# 	modal = Modal.createModal(title: 'Modify city', submit: updateCity, data: { pk: pk }, postSubmit: 'load' )
 	# 	modal.addTextInput( name: 'name', label: 'Name', defaultValue: name, required: true, submitShortcut: true )
 	# 	modal.addCheckbox( name: 'public', label: 'Public', helpMessage: "Public cities will be accessible by anyone.", defaultValue: isPublic )
 	# 	modal.show()
@@ -174,7 +174,7 @@ define ['Utils/Utils'], () ->
 	# 	userCities = JSON.parse(result.userCities)
 	# 	publicCities = JSON.parse(result.publicCities)
 
-	# 	modal = R.RModal.getModalByTitle('Open city')
+	# 	modal = Modal.getModalByTitle('Open city')
 	# 	modal.removeProgressBar()
 	# 	modalBodyJ = modal.modalBodyJ
 

@@ -2,16 +2,19 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  define(['Items/Item', 'jqueryUi', 'scrollbar'], function(Item) {
+  define(['Items/Item', 'UI/ModuleLoader', 'jqueryUi', 'scrollbar', 'typeahead'], function(Item, ModuleLoader) {
     var Sidebar;
     Sidebar = (function() {
       function Sidebar() {
+        this.displayDesiredTool = __bind(this.displayDesiredTool, this);
+        this.queryDesiredTool = __bind(this.queryDesiredTool, this);
         this.toggleSidebar = __bind(this.toggleSidebar, this);
         this.toggleToolToFavorite = __bind(this.toggleToolToFavorite, this);
         this.sidebarJ = $("#sidebar");
         this.favoriteToolsJ = $("#FavoriteTools .tool-list");
         this.allToolsContainerJ = $("#AllTools");
         this.allToolsJ = this.allToolsContainerJ.find(".all-tool-list");
+        this.searchToolInputJ = this.allToolsContainerJ.find('.search-tool');
         this.initializeFavoriteTools();
         this.handleJ = this.sidebarJ.find(".sidebar-handle");
         this.handleJ.click(this.toggleSidebar);
@@ -38,6 +41,11 @@
         });
         return;
       }
+
+      Sidebar.prototype.initialize = function() {
+        ModuleLoader.initialize();
+        this.initializeTypeahead();
+      };
 
       Sidebar.prototype.initializeFavoriteTools = function() {
         var defaultFavoriteTools, error;
@@ -72,8 +80,8 @@
           btnJ.addClass("selected");
           cloneJ = btnJ.clone();
           this.favoriteToolsJ.append(cloneJ);
-          cloneJ.click(function(event) {
-            return btnJ.click(event);
+          cloneJ.click(function() {
+            return btnJ.click();
           });
           _ref = ['placement', 'container', 'trigger', 'delay', 'content', 'title'];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -82,6 +90,9 @@
             cloneJ.attr(attrName, btnJ.attr(attrName));
             cloneJ.popover();
           }
+          cloneJ.css({
+            'order': btnJ.attr('data-order')
+          });
           this.favoriteTools.push(toolName);
         }
         if (typeof localStorage === "undefined" || localStorage === null) {
@@ -117,13 +128,50 @@
       };
 
       Sidebar.prototype.toggleSidebar = function(show) {
-        if (show == null) {
-          show = !this.sidebarJ.hasClass("r-hidden");
+        if ((show == null) || jQuery.Event.prototype.isPrototypeOf(show)) {
+          show = this.sidebarJ.hasClass("r-hidden");
         }
         if (show) {
           this.show();
         } else {
           this.hide();
+        }
+      };
+
+      Sidebar.prototype.initializeTypeahead = function() {
+        var toolValues;
+        toolValues = this.allToolsJ.children().map(function() {
+          return {
+            value: this.getAttribute('data-name')
+          };
+        }).get();
+        this.typeaheadModuleEngine = new Bloodhound({
+          name: 'Tools',
+          local: toolValues,
+          datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+          queryTokenizer: Bloodhound.tokenizers.whitespace
+        });
+        this.typeaheadModuleEngine.initialize();
+        this.searchToolInputJ = this.allToolsContainerJ.find("input.search-tool");
+        this.searchToolInputJ.keyup(this.queryDesiredTool);
+      };
+
+      Sidebar.prototype.queryDesiredTool = function(event) {
+        var query;
+        query = this.searchToolInputJ.val();
+        if (query === "") {
+          this.allToolsJ.children().show();
+          return;
+        }
+        this.allToolsJ.children().hide();
+        this.typeaheadModuleEngine.get(query, this.displayDesiredTool);
+      };
+
+      Sidebar.prototype.displayDesiredTool = function(suggestions) {
+        var suggestion, _i, _len;
+        for (_i = 0, _len = suggestions.length; _i < _len; _i++) {
+          suggestion = suggestions[_i];
+          this.allToolsJ.children("[data-name='" + suggestion.value + "']").show();
         }
       };
 

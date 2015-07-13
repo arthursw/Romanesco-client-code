@@ -9,13 +9,12 @@ define [
 	'UI/Sidebar'
 	'UI/Code'
 	'UI/Modal'
-	'UI/ModuleLoader'
 	'UI/AlertManager'
 	'UI/Controllers/ControllerManager'
 	'Commands/CommandManager'
 	'View/View'
 	'Tools/ToolManager'
-], (Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, Modal, ModuleLoader, AlertManager, ControllerManager, CommandManager, View, ToolManager) ->
+], (Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager) ->
 
 
 	# R.rasterizerMode = window.rasterizerMode
@@ -276,7 +275,7 @@ define [
 		R.fileManager = new FileManager()
 		R.fontManager = new FontManager()
 		R.view.initializePosition()
-		ModuleLoader.initialize()
+		R.sidebar.initialize()
 
 		window.setPageFullyLoaded?(true)
 
@@ -288,7 +287,7 @@ define [
 
 	R.showCodeEditor = (source)->
 		if not R.codeEditor?
-			require ['editor'], (CodeEditor)->
+			require ['UI/Editor'], (CodeEditor)->
 				R.codeEditor = new CodeEditor()
 				if source then R.codeEditor.setSource(source)
 				R.codeEditor.open()

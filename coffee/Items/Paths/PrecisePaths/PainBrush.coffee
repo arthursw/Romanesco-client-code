@@ -1,6 +1,6 @@
-define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
+define [ 'Items/Paths/PrecisePaths/StepPath' ], (StepPath) ->
 
-	class PaintBrush extends PrecisePath
+	class PaintBrush extends StepPath
 		@label = 'Paint brush'
 		@description = "Paints a thick stroke with customable blur effects."
 		@iconURL = 'static/images/icons/inverted/brush.png'

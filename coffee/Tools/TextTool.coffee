@@ -1,4 +1,4 @@
-define [ 'Tools/Tool', 'Tools/ItemTool', 'Items/Divs/Media' ], (Tool, ItemTool, Media) ->
+define [ 'Tools/Tool', 'Tools/ItemTool', 'Items/Divs/Text' ], (Tool, ItemTool, Text) ->
 
 	# Text creation tool
 	class TextTool extends ItemTool
@@ -10,6 +10,7 @@ define [ 'Tools/Tool', 'Tools/ItemTool', 'Items/Divs/Media' ], (Tool, ItemTool, 
 			position:
 				x: 0, y: 0
 			name: 'crosshair'
+		@order = 5
 
 		constructor: () ->
 			super(Text)
@@ -22,7 +23,7 @@ define [ 'Tools/Tool', 'Tools/ItemTool', 'Items/Divs/Media' ], (Tool, ItemTool, 
 		# @param [String] author (username) of the event
 		end: (event, from=R.me) ->
 			if super(event, from)
-				text = new R.Text(R.currentPaths[from].bounds)
+				text = new Text(R.currentPaths[from].bounds)
 				text.finish()
 				if not text.group then return
 				text.select()

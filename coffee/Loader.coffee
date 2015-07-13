@@ -1,4 +1,4 @@
-define [ 'Commands/Command', 'Items/Item', 'Items/Lock', 'Items/Divs/Div', 'Items/Divs/Media', 'Items/Divs/Text' ], (Command, Item) ->
+define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Lock', 'Items/Divs/Div', 'Items/Divs/Media', 'Items/Divs/Text' ], (Command, Item, ModuleLoader, Spinner) ->
 
 	# --- load --- #
 
@@ -7,14 +7,53 @@ define [ 'Commands/Command', 'Items/Item', 'Items/Lock', 'Items/Divs/Div', 'Item
 		constructor: ()->
 			@loadedAreas = []
 			@debug = false
+			@pathsToCreate = {}
+			@initializeLoadingBar()
+			@showLoadingBar()
 			return
 
-		showLoadingBar: ()->
+		initializeLoadingBar: ()->
+			opts =
+				lines: 13
+				length: 45
+				width: 41
+				radius: 0
+				scale: 0.25
+				corners: 1
+				color: '#000'
+				opacity: 0.15
+				rotate: 0
+				direction: 1
+				speed: 1
+				trail: 42
+				fps: 20
+				zIndex: 2e9
+				className: 'spinner'
+				top: '50%'
+				left: '50%'
+				shadow: false
+				hwaccel: false
+				position: 'absolute'
+			target = document.getElementById('loadingBar')
+			@spinner = new Spinner(opts).spin(target)
+			return
+
+		showDrawingBar: ()->
+			$("#drawingBar").show()
+			return
+
+		hideDrawingBar: ()->
+			$("#drawingBar").hide()
+			return
+
+		showLoadingBar: ()=>
 			$("#loadingBar").show()
+			@spinner.spin()
 			return
 
-		hideLoadingBar: ()->
+		hideLoadingBar: ()=>
 			$("#loadingBar").hide()
+			@spinner.stop()
 			return
 
 		# @return [Boolean] true if the area was already loaded, false otherwise
@@ -239,6 +278,24 @@ define [ 'Commands/Command', 'Items/Item', 'Items/Lock', 'Items/Divs/Div', 'Item
 
 			return itemsToLoad
 
+		moduleLoaded: (args)->
+			@createPath(args)
+			delete @pathsToCreate[args.pk]
+			if Utils.isEmpty(@pathsToCreate)
+				@hideLoadingBar()
+				R.rasterizer.checkRasterizeAreasToUpdate?(true)
+			return
+
+		loadModuleAndCreatePath: (args)->
+			@pathsToCreate[args.pk] = true
+			ModuleLoader.load(args.path.object_type, ()=>@moduleLoaded(args))
+			return
+
+		createPath: (args)->
+			path = new R.tools[args.path.object_type].Path(args.date, args.data, args.pk, args.points, args.lock)
+			path.lastUpdateDate = args.path.lastUpdate?.$date
+			return
+
 		createNewItems: (itemsToLoad)->
 			for item in itemsToLoad
 
@@ -271,8 +328,6 @@ define [ 'Commands/Command', 'Items/Item', 'Items/Lock', 'Items/Divs/Div', 'Item
 						if div.box.coordinates[0].length<5
 							console.log "Error: box has less than 5 points"
 
-
-
 						# rdiv = new R.g[div.object_type](Utils.CS.rectangleFromBox(box), data, div._id.$oid, date, div.lock)
 
 						switch div.object_type
@@ -283,7 +338,7 @@ define [ 'Commands/Command', 'Items/Item', 'Items/Lock', 'Items/Divs/Div', 'Item
 
 						rdiv.lastUpdateDate = div.lastUpdate.$date
 
-					when 'P.Path' 		# add RPaths
+					when 'Path' 		# add RPaths
 						path = item
 						planet = new P.Point(path.planetX, path.planetY)
 						data?.planet = planet
@@ -296,14 +351,18 @@ define [ 'Commands/Command', 'Items/Item', 'Items/Lock', 'Items/Divs/Div', 'Item
 
 						# create the RPath with the corresponding RTool
 						rpath = null
+						args =
+							path: path
+							date: date
+							data: data
+							pk: pk
+							points: points
+							lock: lock
 						if R.tools[path.object_type]?
-							rpath = new R.tools[path.object_type].RPath(date, data, pk, points, lock)
-							rpath.lastUpdateDate = path.lastUpdate.$date
-
-							if rpath.constructor.name == "Checkpoint"
-								console.log rpath
+							@createPath(args)
 						else
-							console.log "Unknown path type: " + path.object_type
+							@loadModuleAndCreatePath(args)
+
 					when 'AreaToUpdate'
 						R.rasterizer.addAreaToUpdate(Utils.CS.rectangleFromBox(item))
 
@@ -341,13 +400,12 @@ define [ 'Commands/Command', 'Items/Item', 'Items/Lock', 'Items/Divs/Div', 'Item
 
 			@createNewItems(itemsToLoad)
 
-
 			R.rasterizer.setQZoomToUpdate(results.qZoom)
 
 			if not results.rasters? or results.rasters.length==0
-				R.rasterizer.rasterizeAreasToUpdate()
+				R.rasterizer.checkRasterizeAreasToUpdate()
 
-			Item.Div.updateZIndex(R.sortedDivs)
+			Item.Div.updateZindex(R.sortedDivs)
 
 			if not R.rasterizerMode
 
@@ -361,7 +419,8 @@ define [ 'Commands/Command', 'Items/Item', 'Items/Lock', 'Items/Divs/Div', 'Item
 				# P.view.draw()
 				# updateView()
 
-				@hideLoadingBar()
+				if Utils.isEmpty(@pathsToCreate)
+					@hideLoadingBar()
 
 				@dispatchLoadFinished()
 

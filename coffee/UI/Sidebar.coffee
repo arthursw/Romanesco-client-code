@@ -1,4 +1,4 @@
-define [ 'Items/Item', 'jqueryUi', 'scrollbar' ], (Item) ->
+define [ 'Items/Item', 'UI/ModuleLoader', 'jqueryUi', 'scrollbar', 'typeahead' ], (Item, ModuleLoader) ->
 
 	class Sidebar
 
@@ -7,6 +7,7 @@ define [ 'Items/Item', 'jqueryUi', 'scrollbar' ], (Item) ->
 			@favoriteToolsJ = $("#FavoriteTools .tool-list")
 			@allToolsContainerJ = $("#AllTools")
 			@allToolsJ = @allToolsContainerJ.find(".all-tool-list")
+			@searchToolInputJ = @allToolsContainerJ.find('.search-tool')
 			@initializeFavoriteTools()
 
 			# initialize sidebar handle
@@ -29,7 +30,11 @@ define [ 'Items/Item', 'jqueryUi', 'scrollbar' ], (Item) ->
 			@sortedDivs = R.sortedDivs
 
 			$(".mCustomScrollbar").mCustomScrollbar( keyboard: false )
+			return
 
+		initialize: ()->
+			ModuleLoader.initialize()
+			@initializeTypeahead()
 			return
 
 		initializeFavoriteTools: ()->
@@ -63,11 +68,12 @@ define [ 'Items/Item', 'jqueryUi', 'scrollbar' ], (Item) ->
 				btnJ.addClass("selected")
 				cloneJ = btnJ.clone()
 				@favoriteToolsJ.append(cloneJ)
-				cloneJ.click((event)->btnJ.click(event))
+				cloneJ.click(()->btnJ.click())
 				for attr in ['placement', 'container', 'trigger', 'delay', 'content', 'title']
 					attrName = 'data-' + attr
 					cloneJ.attr(attrName, btnJ.attr(attrName))
 					cloneJ.popover()
+				cloneJ.css('order': btnJ.attr('data-order'))
 
 				@favoriteTools.push(toolName)
 
@@ -96,11 +102,40 @@ define [ 'Items/Item', 'jqueryUi', 'scrollbar' ], (Item) ->
 		# Toggle (hide/show) sidebar (called when user clicks on the sidebar handle)
 		# @param show [Boolean] show the sidebar, defaults to the opposite of the current state (true if hidden, false if shown)
 		toggleSidebar: (show)=>
-			show ?= not @sidebarJ.hasClass("r-hidden")
+			if (not show?) or jQuery.Event.prototype.isPrototypeOf(show)
+				show = @sidebarJ.hasClass("r-hidden")
 			if show
 				@show()
 			else
 				@hide()
+			return
+
+		initializeTypeahead: ()->
+			toolValues = @allToolsJ.children().map(()->return value: this.getAttribute('data-name')).get()
+			@typeaheadModuleEngine = new Bloodhound({
+				name: 'Tools',
+				local: toolValues,
+				datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+				queryTokenizer: Bloodhound.tokenizers.whitespace
+			})
+			@typeaheadModuleEngine.initialize()
+
+			@searchToolInputJ = @allToolsContainerJ.find("input.search-tool")
+			@searchToolInputJ.keyup @queryDesiredTool
+			return
+
+		queryDesiredTool: (event)=>
+			query = @searchToolInputJ.val()
+			if query == ""
+				@allToolsJ.children().show()
+				return
+			@allToolsJ.children().hide()
+			@typeaheadModuleEngine.get(query, @displayDesiredTool)
+			return
+
+		displayDesiredTool: (suggestions)=>
+			for suggestion in suggestions
+				@allToolsJ.children("[data-name='" + suggestion.value + "']").show()
 			return
 
 	# R.createToolButton = (name, iconURL, favorite, category=null, parentJ)->

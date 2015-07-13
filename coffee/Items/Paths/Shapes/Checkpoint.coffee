@@ -16,7 +16,7 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 
 		@parameters = @initializeParameters()
 		@createTool(@)
-		
+
 		# register the checkpoint if we are on a video game
 		initialize: ()->
 			@data.type = 'checkpoint'

@@ -15,7 +15,7 @@
       Item.zIndexSortStop = function(event, ui) {
         var item, nextItemJ, previousItemJ, previouslySelectedItems, rItem, _i, _len;
         previouslySelectedItems = R.selectedItems;
-        R.tools.select.deselectAll()();
+        R.tools.select.deselectAll();
         rItem = R.items[ui.item.attr("data-pk")];
         nextItemJ = ui.item.next();
         if (nextItemJ.length > 0) {
@@ -59,7 +59,7 @@
         } else {
           console.error("Error: the item is neither an Div nor an RPath");
         }
-        item.updateZIndex();
+        item.updateZindex();
         if (wasSelected) {
           item.select();
         }
@@ -180,10 +180,25 @@
 
       Item.prototype.finishHitTest = function() {};
 
-      Item.prototype.setRectangle = function(rectangle, update) {
-        if (update == null) {
-          update = true;
+      Item.prototype.performHitTest = function(point) {
+        if (this.rectangle.contains(point)) {
+          return true;
+        } else {
+          return null;
         }
+      };
+
+      Item.prototype.hitTest = function(event) {
+        var hitResult;
+        hitResult = this.performHitTest(event.point);
+        if ((hitResult != null) && !this.selected) {
+          R.tools.select.deselectAll();
+          R.commandManager.add(new Command.Select([this]), true);
+        }
+        return hitResult;
+      };
+
+      Item.prototype.setRectangle = function(rectangle, update) {
         if (!P.Rectangle.prototype.isPrototypeOf(rectangle)) {
           rectangle = new P.Rectangle(rectangle);
         }
@@ -195,7 +210,7 @@
           R.socket.emit("bounce", {
             itemPk: this.pk,
             "function": "setRectangle",
-            "arguments": [this.rectangle, false]
+            "arguments": [rectangle, false]
           });
         }
       };
@@ -382,8 +397,15 @@
         });
       };
 
+      Item.prototype.deleteFromDatabase = function() {};
+
       Item.prototype["delete"] = function() {
+        this.remove();
+        if (this.pk == null) {
+          return;
+        }
         if (!this.socketAction) {
+          this.deleteFromDatabase();
           R.socket.emit("bounce", {
             itemPk: this.pk,
             "function": "delete",
@@ -447,6 +469,7 @@
       return Item;
 
     })();
+    ItemTool.Item = Item;
     return Item;
   });
 

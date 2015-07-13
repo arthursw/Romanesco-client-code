@@ -31,7 +31,7 @@
       Controller.prototype.onChange = function(value) {
         R.c = this;
         if (R.selectedItems.length > 0) {
-          R.commandManager.deferredAction(R.Command.SetParameter, R.selectedItems, this, value);
+          R.commandManager.deferredAction(R.Command.SetParameter, R.selectedItems, this.name, value);
         }
       };
 

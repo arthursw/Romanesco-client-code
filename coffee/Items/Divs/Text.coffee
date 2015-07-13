@@ -1,4 +1,4 @@
-define [ 'Items/Item', 'Items/Divs/Div' ], (Item, Div) ->
+define [ 'Items/Item', 'Items/Divs/Div', 'Commands/Command' ], (Item, Div, Command) ->
 
 	# Text: a textarea to write some text.
 	# The text can have any google font, any effect, but all the text has the same formating.
@@ -26,7 +26,7 @@ define [ 'Items/Item', 'Items/Divs/Div' ], (Item, Div) ->
 
 						input.typeahead(
 							{ hint: true, highlight: true, minLength: 1 },
-							{ valueKey: 'value', displayKey: 'value', source: R.typeaheadFontEngine.ttAdapter() }
+							{ valueKey: 'value', displayKey: 'value', source: R.fontManager.typeaheadFontEngine.ttAdapter() }
 						)
 
 						input.on 'typeahead:opened', ()->
@@ -160,16 +160,15 @@ define [ 'Items/Item', 'Items/Divs/Div' ], (Item, Div) ->
 
 			@setCss()
 
-			@contentJ.focus( () -> $(this).addClass("selected form-control") )
-			@contentJ.blur( () -> $(this).removeClass("selected form-control") )
+			@contentJ.focus(@onFocus)
+			@contentJ.blur(@onBlur)
 			@contentJ.focus()
-
-			@contentJ.keydown (event)=>
-				if event.metaKey or event.ctrlKey
-					@deselect()
-					event.stopImmediatePropagation()
-					return false
-				return
+			# @contentJ.keydown (event)=>
+			# 	if event.metaKey or event.ctrlKey
+			# 		@deselect()
+			# 		event.stopImmediatePropagation()
+			# 		return false
+			# 	return
 
 			if not lockedForMe
 				@contentJ.bind('input propertychange', (event) => @textChanged(event) )
@@ -178,8 +177,19 @@ define [ 'Items/Item', 'Items/Divs/Div' ], (Item, Div) ->
 				@setFont(false)
 			return
 
+		onFocus: (event)=>
+			$(event.target).addClass("selected form-control")
+			@select()
+			return
+
+		onBlur: (event)=>
+			$(event.target).removeClass("selected form-control")
+			# @deselect()
+			return
+		#
 		# select: (updateOptions=true, updateSelectionRectangle=true)->
 		# 	if not super(updateOptions, updateSelectionRectangle) then return false
+		# 	@contentJ.focus()
 		# 	return true
 
 		deselect: ()->
@@ -193,7 +203,7 @@ define [ 'Items/Item', 'Items/Divs/Div' ], (Item, Div) ->
 		# @param event [jQuery Event] the key event
 		textChanged: (event) =>
 			newText = @contentJ.val()
-			@deferredAction(Command.ModifyText, newText)
+			R.commandManager.deferredAction(Command.ModifyText, @, newText)
 			# Utils.deferredExecution(@update, 'update', 1000, ['text'], @)
 			return
 
@@ -217,7 +227,7 @@ define [ 'Items/Item', 'Items/Divs/Div' ], (Item, Div) ->
 
 			# check font validity
 			available = false
-			for item in R.availableFonts
+			for item in R.fontManager.availableFonts
 				if item.family == fontFamily
 					available = true
 					break
@@ -353,7 +363,7 @@ define [ 'Items/Item', 'Items/Divs/Div' ], (Item, Div) ->
 		# update text content and font styles, effects and colors
 		setParameter: (name, value)->
 			super(name, value)
-			switch controller.name
+			switch name
 				when 'fontStyle', 'fontFamily', 'fontSize', 'effect', 'fontColor'
 					@setFont(false)
 				else

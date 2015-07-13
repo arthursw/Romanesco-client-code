@@ -18,6 +18,7 @@
         this.onMouseDrag = __bind(this.onMouseDrag, this);
         this.onMouseDown = __bind(this.onMouseDown, this);
         this.onHashChange = __bind(this.onHashChange, this);
+        this.addMoveCommand = __bind(this.addMoveCommand, this);
         R.stageJ = $("#stage");
         R.canvasJ = R.stageJ.find("#canvas");
         R.canvas = R.canvasJ[0];
@@ -340,7 +341,7 @@
       };
 
       View.prototype.onFrame = function(event) {
-        var car, direction, item, username, _base, _i, _len, _ref, _ref1, _ref2;
+        var item, _base, _i, _len, _ref, _ref1;
         TWEEN.update(event.time);
         if (typeof (_base = R.rasterizer).updateLoadingBar === "function") {
           _base.updateLoadingBar(event.time);
@@ -354,17 +355,6 @@
         for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
           item = _ref1[_i];
           item.onFrame(event);
-        }
-        _ref2 = R.cars;
-        for (username in _ref2) {
-          car = _ref2[username];
-          direction = new P.Point(1, 0);
-          direction.angle = car.rotation - 90;
-          car.position = car.position.add(direction.multiply(car.speed));
-          if (Date.now() - car.rLastUpdate > 1000) {
-            R.cars[username].remove();
-            delete R.cars[username];
-          }
         }
       };
 

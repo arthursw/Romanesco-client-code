@@ -12,6 +12,10 @@ define [ 'Tools/Tool' ], (Tool) ->
 			position:
 				x: 0, y:0
 			name: 'default'
+		@order = 7
+
+		@minSpeed = 0.05
+		@maxSpeed = 100
 
 		@initializeParameters: ()->
 			parameters =
@@ -30,13 +34,11 @@ define [ 'Tools/Tool' ], (Tool) ->
 						max: 10
 						onChange: (value)-> 		# set volume of the car, stop the sound if volume==0 and restart otherwise
 							if R.selectedTool.constructor.name == "CarTool"
-								sound = R.Tools.car.sound
-								if sound? and value>0
-									if not sound.isPlaying
-										sound.play()
-										sound.setLoopStart(3.26)
-										sound.setLoopEnd(5.22)
-									sound.setVolume(0.1*value)
+								sound = R.tools.car.sound
+								if not sound? then return
+								if value>0
+									sound.play('car')
+									sound.volume(0.1*value)
 								else
 									sound.stop()
 							return
@@ -53,7 +55,10 @@ define [ 'Tools/Tool' ], (Tool) ->
 		# load the car image, and initialize the car and the sound
 		select: (deselectItems=true, updateParameters=true)->
 			super
+			require(['howler'], @howlerLoaded)
+			return
 
+		howlerLoaded: ()=>
 			# create Paper raster and initialize car parameters
 			@car = new P.Raster("/static/images/car.png")
 			R.view.carLayer.addChild(@car)
@@ -67,15 +72,19 @@ define [ 'Tools/Tool' ], (Tool) ->
 			@car.previousSpeed = 0
 
 			# initialize sound
-			@sound = new Sound(['/static/sounds/viper.ogg']) 			# load car sound
-
-			@sound.setVolume(0.1)
-			@sound.play(0)
-			@sound.setLoopStart(3.26)
-			@sound.setLoopEnd(5.22)
+			@sound = new Howl
+				urls: ['/static/sounds/viper.ogg']
+				loop: true
+				volume: 0.1
+				sprite:
+					car: [3260, 5220]
+			@sound.play('car')
 
 			@lastUpdate = Date.now()
 
+			# on car move: create car (Raster) if the car for this user does not exist, and update position, rotation and speed.
+			# the car will be removed if it is not updated for 1 second
+			R.socket.socket.on "car move", @onCarMove
 			return
 
 		# Deselect tool: remove car and stop sound
@@ -93,28 +102,21 @@ define [ 'Tools/Tool' ], (Tool) ->
 			if not @car? then return
 
 			# update car position, speed and direction according to user inputs
-			minSpeed = 0.05
-			maxSpeed = 100
 
-			if Key.isDown('right')
+			if P.Key.isDown('right')
 				@car.direction.angle += 5
-			if Key.isDown('left')
+			if P.Key.isDown('left')
 				@car.direction.angle -= 5
-			if Key.isDown('up')
-				if @car.speed<maxSpeed then @car.speed++
-			else if Key.isDown('down')
-				if @car.speed>-maxSpeed then @car.speed--
+			if P.Key.isDown('up')
+				if @car.speed<@constructor.maxSpeed then @car.speed++
+			else if P.Key.isDown('down')
+				if @car.speed>-@constructor.maxSpeed then @car.speed--
 			else
 				@car.speed *= 0.9
-				if Math.abs(@car.speed) < minSpeed
+				if Math.abs(@car.speed) < @constructor.minSpeed
 					@car.speed = 0
 
-			# update sound rate
-			minRate = 0.25
-			maxRate = 3
-			rate = minRate+Math.abs(@car.speed)/maxSpeed*(maxRate-minRate)
-			# console.log rate
-			@sound.setRate(rate)
+			@updateSound()
 
 			# acc = @speed-@previousSpeed
 
@@ -149,9 +151,9 @@ define [ 'Tools/Tool' ], (Tool) ->
 
 			@car.rotation = @car.direction.angle+90
 
-			if Math.abs(@car.speed) > minSpeed
+			if Math.abs(@car.speed) > @constructor.minSpeed
 				@car.position = @car.position.add(@car.direction.multiply(@car.speed))
-				View.moveTo(@car.position)
+				R.view.moveTo(@car.position)
 
 			# R.gameAt(@car.position)?.updateGame(@)
 
@@ -159,7 +161,35 @@ define [ 'Tools/Tool' ], (Tool) ->
 				if R.me? then R.socket.emit "car move", R.me, @car.position, @car.rotation, @car.speed
 				@lastUpdate = Date.now()
 
+
 			#P.view.center = @car.position
+			return
+
+		updateSound: ()->
+			minRate = 0.25
+			maxRate = 3
+			rate = minRate+Math.abs(@car.speed)/@constructor.maxSpeed*(maxRate-minRate)
+			@sound._rate = rate
+			@sound._activeNode()?.bufferSource?.playbackRate?.value = rate
+			return
+
+		onCarMove: (user, position, rotation, speed)->
+			if R.ignoreSockets then return
+			R.cars[user] ?= new P.Raster("/static/images/car.png")
+			R.cars[user].position = new P.Point(position)
+			R.cars[user].rotation = rotation
+			R.cars[user].speed = speed
+			R.cars[user].rLastUpdate = Date.now()
+			return
+
+		updateOtherCars: ()->
+			for username, car of R.cars
+				direction = new P.Point(1,0)
+				direction.angle = car.rotation-90
+				car.position = car.position.add(direction.multiply(car.speed))
+				if Date.now() - car.rLastUpdate > 1000
+					R.cars[username].remove()
+					delete R.cars[username]
 			return
 
 		keyUp: (event)->

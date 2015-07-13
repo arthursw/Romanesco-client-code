@@ -5,7 +5,7 @@
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
-  define(['Items/Item', 'Items/Divs/Div', 'oembed'], function(Item, Div) {
+  define(['Items/Item', 'Items/Divs/Div', 'UI/Modal', 'oembed'], function(Item, Div, Modal) {
     var Media;
     Media = (function(_super) {
       __extends(Media, _super);
@@ -19,10 +19,11 @@
       Media.object_type = 'media';
 
       Media.initialize = function(rectangle) {
-        var submit;
+        var modal, submit;
         submit = function(data) {
           var div;
-          div = new R.Media(rectangle, data);
+          div = new Media(rectangle);
+          div.setURL(data.url);
           div.finish();
           if (!div.group) {
             return;
@@ -30,9 +31,19 @@
           div.save();
           div.select();
         };
-        R.RModal.initialize('Add media', submit);
-        R.RModal.addTextInput('url', 'http:// or <iframe>', 'url', 'url', 'URL', true);
-        R.RModal.show();
+        modal = Modal.createModal({
+          title: 'Add media',
+          submit: submit
+        });
+        modal.addTextInput({
+          name: 'url',
+          placeholder: 'http:// or <iframe>',
+          type: 'url',
+          "class": 'url',
+          label: 'URL',
+          required: true
+        });
+        modal.show();
       };
 
       Media.initializeParameters = function() {
@@ -61,12 +72,12 @@
         this.date = date;
         this.lock = lock != null ? lock : null;
         this.afterEmbed = __bind(this.afterEmbed, this);
-        this.urlChanged = __bind(this.urlChanged, this);
+        this.setURL = __bind(this.setURL, this);
         this.loadMedia = __bind(this.loadMedia, this);
         Media.__super__.constructor.call(this, bounds, this.data, this.pk, this.date, this.lock);
         this.url = this.data.url;
         if ((this.url != null) && this.url.length > 0) {
-          this.urlChanged(this.url, false);
+          this.setURL(this.url, false);
         }
         return;
       }
@@ -153,12 +164,12 @@
 
       Media.prototype.setParameter = function(name, value) {
         Media.__super__.setParameter.call(this, name, value);
-        switch (controller.name) {
+        switch (name) {
           case 'fitImage':
             this.toggleFitImage();
             break;
           case 'url':
-            this.urlChanged(value, false);
+            this.setURL(value, false);
         }
       };
 
@@ -254,11 +265,11 @@
         document.dispatchEvent(commandEvent);
       };
 
-      Media.prototype.urlChanged = function(url, updateDiv) {
+      Media.prototype.setURL = function(url, updateDiv) {
         if (updateDiv == null) {
           updateDiv = false;
         }
-        console.log('urlChanged, updateDiv: ' + updateDiv + ', ' + this.pk);
+        console.log('setURL, updateDiv: ' + updateDiv + ', ' + this.pk);
         this.url = url;
         if (this.contentJ != null) {
           this.contentJ.remove();

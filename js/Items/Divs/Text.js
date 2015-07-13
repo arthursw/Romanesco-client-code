@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Items/Item', 'Items/Divs/Div'], function(Item, Div) {
+  define(['Items/Item', 'Items/Divs/Div', 'Commands/Command'], function(Item, Div, Command) {
     var Text;
     Text = (function(_super) {
       __extends(Text, _super);
@@ -37,7 +37,7 @@
               }, {
                 valueKey: 'value',
                 displayKey: 'value',
-                source: R.typeaheadFontEngine.ttAdapter()
+                source: R.fontManager.typeaheadFontEngine.ttAdapter()
               });
               input.on('typeahead:opened', function() {
                 var dropDown;
@@ -215,6 +215,8 @@
         this.lock = lock != null ? lock : null;
         this.changeFontStyle = __bind(this.changeFontStyle, this);
         this.textChanged = __bind(this.textChanged, this);
+        this.onBlur = __bind(this.onBlur, this);
+        this.onFocus = __bind(this.onFocus, this);
         Text.__super__.constructor.call(this, bounds, this.data, this.pk, this.date, this.lock);
         this.contentJ = $("<textarea></textarea>");
         this.contentJ.insertBefore(this.maskJ);
@@ -227,22 +229,9 @@
           }), false);
         }
         this.setCss();
-        this.contentJ.focus(function() {
-          return $(this).addClass("selected form-control");
-        });
-        this.contentJ.blur(function() {
-          return $(this).removeClass("selected form-control");
-        });
+        this.contentJ.focus(this.onFocus);
+        this.contentJ.blur(this.onBlur);
         this.contentJ.focus();
-        this.contentJ.keydown((function(_this) {
-          return function(event) {
-            if (event.metaKey || event.ctrlKey) {
-              _this.deselect();
-              event.stopImmediatePropagation();
-              return false;
-            }
-          };
-        })(this));
         if (!lockedForMe) {
           this.contentJ.bind('input propertychange', (function(_this) {
             return function(event) {
@@ -256,6 +245,15 @@
         return;
       }
 
+      Text.prototype.onFocus = function(event) {
+        $(event.target).addClass("selected form-control");
+        this.select();
+      };
+
+      Text.prototype.onBlur = function(event) {
+        $(event.target).removeClass("selected form-control");
+      };
+
       Text.prototype.deselect = function() {
         if (!Text.__super__.deselect.call(this)) {
           return false;
@@ -267,7 +265,7 @@
       Text.prototype.textChanged = function(event) {
         var newText;
         newText = this.contentJ.val();
-        this.deferredAction(Command.ModifyText, newText);
+        R.commandManager.deferredAction(Command.ModifyText, this, newText);
       };
 
       Text.prototype.setText = function(newText, update) {
@@ -297,7 +295,7 @@
           return;
         }
         available = false;
-        _ref = R.availableFonts;
+        _ref = R.fontManager.availableFonts;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           item = _ref[_i];
           if (item.family === fontFamily) {
@@ -462,7 +460,7 @@
 
       Text.prototype.setParameter = function(name, value) {
         Text.__super__.setParameter.call(this, name, value);
-        switch (controller.name) {
+        switch (name) {
           case 'fontStyle':
           case 'fontFamily':
           case 'fontSize':

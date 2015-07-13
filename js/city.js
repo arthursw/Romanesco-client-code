@@ -2,7 +2,7 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  define(['Utils/Utils'], function() {
+  define(['Utils/Utils', 'UI/Modal'], function(Utils, Modal) {
     var CityManager;
     CityManager = (function() {
       function CityManager() {
@@ -23,7 +23,7 @@
 
       CityManager.prototype.createCityModal = function() {
         var modal;
-        modal = R.RModal.createModal({
+        modal = Modal.createModal({
           title: 'Create city',
           submit: this.createCity,
           postSubmit: 'load'
@@ -77,7 +77,7 @@
           site: null
         };
         R.loader.load();
-        View.updateHash();
+        R.view.updateHash();
       };
 
       CityManager.prototype.openCitySettings = function() {
@@ -88,7 +88,7 @@
         name = parentJ.attr('data-name');
         isPublic = parseInt(parentJ.attr('data-public'));
         pk = parentJ.attr('data-pk');
-        modal = R.RModal.createModal({
+        modal = Modal.createModal({
           title: 'Modify city',
           submit: this.updateCity,
           data: {
@@ -122,14 +122,14 @@
 
       CityManager.prototype.updateCityCallback = function() {
         var city, modal, modalBodyJ, rowJ;
-        modal = R.RModal.getModalByTitle('Modify city');
+        modal = Modal.getModalByTitle('Modify city');
         modal.hide();
         if (!R.loader.checkError(result)) {
           return;
         }
         city = JSON.parse(result.city);
         R.alertManager.alert("City successfully renamed to: " + city.name, "info");
-        modalBodyJ = R.RModal.getModalByTitle('Open city').modalBodyJ;
+        modalBodyJ = Modal.getModalByTitle('Open city').modalBodyJ;
         rowJ = modalBodyJ.find('[data-pk="' + city._id.$oid + '"]');
         rowJ.attr('data-name', city.name);
         rowJ.attr('data-public', Number(city["public"] || 0));

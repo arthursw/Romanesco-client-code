@@ -13,6 +13,7 @@ define [ 'Tools/Tool', 'Tools/ItemTool', 'Items/Lock' ], (Tool, ItemTool, Lock) 
 				x: 0, y:0
 			name: 'default'
 			icon: 'key'
+		@order = 4
 		@drawItems = false
 
 		constructor: () ->

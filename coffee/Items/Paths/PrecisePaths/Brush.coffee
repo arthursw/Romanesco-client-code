@@ -1,5 +1,5 @@
 
-	# class Brush extends PrecisePath
+	# class Brush extends StepPath
 	# 	@label = 'new P.Path'
 	# 	@description = "New tool description."
 

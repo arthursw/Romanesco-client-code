@@ -3,7 +3,7 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Items/Paths/PrecisePaths/PrecisePath'], function(PrecisePath) {
+  define(['Items/Paths/PrecisePaths/StepPath'], function(StepPath) {
     var PaintBrush;
     PaintBrush = (function(_super) {
       __extends(PaintBrush, _super);
@@ -93,7 +93,7 @@
 
       return PaintBrush;
 
-    })(PrecisePath);
+    })(StepPath);
     return PaintBrush;
   });
 

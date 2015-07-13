@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tools/Tool', 'zeroClipboard'], function(Tool, ZeroClipboard) {
+  define(['Tools/Tool', 'zeroClipboard', 'View/SelectionRectangle'], function(Tool, ZeroClipboard, SelectionRectangle) {
     var ScreenshotTool;
     ScreenshotTool = (function(_super) {
       __extends(ScreenshotTool, _super);
@@ -25,6 +25,8 @@
       };
 
       ScreenshotTool.drawItems = false;
+
+      ScreenshotTool.order = 3;
 
       function ScreenshotTool() {
         this.downloadSVG = __bind(this.downloadSVG, this);
@@ -118,7 +120,7 @@
         if (r.area < 100) {
           return;
         }
-        this.selectionRectangle = new R.RSelectionRectangle(new P.Rectangle(event.downPoint, event.point), this.extractImage);
+        this.selectionRectangle = new SelectionRectangle(new P.Rectangle(event.downPoint, event.point), this.extractImage);
       };
 
       ScreenshotTool.prototype.extractImage = function(redraw) {

@@ -54,7 +54,7 @@ define ['Items/Paths/PrecisePaths/SpeedPaths/SpeedPath'], (SpeedPath) ->
 
 		@parameters = @initializeParameters()
 		@createTool(@)
-		
+
 		beginDraw: ()->
 			@initializeDrawing(false)
 			@lastOffset = 0

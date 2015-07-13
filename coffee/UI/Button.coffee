@@ -7,6 +7,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 			iconURL = parameters.iconURL
 			favorite = parameters.favorite
 			category = parameters.category
+			order = parameters.order
 			@file = parameters.file
 
 			parentJ = R.sidebar.allToolsJ
@@ -64,6 +65,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 			favoriteBtnJ.click(R.sidebar.toggleToolToFavorite)
 
 			@btnJ.append(favoriteBtnJ)
+			@btnJ.attr('data-order': if order? then order else 999)
 			@btnJ.click(if @file? then @onClickWhenNotLoaded else @onClickWhenLoaded)
 
 

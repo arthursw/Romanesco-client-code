@@ -3,6 +3,8 @@ define [ 'Tools/Tool', 'Items/Lock', 'Commands/Command', 'View/SelectionRectangl
 	# Enables to select RItems
 	class SelectTool extends Tool
 
+		@SelectionRectangle = SelectionRectangle
+
 		@label = 'Select'
 		@description = ''
 		@iconURL = 'cursor.png'
@@ -11,16 +13,13 @@ define [ 'Tools/Tool', 'Items/Lock', 'Commands/Command', 'View/SelectionRectangl
 				x: 0, y: 0
 			name: 'default'
 		@drawItems = false
+		@order = 1
 
 		# Paper hitOptions for hitTest function to check which items (corresponding to those criterias) are under a point
 		@hitOptions =
 			stroke: true
 			fill: true
-			handles: true
-			segments: true
-			curves: true
 			selected: true
-			tolerance: 5
 
 		constructor: () ->
 			super(true)
@@ -35,6 +34,10 @@ define [ 'Tools/Tool', 'Items/Lock', 'Commands/Command', 'View/SelectionRectangl
 				@selectionRectangle?.remove()
 				@selectionRectangle = null
 			P.project.activeLayer.selected = false
+			return
+
+		setSelectionRectangleVisibility: (value)=>
+			@selectionRectangle?.setVisibility(value)
 			return
 
 		updateSelectionRectangle: (rotation)->
@@ -172,7 +175,7 @@ define [ 'Tools/Tool', 'Items/Lock', 'Commands/Command', 'View/SelectionRectangl
 				hitResult = P.project.hitTest(event.point, @constructor.hitOptions)
 				path.finishHitTest() for name, path of R.paths
 				controller = hitResult?.item.controller
-				controller?.hitTest?(event)
+				controller?.hitTest(event)
 				itemWasHit = controller?
 
 			if not itemWasHit

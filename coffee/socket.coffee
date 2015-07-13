@@ -148,10 +148,6 @@ define [ 'socketio' ], (ioo) ->
 			# 	P.view.update()
 			# 	return
 
-			# on car move: create car (Raster) if the car for this user does not exist, and update position, rotation and speed.
-			# the car will be removed if it is not updated for 1 second
-			@socket.on "car move", @onCarMove
-
 			# # on parameter change:
 			# # set items[pk].data[name] to value and call parameterChanged
 			# # experimental *type* == 'rFunction' to call a custom function of the item
@@ -272,15 +268,6 @@ define [ 'socketio' ], (ioo) ->
 				@chatJ.find("#chatUserNameError").addClass("hidden")
 			else
 				@chatJ.find("#chatUserNameError").removeClass("hidden")
-			return
-
-		onCarMove: (user, position, rotation, speed)->
-			if R.ignoreSockets then return
-			R.cars[user] ?= new P.Raster("/static/images/car.png")
-			R.cars[user].position = new P.Point(position)
-			R.cars[user].rotation = rotation
-			R.cars[user].speed = speed
-			R.cars[user].rLastUpdate = Date.now()
 			return
 
 		onBounce: (data) ->

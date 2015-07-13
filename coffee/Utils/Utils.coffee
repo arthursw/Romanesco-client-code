@@ -571,5 +571,9 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 		console.log "Time elapsed: " + time + " sec."
 		return
 
+	Utils.defaultCallback = (a)->
+		console.log a
+		return
+
 	window.Utils = Utils
 	return Utils

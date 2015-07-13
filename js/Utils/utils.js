@@ -519,6 +519,9 @@
       time = (Date.now() - R.startTime) / 1000;
       console.log("Time elapsed: " + time + " sec.");
     };
+    Utils.defaultCallback = function(a) {
+      console.log(a);
+    };
     window.Utils = Utils;
     return Utils;
   });

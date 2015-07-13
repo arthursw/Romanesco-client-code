@@ -112,12 +112,18 @@
         this.actionCommand.begin(event);
       };
 
-      CommandManager.prototype.updateAction = function(event) {
-        this.actionCommand.update(event);
+      CommandManager.prototype.updateAction = function() {
+        var _ref;
+        if ((_ref = this.actionCommand) != null) {
+          _ref.update.apply(this.actionCommand, arguments);
+        }
       };
 
       CommandManager.prototype.endAction = function(event) {
-        this.actionCommand.end(event);
+        var _ref;
+        if ((_ref = this.actionCommand) != null) {
+          _ref.end(event);
+        }
         this.actionCommand = null;
       };
 
@@ -132,21 +138,29 @@
       };
 
       CommandManager.prototype.mapItemsToCommand = function(command) {
-        var item, _base, _i, _len, _name, _ref;
+        var item, pk, _base, _ref;
         if (command.items == null) {
           return;
         }
         _ref = command.items;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
-          if ((_base = this.itemToCommands)[_name = item.getPk()] == null) {
-            _base[_name] = [];
+        for (pk in _ref) {
+          item = _ref[pk];
+          if ((_base = this.itemToCommands)[pk] == null) {
+            _base[pk] = [];
           }
-          this.itemToCommands[item.getPk()].push(command);
+          this.itemToCommands[pk].push(command);
         }
       };
 
       CommandManager.prototype.setItemPk = function(id, pk) {
+        var command, commands, _i, _len;
+        commands = this.itemToCommands[id];
+        if (commands != null) {
+          for (_i = 0, _len = commands.length; _i < _len; _i++) {
+            command = commands[_i];
+            command.setItemPk(id, pk);
+          }
+        }
         this.itemToCommands[pk] = this.itemToCommands[id];
         delete this.itemToCommands[id];
       };
@@ -179,9 +193,11 @@
         if (commands != null) {
           for (_i = 0, _len = commands.length; _i < _len; _i++) {
             command = commands[_i];
-            command.resurrectItem(pk, item);
+            command.resurrectItem(item);
           }
         }
+        this.itemToCommands[item.getPk()] = commands;
+        delete this.itemToCommands[pk];
       };
 
       return CommandManager;

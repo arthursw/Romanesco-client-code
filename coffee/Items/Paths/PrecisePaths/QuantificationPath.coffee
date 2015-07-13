@@ -1,5 +1,5 @@
 
-	# class QuantificationPath extends PrecisePath
+	# class QuantificationPath extends StepPath
 	#   @label = 'Quantification path'
 	#   @description = "Quantification path."
 

@@ -12,7 +12,7 @@ define [ ], () ->
 			jqxhr = $.getJSON("https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyBVfBj_ugQO_w0AK1x9F6yiXByhcNgjQZU", @initTextOptions)
 			jqxhr.done (json)=>
 				console.log 'done'
-				@initTextOptions(json)
+				@initializeTextOptions(json)
 				return
 			jqxhr.fail (jqxhr, textStatus, error)->
 				err = textStatus + ", " + error
@@ -22,6 +22,7 @@ define [ ], () ->
 				err = textStatus + ", " + error
 				console.log 'always: ' + err
 				return
+
 			return
 
 		# add font to the page:
@@ -90,7 +91,7 @@ define [ ], () ->
 			return
 
 		# initialize typeahead font engine to quickly search for a font by typing its first letters
-		initTextOptions: (data, textStatus, jqXHR) =>
+		initializeTextOptions: (data, textStatus, jqXHR) =>
 
 			# gather all font names
 			fontFamilyNames = []

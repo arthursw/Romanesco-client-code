@@ -25,12 +25,14 @@ requirejs.config
 		'paper': ['//cdnjs.cloudflare.com/ajax/libs/paper.js/0.9.22/paper-full', libs + 'paper-full']
 		'gui': ['//cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui', libs + 'dat.gui.min']
 		'typeahead': ['//cdnjs.cloudflare.com/ajax/libs/typeahead.js/0.10.4/typeahead.bundle.min', libs + 'typeahead.bundle.min']
+		'howler': ['//cdnjs.cloudflare.com/ajax/libs/howler/1.1.26/howler.min', libs + 'howler']
+		'spin': ['//cdnjs.cloudflare.com/ajax/libs/spin.js/2.0.1/spin.min', libs + 'spin.min']
 		'pinit': ['//assets.pinterest.com/js/pinit', libs + 'pinit']
-
+		'table': ['//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.8.1/bootstrap-table.min', libs + 'table']
 		'zeroClipboard': ['//cdnjs.cloudflare.com/ajax/libs/zeroclipboard/2.2.0/ZeroClipboard.min', libs + 'ZeroClipboard.min']
 
 
-
+		# 'domReady': [libs + 'domReady']
 		# 'ace': [libs + 'ace']
 		# 'aceTools': [libs + 'ace/ext-language_tools']
 		# 'underscore': [libs + 'underscore-min']
@@ -50,7 +52,9 @@ requirejs.config
 		# 'gui': [libs + 'dat.gui.min']
 		# 'typeahead': [libs + 'typeahead.bundle.min']
 		# 'pinit': [libs + 'pinit']
-
+		# 'howler': [libs + 'howler']
+		# 'spin': [libs + 'spin.min']
+		#
 		# 'zeroClipboard': [libs + 'ZeroClipboard.min']
 
 

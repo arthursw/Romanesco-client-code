@@ -9,9 +9,8 @@
     var AddPointCommand, Command, CreateItemCommand, DeferredCommand, DeleteItemCommand, DeletePointCommand, DeselectCommand, DuplicateItemCommand, ItemCommand, ItemsCommand, ModifyControlPathCommand, ModifyPointCommand, ModifyPointTypeCommand, ModifySpeedCommand, ModifyTextCommand, MoveViewCommand, RotateCommand, ScaleCommand, SelectCommand, SelectionRectangleCommand, SetParameterCommand, TranslateCommand;
     Command = (function() {
       function Command(name) {
-        this.name = name;
         this.click = __bind(this.click, this);
-        this.liJ = $("<li>").text(this.name);
+        this.liJ = $("<li>").text(name);
         this.liJ.click(this.click);
         this.id = Math.random();
         return;
@@ -122,15 +121,20 @@
       };
 
       ItemsCommand.prototype.unloadItem = function(item) {
-        this.items[item.pk] = null;
+        delete this.items[item.pk];
       };
 
       ItemsCommand.prototype.loadItem = function(item) {
         this.items[item.pk] = item;
       };
 
-      ItemsCommand.prototype.resurrectItem = function(pk, item) {
-        this.items[pk] = item;
+      ItemsCommand.prototype.setItemPk = function(id, pk) {
+        this.items[pk] = this.items[id];
+        delete this.items[id];
+      };
+
+      ItemsCommand.prototype.resurrectItem = function(item) {
+        this.items[item.getPk()] = item;
       };
 
       ItemsCommand.prototype["delete"] = function() {
@@ -157,9 +161,7 @@
       }
 
       ItemCommand.prototype.unloadItem = function(item) {
-        this.item = {
-          pk: item.pk
-        };
+        this.item = null;
         ItemCommand.__super__.unloadItem.call(this, item);
       };
 
@@ -168,9 +170,9 @@
         ItemCommand.__super__.loadItem.call(this, item);
       };
 
-      ItemCommand.prototype.resurrectItem = function(pk, item) {
+      ItemCommand.prototype.resurrectItem = function(item) {
         this.item = item;
-        ItemCommand.__super__.resurrectItem.call(this, pk, item);
+        ItemCommand.__super__.resurrectItem.call(this, item);
       };
 
       return ItemCommand;
@@ -207,6 +209,9 @@
 
       DeferredCommand.prototype.updateItems = function(type) {
         var args, item, pk, _ref;
+        if (type == null) {
+          type = this.updateType;
+        }
         args = [];
         _ref = this.items;
         for (pk in _ref) {
@@ -234,6 +239,7 @@
 
       function SelectionRectangleCommand(items) {
         SelectionRectangleCommand.__super__.constructor.call(this, this.constructor.Method + ' items', items);
+        this.updateType = this.constructor.method;
         return;
       }
 
@@ -296,13 +302,13 @@
       };
 
       ScaleCommand.prototype["do"] = function() {
-        R.tools.select.selectionRectangle.constructor.setRectangle(this.getItemArray(), this.state.previous, this.state["new"], this.state.rotation);
+        R.SelectionRectangle.setRectangle(this.getItemArray(), this.state.previous, this.state["new"], this.state.rotation, false);
         this.updateSelectionRectangle(this.state.rotation);
         this.superDo();
       };
 
       ScaleCommand.prototype.undo = function() {
-        R.tools.select.selectionRectangle.constructor.setRectangle(this.getItemArray(), this.state["new"], this.state.previous, this.state.rotation);
+        R.SelectionRectangle.setRectangle(this.getItemArray(), this.state["new"], this.state.previous, this.state.rotation, false);
         this.updateSelectionRectangle(this.state.rotation);
         this.superUndo();
       };
@@ -405,6 +411,7 @@
         ModifyPointCommand.__super__.constructor.call(this, 'Modify point', item);
         this.index = this.item.selectedSegment.index;
         this.previousPoint = this.getPoint();
+        this.updateType = 'points';
         return;
       }
 
@@ -431,17 +438,17 @@
       ModifyPointCommand.prototype.getPoint = function() {
         var segment;
         segment = this.item.controlPath.segments[this.index];
-        return [segment, segment.point.clone(), segment.handleIn.clone(), segment.handleOut.clone(), true];
+        return [segment.index, segment.point.clone(), segment.handleIn.clone(), segment.handleOut.clone(), true];
       };
 
       ModifyPointCommand.prototype.commandChanged = function() {
         var i, _i;
         for (i = _i = 1; _i <= 3; i = ++_i) {
           if (!this.previousPoint[i].equals(this.newPoint[i])) {
-            return false;
+            return true;
           }
         }
-        return true;
+        return false;
       };
 
       return ModifyPointCommand;
@@ -453,6 +460,7 @@
       function ModifySpeedCommand(item) {
         ModifySpeedCommand.__super__.constructor.call(this, 'Modify speed', item);
         this.previousSpeeds = this.item.speeds.slice();
+        this.updateType = 'speed';
         return;
       }
 
@@ -490,10 +498,12 @@
     SetParameterCommand = (function(_super) {
       __extends(SetParameterCommand, _super);
 
-      function SetParameterCommand(items, name) {
+      function SetParameterCommand(items, args) {
         var item, pk, _ref;
-        this.name = name;
+        this.name = args[0];
+        this.previousValue = args[1];
         SetParameterCommand.__super__.constructor.call(this, 'Change item parameter "' + this.name + '"', items);
+        this.updateType = 'parameters';
         this.previousValues = {};
         _ref = this.items;
         for (pk in _ref) {
@@ -504,11 +514,11 @@
       }
 
       SetParameterCommand.prototype["do"] = function() {
-        var pk, value, _ref;
-        _ref = this.newValues;
+        var item, pk, _ref;
+        _ref = this.items;
         for (pk in _ref) {
-          value = _ref[pk];
-          this.items[pk].setParameter(this.name, value);
+          item = _ref[pk];
+          item.setParameter(this.name, this.newValue);
         }
         R.controllerManager.updateController(this.name, this.newValue);
         this.updateItems(this.name);
@@ -516,11 +526,11 @@
       };
 
       SetParameterCommand.prototype.undo = function() {
-        var pk, value, _ref;
-        _ref = this.previousValues;
+        var item, pk, _ref;
+        _ref = this.items;
         for (pk in _ref) {
-          value = _ref[pk];
-          this.items[pk].setParameter(this.name, value);
+          item = _ref[pk];
+          item.setParameter(this.name, this.previousValues[pk]);
         }
         R.controllerManager.updateController(this.name, this.previousValue);
         this.updateItems(this.name);
@@ -528,23 +538,17 @@
       };
 
       SetParameterCommand.prototype.update = function(name, value) {
-        var item, pk, _i, _len, _ref;
+        var item, pk, _ref;
+        this.newValue = value;
         _ref = this.items;
-        for (item = _i = 0, _len = _ref.length; _i < _len; item = ++_i) {
-          pk = _ref[item];
+        for (pk in _ref) {
+          item = _ref[pk];
           item.setParameter(name, value);
         }
       };
 
-      SetParameterCommand.prototype.end = function(event) {
-        var item, pk, _ref;
-        this.newValues = {};
-        _ref = this.items;
-        for (pk in _ref) {
-          item = _ref[pk];
-          this.newValues[pk] = item.data[this.name];
-        }
-        SetParameterCommand.__super__.end.call(this, event);
+      SetParameterCommand.prototype.commandChanged = function() {
+        return true;
       };
 
       return SetParameterCommand;
@@ -632,7 +636,7 @@
 
       ModifyPointTypeCommand.prototype.undo = function() {
         this.item.modifyPointType(this.segment, this.previousRType, true, false);
-        this.item.changeSegment(this.segment, this.previousPosition, this.previousHandleIn, this.previousHandleOut);
+        this.item.modifyPoint(this.segment, this.previousPosition, this.previousHandleIn, this.previousHandleOut);
         ModifyPointTypeCommand.__super__.undo.call(this);
       };
 
@@ -678,14 +682,14 @@
 
       MoveViewCommand.prototype["do"] = function() {
         var somethingToLoad;
-        somethingToLoad = View.moveBy(this.newPosition.subtract(this.previousPosition), false);
+        somethingToLoad = R.view.moveBy(this.newPosition.subtract(this.previousPosition), false);
         MoveViewCommand.__super__["do"].call(this);
         return somethingToLoad;
       };
 
       MoveViewCommand.prototype.undo = function() {
         var somethingToLoad;
-        somethingToLoad = View.moveBy(this.previousPosition.subtract(this.newPosition), false);
+        somethingToLoad = R.view.moveBy(this.previousPosition.subtract(this.newPosition), false);
         MoveViewCommand.__super__.undo.call(this);
         return somethingToLoad;
       };
@@ -825,8 +829,8 @@
     ModifyTextCommand = (function(_super) {
       __extends(ModifyTextCommand, _super);
 
-      function ModifyTextCommand(item, args) {
-        ModifyTextCommand.__super__.constructor.call(this, "Change text", item);
+      function ModifyTextCommand(items, args) {
+        ModifyTextCommand.__super__.constructor.call(this, "Change text", items);
         this.newText = args[0];
         this.previousText = this.item.data.message;
         return;
@@ -849,21 +853,13 @@
         this.item.setText(this.newText, false);
       };
 
-      ModifyTextCommand.prototype.end = function(valid) {
-        if (this.newText === this.previousText) {
-          return false;
-        }
-        if (!valid) {
-          return false;
-        }
-        this.item.update('text');
-        ModifyTextCommand.__super__.end.call(this);
-        return true;
+      ModifyTextCommand.prototype.commandChanged = function() {
+        return this.newText !== this.previousText;
       };
 
       return ModifyTextCommand;
 
-    })(ItemCommand);
+    })(DeferredCommand);
     R.Command = Command;
     Command.Scale = ScaleCommand;
     Command.Rotate = RotateCommand;

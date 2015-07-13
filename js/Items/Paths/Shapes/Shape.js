@@ -155,9 +155,6 @@
       };
 
       Shape.prototype.setRectangle = function(rectangle, update) {
-        if (update == null) {
-          update = true;
-        }
         Utils.Rectangle.updatePathRectangle(this.controlPath, rectangle);
         Shape.__super__.setRectangle.call(this, rectangle, update);
       };

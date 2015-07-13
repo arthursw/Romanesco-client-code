@@ -1,4 +1,4 @@
-define [ 'Tools/Tool', 'zeroClipboard' ], (Tool, ZeroClipboard) ->
+define [ 'Tools/Tool', 'zeroClipboard', 'View/SelectionRectangle' ], (Tool, ZeroClipboard, SelectionRectangle) ->
 
 	# todo: ZeroClipboard.destroy()
 	# ScreenshotTool to take a screenshot and save it or publish it on different social platforms (facebook, pinterest or twitter)
@@ -17,6 +17,7 @@ define [ 'Tools/Tool', 'zeroClipboard' ], (Tool, ZeroClipboard) ->
 			name: 'crosshair'
 			icon: 'screenshot'
 		@drawItems = false
+		@order = 3
 
 		# Initialize screenshot modal (init button click event handlers)
 		constructor: () ->
@@ -82,7 +83,7 @@ define [ 'Tools/Tool', 'zeroClipboard' ], (Tool, ZeroClipboard) ->
 			if r.area<100
 				return
 
-			@selectionRectangle = new R.RSelectionRectangle(new P.Rectangle(event.downPoint, event.point), @extractImage)
+			@selectionRectangle = new SelectionRectangle(new P.Rectangle(event.downPoint, event.point), @extractImage)
 
 			return
 

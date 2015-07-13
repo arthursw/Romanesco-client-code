@@ -29,7 +29,6 @@ define [ 'Items/Item' ], (Item) ->
 			@rotation = @data.rotation or 0
 
 			@liJ = $("<li>")
-			@setZindexLabel()
 			@liJ.attr("data-pk", @pk)
 			@liJ.click(@onLiClick)
 			@liJ.mouseover (event)=>
@@ -42,17 +41,21 @@ define [ 'Items/Item' ], (Item) ->
 			itemListJ.prepend(@liJ)
 			$("#RItems .mCustomScrollbar").mCustomScrollbar("scrollTo", "bottom")
 
-			if @pk?
-				@updateZIndex()
+			@updateZindex()
 
 			return
 
+		getDuplicateData: ()->
+			data = super()
+			data.lock = @lock?.getPk()
+			return data
+
 		onLiClick: (event)=>
 			if not event.shiftKey
-				R.tools.select.deselectAll()()
+				R.tools.select.deselectAll()
 				bounds = @getBounds()
 				if not P.view.bounds.intersects(bounds)
-					View.moveTo(bounds.center, 1000)
+					R.view.moveTo(bounds.center, 1000)
 			@select()
 			return
 
@@ -64,14 +67,6 @@ define [ 'Items/Item' ], (Item) ->
 		# 	else
 		# 		Item.addItemToStage(@)
 		# 	return
-
-		setZindexLabel: ()->
-			dateLabel = '' + @date
-			dateLabel = dateLabel.substring(dateLabel.length-7, dateLabel.length-3)
-			zindexLabel = @constructor.label
-			if dateLabel.length>0 then zindexLabel += ' - ' + dateLabel
-			@liJ.text(zindexLabel)
-			return
 
 		# initializeSelection: (event, hitResult) ->
 		# 	super(event, hitResult)
@@ -109,24 +104,23 @@ define [ 'Items/Item' ], (Item) ->
 		# 	return
 
 		rotate: (rotation, center, update)->
-			@setRotation(@rotation+rotation, center)
+			@setRotation(@rotation+rotation, center, update)
 			return
 
-		setRotation: (rotation, center, update=true)->
-			deltaRotation = rotation-@rotation
-			previousPivot = @group.pivot
-			@group.pivot = center
-			@rotation = rotation
-			@group.rotate(deltaRotation)
-			@group.pivot = previousPivot
+		setRotation: (rotation, center, update)->
 
-			@rectangle = @group.bounds
+			deltaRotation = rotation-@rotation
+			@rotation = rotation
+			@group.rotate(deltaRotation, center)
+
+			delta = @rectangle.center.subtract(center)
+			@rectangle.center = center.add(delta.rotate(deltaRotation))
 
 			# @rotation = rotation
 			# @selectionRectangle.rotation = rotation
 			if not @socketAction
 				if update then @update('rotation')
-				R.socket.emit "bounce", itemPk: @pk, function: "setRotation", arguments: [@rotation, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "setRotation", arguments: [rotation, center, false]
 			return
 
 		# updateSetRotation: (event)->
@@ -151,26 +145,32 @@ define [ 'Items/Item' ], (Item) ->
 			if @rotation == 0 then return @rectangle
 			return Utils.Rectangle.getRotatedBounds(@rectangle, @rotation)
 
+		setZindex: ()->
+			dateLabel = '' + @date
+			dateLabel = dateLabel.substring(dateLabel.length-7, dateLabel.length-3)
+			zindexLabel = @constructor.label
+			if dateLabel.length>0 then zindexLabel += ' - ' + dateLabel
+			@liJ.text(zindexLabel)
+			return
+
 		# update the z index (i.e. move the item to the right position)
 		# - RItems are kept sorted by z-index in *R.sortedPaths* and *R.sortedDivs*
 		# - z-index are initialized to the current date (this is a way to provide a global z index even with RItems which are not loaded)
-		updateZIndex: ()->
+		updateZindex: ()->
 			if not @date? then return
 
 			if @sortedItems.length==0
 				@sortedItems.push(@)
+				@setZindex()
 				return
 
 			#insert item at the right place
-			found = false
 			for item, i in @sortedItems
 				if @date < item.date
 					@insertBelow(item, i)
-					found = true
-					break
+					return
 
-			if not found then @insertAbove(_.last(@sortedItems))
-
+			@insertAbove(_.last(@sortedItems))
 			return
 
 		# insert above given *item*
@@ -191,7 +191,7 @@ define [ 'Items/Item' ], (Item) ->
 					nextDate = @sortedItems[index+1].date
 					@date = (previousDate + nextDate) / 2
 				@update('z-index')
-			@setZindexLabel()
+			@setZindex()
 			return
 
 		# insert below given *item*
@@ -212,7 +212,7 @@ define [ 'Items/Item' ], (Item) ->
 					nextDate = @sortedItems[index+1].date
 					@date = (previousDate + nextDate) / 2
 				@update('z-index')
-			@setZindexLabel()
+			@setZindex()
 			return
 
 		setPK: (pk)->
@@ -272,6 +272,11 @@ define [ 'Items/Item' ], (Item) ->
 			super()
 			if @sortedItems? then Utils.Array.remove(@sortedItems, @)
 			@liJ?.remove()
+			return
+
+		delete: ()->
+			if @lock? and @lock.owner != R.me then return
+			super()
 			return
 
 		update: ()->

@@ -27,6 +27,8 @@
         icon: 'hand'
       };
 
+      MoveTool.order = 0;
+
       function MoveTool() {
         MoveTool.__super__.constructor.call(this, true);
         this.prevPoint = {
@@ -85,7 +87,7 @@
 
       MoveTool.prototype.updateNative = function(event) {
         if (this.dragging) {
-          View.moveBy({
+          R.view.moveBy({
             x: (this.prevPoint.x - event.pageX) / P.view.zoom,
             y: (this.prevPoint.y - event.pageY) / P.view.zoom
           });

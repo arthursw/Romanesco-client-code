@@ -45,7 +45,7 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 
 		@zIndexSortStop: (event, ui)->
 			previouslySelectedItems = R.selectedItems
-			R.tools.select.deselectAll()()
+			R.tools.select.deselectAll()
 			rItem = R.items[ui.item.attr("data-pk")]
 			nextItemJ = ui.item.next()
 			if nextItemJ.length>0
@@ -78,7 +78,7 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 				parent.itemListsJ.find(".rPath-list").append(item.liJ)
 			else
 				console.error "Error: the item is neither an Div nor an RPath"
-			item.updateZIndex()
+			item.updateZindex()
 			if wasSelected then item.select()
 			return
 
@@ -170,6 +170,7 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 
 		@parameters = @initializeParameters()
 
+		# always overloaded
 		@create: (duplicateData)->
 			copy = new @(duplicateData)
 			if not @socketAction
@@ -248,6 +249,16 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 		# # @param fullySelected [Boolean] (optional) whether the control path must be fully selected before performing the hit test (it must be if we want to test over control path handles)
 		finishHitTest: ()->
 			return
+
+		performHitTest: (point)->
+			return if @rectangle.contains(point) then true else null
+
+		hitTest: (event)->
+			hitResult = @performHitTest(event.point)
+			if hitResult? and not @selected
+				R.tools.select.deselectAll()
+				R.commandManager.add(new Command.Select([@]), true)
+			return hitResult
 
 		# # perform hit test to check if the point hits the selection rectangle
 		# # @param point [P.Point] the point to test
@@ -395,13 +406,13 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 
 		# 	return
 
-		setRectangle: (rectangle, update=true)->
+		setRectangle: (rectangle, update)->
 			if not P.Rectangle.prototype.isPrototypeOf(rectangle) then rectangle = new P.Rectangle(rectangle)
 			@rectangle = rectangle
 			# if @selectionRectangle then @updateSelectionRectangle()
 			if not @socketAction
 				if update then @update('rectangle')
-				R.socket.emit "bounce", itemPk: @pk, function: "setRectangle", arguments: [@rectangle, false]
+				R.socket.emit "bounce", itemPk: @pk, function: "setRectangle", arguments: [rectangle, false]
 			return
 
 		validatePosition: ()->
@@ -643,8 +654,15 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 			args.push( function: @getUpdateFunction(type), arguments: @getUpdateArguments(type) )
 			return
 
+		deleteFromDatabase: ()->
+			return
+
 		delete: ()->
-			if not @socketAction then R.socket.emit "bounce", itemPk: @pk, function: "delete", arguments: []
+			@remove()
+			if not @pk? then return
+			if not @socketAction
+				@deleteFromDatabase()
+				R.socket.emit "bounce", itemPk: @pk, function: "delete", arguments: []
 			@pk = null
 			return
 
@@ -682,4 +700,5 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 			@removeDrawing()
 			return
 
+	ItemTool.Item = Item
 	return Item

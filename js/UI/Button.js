@@ -9,11 +9,12 @@
         this.onClickWhenLoaded = __bind(this.onClickWhenLoaded, this);
         this.onClickWhenNotLoaded = __bind(this.onClickWhenNotLoaded, this);
         this.fileLoaded = __bind(this.fileLoaded, this);
-        var categories, category, favorite, favoriteBtnJ, hJ, iconURL, liJ, name, parentJ, shortName, shortNameJ, toolNameJ, ulJ, word, words, _i, _j, _len, _len1;
+        var categories, category, favorite, favoriteBtnJ, hJ, iconURL, liJ, name, order, parentJ, shortName, shortNameJ, toolNameJ, ulJ, word, words, _i, _j, _len, _len1;
         name = parameters.name;
         iconURL = parameters.iconURL;
         favorite = parameters.favorite;
         category = parameters.category;
+        order = parameters.order;
         this.file = parameters.file;
         parentJ = R.sidebar.allToolsJ;
         if ((category != null) && category !== "") {
@@ -66,6 +67,9 @@
         favoriteBtnJ = $("<button type=\"button\" class=\"btn btn-default favorite-btn\">\n	  			<span class=\"glyphicon glyphicon-star\" aria-hidden=\"true\"></span>\n</button>");
         favoriteBtnJ.click(R.sidebar.toggleToolToFavorite);
         this.btnJ.append(favoriteBtnJ);
+        this.btnJ.attr({
+          'data-order': order != null ? order : 999
+        });
         this.btnJ.click(this.file != null ? this.onClickWhenNotLoaded : this.onClickWhenLoaded);
         if (favorite) {
           R.sidebar.toggleToolToFavorite(null, this.btnJ);

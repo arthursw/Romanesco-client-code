@@ -97,6 +97,7 @@
         }
         this.shape.add(new P.Point(c.x + hw * Math.cos(angle), c.y + hh * Math.sin(angle)));
         this.shape.pivot = this.rectangle.center;
+        this.path.strokeCap = 'round';
       };
 
       SpiralShape.prototype.onFrame = function(event) {

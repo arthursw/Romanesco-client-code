@@ -13,6 +13,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 				x: 32, y: 32
 			name: 'default'
 			icon: 'hand'
+		@order = 0
 
 		constructor: () ->
 			super(true)
@@ -42,7 +43,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 
 		update: (event) ->
 			# if @dragging
-			# 	View.moveBy(event.delta)
+			# 	R.view.moveBy(event.delta)
 			return
 
 		end: (moved) ->
@@ -62,7 +63,7 @@ define [ 'Tools/Tool' ], (Tool) ->
 		# update with jQuery event
 		updateNative: (event) ->
 			if @dragging
-				View.moveBy({ x: (@prevPoint.x-event.pageX)/P.view.zoom, y: (@prevPoint.y-event.pageY)/P.view.zoom })
+				R.view.moveBy({ x: (@prevPoint.x-event.pageX)/P.view.zoom, y: (@prevPoint.y-event.pageY)/P.view.zoom })
 				@prevPoint = { x: event.pageX, y: event.pageY }
 			return
 

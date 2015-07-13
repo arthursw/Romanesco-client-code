@@ -242,12 +242,17 @@ define [ 'Items/Lock' ], (Lock) ->
 			raster.context.drawImage(raster.image, 0, 0)
 			raster.ready = true
 			raster.loaded = true
-			allRastersAreReady = true
-			for x, rasterColumn of @rasters
-				for y, raster of rasterColumn
-					allRastersAreReady &= raster.ready
-			if allRastersAreReady
-				@rasterizeAreasToUpdate()
+			@checkRasterizeAreasToUpdate()
+			return
+
+		checkRasterizeAreasToUpdate: (pathsCreated=false)->
+			if pathsCreated or Utils.isEmpty(R.loader.pathsToCreate)
+				allRastersAreReady = true
+				for x, rasterColumn of @rasters
+					for y, raster of rasterColumn
+						allRastersAreReady &= raster.ready
+				if allRastersAreReady
+					@rasterizeAreasToUpdate()
 			return
 
 		createRaster: (x, y, zoom, raster)->

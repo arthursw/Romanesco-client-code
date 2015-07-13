@@ -286,22 +286,31 @@
       };
 
       TileRasterizer.prototype.rasterLoaded = function(raster) {
-        var allRastersAreReady, rasterColumn, x, y, _ref;
         raster.context.clearRect(0, 0, R.scale, R.scale);
         raster.context.drawImage(raster.image, 0, 0);
         raster.ready = true;
         raster.loaded = true;
-        allRastersAreReady = true;
-        _ref = this.rasters;
-        for (x in _ref) {
-          rasterColumn = _ref[x];
-          for (y in rasterColumn) {
-            raster = rasterColumn[y];
-            allRastersAreReady &= raster.ready;
-          }
+        this.checkRasterizeAreasToUpdate();
+      };
+
+      TileRasterizer.prototype.checkRasterizeAreasToUpdate = function(pathsCreated) {
+        var allRastersAreReady, raster, rasterColumn, x, y, _ref;
+        if (pathsCreated == null) {
+          pathsCreated = false;
         }
-        if (allRastersAreReady) {
-          this.rasterizeAreasToUpdate();
+        if (pathsCreated || Utils.isEmpty(R.loader.pathsToCreate)) {
+          allRastersAreReady = true;
+          _ref = this.rasters;
+          for (x in _ref) {
+            rasterColumn = _ref[x];
+            for (y in rasterColumn) {
+              raster = rasterColumn[y];
+              allRastersAreReady &= raster.ready;
+            }
+          }
+          if (allRastersAreReady) {
+            this.rasterizeAreasToUpdate();
+          }
         }
       };
 

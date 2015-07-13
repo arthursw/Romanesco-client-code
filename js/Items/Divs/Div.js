@@ -30,13 +30,13 @@
       Div.parameters = Div.initializeParameters();
 
       Div.updateHiddenDivs = function(event) {
-        var div, point, projectPoint, _i, _len, _ref;
+        var div, hiddenDivs, point, projectPoint, _i, _len;
         if (this.hiddenDivs.length > 0) {
           point = new P.Point(event.pageX, event.pageY);
           projectPoint = P.view.viewToProject(point);
-          _ref = this.hiddenDivs;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            div = _ref[_i];
+          hiddenDivs = this.hiddenDivs.slice();
+          for (_i = 0, _len = hiddenDivs.length; _i < _len; _i++) {
+            div = hiddenDivs[_i];
             if (!div.getBounds().contains(projectPoint)) {
               div.show();
             }
@@ -50,14 +50,31 @@
         }
       };
 
-      Div.updateZIndex = function(sortedDivs) {
+      Div.updateZindex = function(sortedDivs) {
         var div, i, _i, _len;
         for (i = _i = 0, _len = sortedDivs.length; _i < _len; i = ++_i) {
           div = sortedDivs[i];
           div.divJ.css({
-            'z-index': i
+            'z-index': i + this.zIndexMin
           });
         }
+      };
+
+      Div.create = function(duplicateData) {
+        var copy;
+        if (duplicateData == null) {
+          duplicateData = this.getDuplicateData();
+        }
+        copy = new this(duplicateData.bounds, duplicateData.data, null, null, R.items[duplicateData.lock]);
+        if (!this.socketAction) {
+          copy.save(false);
+          R.socket.emit("bounce", {
+            itemClass: this.name,
+            "function": "create",
+            "arguments": [duplicateData]
+          });
+        }
+        return copy;
       };
 
       function Div(bounds, data, pk, date, lock) {
@@ -72,26 +89,16 @@
         this.endSelect = __bind(this.endSelect, this);
         this.beginSelect = __bind(this.beginSelect, this);
         this.saveCallback = __bind(this.saveCallback, this);
+        this.onClick = __bind(this.onClick, this);
+        this.onMouseEnter = __bind(this.onMouseEnter, this);
         this.rectangle = ((_ref = this.data) != null ? _ref.rectangle : void 0) != null ? new P.Rectangle(this.data.rectangle) : bounds;
         this.controller = this;
         this.object_type = this.constructor.object_type;
         separatorJ = R.stageJ.find("." + this.object_type + "-separator");
         this.divJ = R.templatesJ.find(".custom-div").clone().insertAfter(separatorJ);
-        this.divJ.mouseenter((function(_this) {
-          return function(event) {
-            var item, _i, _len, _ref1;
-            _ref1 = R.selectedItems;
-            for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-              item = _ref1[_i];
-              if (item !== _this && item.getBounds().intersects(_this.getBounds())) {
-                _this.hide();
-                break;
-              }
-            }
-          };
-        })(this));
+        this.divJ.mouseenter(this.onMouseEnter);
         if (!this.lock) {
-          Div.__super__.constructor.call(this, this.data, this.pk, this.date, R.divList, R.sortedDivs);
+          Div.__super__.constructor.call(this, this.data, this.pk, this.date, R.sidebar.divListJ, R.sortedDivs);
         } else {
           Div.__super__.constructor.call(this, this.data, this.pk, this.date, this.lock.itemListsJ.find('.rDiv-list'), this.lock.sortedDivs);
         }
@@ -111,23 +118,35 @@
         if (R.selectedTool.name === 'Move') {
           this.disableInteraction();
         }
-        this.divJ.click((function(_this) {
-          return function(event) {
-            if (_this.selected != null) {
-              return;
-            }
-            if (!event.shiftKey) {
-              R.tools.select.deselectAll()();
-            }
-            _this.select();
-          };
-        })(this));
+        this.divJ.click(this.onClick);
         if (!bounds.contains(this.rectangle.expand(-1))) {
           console.log("Error: invalid div");
           this.remove();
         }
         return;
       }
+
+      Div.prototype.onMouseEnter = function(event) {
+        var item, _i, _len, _ref;
+        _ref = R.selectedItems;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          item = _ref[_i];
+          if (item !== this && item.getBounds().intersects(this.getBounds())) {
+            this.hide();
+            break;
+          }
+        }
+      };
+
+      Div.prototype.onClick = function(event) {
+        if (this.selected != null) {
+          return;
+        }
+        if (!event.shiftKey) {
+          R.tools.select.deselectAll();
+        }
+        this.select();
+      };
 
       Div.prototype.hide = function() {
         this.divJ.css({
@@ -150,7 +169,7 @@
         if (addCreateCommand == null) {
           addCreateCommand = true;
         }
-        if (Grid.rectangleOverlapsTwoPlanets(this.rectangle)) {
+        if (R.view.grid.rectangleOverlapsTwoPlanets(this.rectangle)) {
           return;
         }
         if (this.rectangle.area === 0) {
@@ -196,11 +215,11 @@
         this.updateTransform();
       };
 
-      Div.prototype.setRotation = function(rotation, update) {
+      Div.prototype.setRotation = function(rotation, center, update) {
         if (update == null) {
           update = true;
         }
-        Div.__super__.setRotation.call(this, rotation, update);
+        Div.__super__.setRotation.call(this, rotation, center, update);
         this.updateTransform();
       };
 
@@ -235,30 +254,8 @@
         });
       };
 
-      Div.prototype.insertAbove = function(div, index, update) {
-        if (index == null) {
-          index = null;
-        }
-        if (update == null) {
-          update = false;
-        }
-        Div.__super__.insertAbove.call(this, div, index, update);
-        if (!index) {
-          this.constructor.updateZIndex(this.sortedItems);
-        }
-      };
-
-      Div.prototype.insertBelow = function(div, index, update) {
-        if (index == null) {
-          index = null;
-        }
-        if (update == null) {
-          update = false;
-        }
-        Div.__super__.insertBelow.call(this, div, index, update);
-        if (!index) {
-          this.constructor.updateZIndex(this.sortedItems);
-        }
+      Div.prototype.setZindex = function() {
+        this.constructor.updateZindex(this.sortedItems);
       };
 
       Div.prototype.beginSelect = function(event) {
@@ -322,7 +319,7 @@
         }
         delete this.updateAfterSave;
         bounds = this.getBounds();
-        if (Grid.rectangleOverlapsTwoPlanets(bounds)) {
+        if (R.view.grid.rectangleOverlapsTwoPlanets(bounds)) {
           return;
         }
         Dajaxice.draw.updateDiv(this.updateCallback, this.getUpdateArguments(type));
@@ -406,20 +403,10 @@
         Div.__super__.remove.call(this);
       };
 
-      Div.prototype["delete"] = function() {
-        if ((this.lock != null) && this.lock.owner !== R.me) {
-          return;
-        }
-        this.remove();
-        if (this.pk == null) {
-          return;
-        }
-        if (!this.socketAction) {
-          Dajaxice.draw.deleteDiv(R.loader.checkError, {
-            'pk': this.pk
-          });
-        }
-        Div.__super__["delete"].apply(this, arguments);
+      Div.prototype.deleteFromDatabase = function() {
+        Dajaxice.draw.deleteDiv(R.loader.checkError, {
+          'pk': this.pk
+        });
       };
 
       return Div;

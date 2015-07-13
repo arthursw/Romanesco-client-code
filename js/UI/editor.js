@@ -2,7 +2,7 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript) {
+  define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
     var CodeEditor, Console;
     Console = (function() {
       function Console(codeEditor) {
@@ -137,14 +137,14 @@
         this.readLinkedFile = __bind(this.readLinkedFile, this);
         this.close = __bind(this.close, this);
         this.onMouseUp = __bind(this.onMouseUp, this);
-        this.onEditorResize = __bind(this.onEditorResize, this);
+        this.resize = __bind(this.resize, this);
         this.onHandleDown = __bind(this.onHandleDown, this);
         this.nextCommand = __bind(this.nextCommand, this);
         this.previousCommand = __bind(this.previousCommand, this);
         this.executeCommand = __bind(this.executeCommand, this);
         this.editorJ = $("#codeEditor");
-        this.editorJ.bind("transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd", this.onEditorResize);
-        if (this.sidebarJ.hasClass("r-hidden")) {
+        this.editorJ.bind("transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd", this.resize);
+        if (R.sidebar.sidebarJ.hasClass("r-hidden")) {
           this.editorJ.addClass("r-hidden");
         }
         this.handleJ = this.editorJ.find(".editor-handle");
@@ -172,6 +172,8 @@
           enableSnippets: true,
           enableLiveAutocompletion: false
         });
+        ace.config.set("packaged", true);
+        ace.config.set("basePath", require.toUrl("ace"));
         this.editor.setTheme("ace/theme/monokai");
         this.editor.getSession().setUseSoftTabs(false);
         this.editor.getSession().setMode("ace/mode/coffee");
@@ -281,7 +283,7 @@
         });
       };
 
-      CodeEditor.prototype.onEditorResize = function() {
+      CodeEditor.prototype.resize = function() {
         this.editor.resize();
       };
 

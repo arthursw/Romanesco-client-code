@@ -70,7 +70,6 @@
         if (this.chatJ.find("#chatUserNameInput").length > 0) {
           this.initializeUserName();
         }
-        this.socket.on("car move", this.onCarMove);
         return this.socket.on("bounce", this.onBounce);
       };
 
@@ -191,20 +190,6 @@
         } else {
           this.chatJ.find("#chatUserNameError").removeClass("hidden");
         }
-      };
-
-      Socket.prototype.onCarMove = function(user, position, rotation, speed) {
-        var _base;
-        if (R.ignoreSockets) {
-          return;
-        }
-        if ((_base = R.cars)[user] == null) {
-          _base[user] = new P.Raster("/static/images/car.png");
-        }
-        R.cars[user].position = new P.Point(position);
-        R.cars[user].rotation = rotation;
-        R.cars[user].speed = speed;
-        R.cars[user].rLastUpdate = Date.now();
       };
 
       Socket.prototype.onBounce = function(data) {

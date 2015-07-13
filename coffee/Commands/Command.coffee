@@ -2,8 +2,8 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 
 	class Command
 
-		constructor: (@name)->
-			@liJ = $("<li>").text(@name)
+		constructor: (name)->
+			@liJ = $("<li>").text(name)
 			@liJ.click(@click)
 			@id = Math.random()
 			return
@@ -92,15 +92,20 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			return true
 
 		unloadItem: (item)->
-			@items[item.pk] = null
+			delete @items[item.pk]
 			return
 
 		loadItem: (item)->
 			@items[item.pk] = item
 			return
 
-		resurrectItem: (pk, item)->
-			@items[pk] = item
+		setItemPk: (id, pk)->
+			@items[pk] = @items[id]
+			delete @items[id]
+			return
+
+		resurrectItem: (item)->
+			@items[item.getPk()] = item
 			return
 
 		delete: ()->
@@ -118,7 +123,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			return
 
 		unloadItem: (item)->
-			@item = {pk: item.pk}
+			@item = null
 			super(item)
 			return
 
@@ -127,9 +132,9 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			super(item)
 			return
 
-		resurrectItem: (pk, item)->
+		resurrectItem: (item)->
 			@item = item
-			super(pk, item)
+			super(item)
 			return
 
 	class DeferredCommand extends ItemCommand
@@ -159,7 +164,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 		commandChanged: ()->
 			return
 
-		updateItems: (type)->
+		updateItems: (type=@updateType)->
 			args = []
 			for pk, item of @items
 				item.addUpdateFunctionAndArguments(args, type)
@@ -190,6 +195,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 
 		constructor: (items)->
 			super(@constructor.Method + ' items', items)
+			@updateType = @constructor.method
 			return
 
 		begin: (event)->
@@ -235,13 +241,13 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			return @itemsArray
 
 		do: ()->
-			R.tools.select.selectionRectangle.constructor.setRectangle(@getItemArray(), @state.previous, @state.new, @state.rotation)
+			R.SelectionRectangle.setRectangle(@getItemArray(), @state.previous, @state.new, @state.rotation, false)
 			@updateSelectionRectangle(@state.rotation)
 			@superDo()
 			return
 
 		undo: ()->
-			R.tools.select.selectionRectangle.constructor.setRectangle(@getItemArray(), @state.new, @state.previous, @state.rotation)
+			R.SelectionRectangle.setRectangle(@getItemArray(), @state.new, @state.previous, @state.rotation, false)
 			@updateSelectionRectangle(@state.rotation)
 			@superUndo()
 			return
@@ -315,6 +321,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			super('Modify point', item)
 			@index = @item.selectedSegment.index
 			@previousPoint = @getPoint()
+			@updateType = 'points'
 			return
 
 		update: (event)->
@@ -339,19 +346,20 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 
 		getPoint: ()->
 			segment = @item.controlPath.segments[@index]
-			return [segment, segment.point.clone(), segment.handleIn.clone(), segment.handleOut.clone(), true]
+			return [segment.index, segment.point.clone(), segment.handleIn.clone(), segment.handleOut.clone(), true]
 
 		commandChanged: ()->
 			for i in [1 .. 3]
 				if not @previousPoint[i].equals(@newPoint[i])
-					return false
-			return true
+					return true
+			return false
 
 	class ModifySpeedCommand extends DeferredCommand
 
 		constructor: (item)->
 			super('Modify speed', item)
 			@previousSpeeds = @item.speeds.slice()
+			@updateType = 'speed'
 			return
 
 		update: (event)->
@@ -381,40 +389,42 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 
 	class SetParameterCommand extends DeferredCommand
 
-		constructor: (items, @name)->
+		constructor: (items, args)->
+			@name = args[0]
+			@previousValue = args[1]
 			super('Change item parameter "' + @name + '"', items)
-			@previousValues = {}
+			@updateType = 'parameters'
+			# @previousValue is used for the controller, @previousValues for each item
+			@previousValues = {} 			# each item can initially have a different value
+											# but in the end they will all have the same value @newValue
 			for pk, item of @items
 				@previousValues[pk] = item.data[@name]
 			return
 
 		do: ()->
-			for pk, value of @newValues
-				@items[pk].setParameter(@name, value)
+			for pk, item of @items
+				item.setParameter(@name, @newValue)
 			R.controllerManager.updateController(@name, @newValue)
 			@updateItems(@name)
 			super()
 			return
 
 		undo: ()->
-			for pk, value of @previousValues
-				@items[pk].setParameter(@name, value)
+			for pk, item of @items
+				item.setParameter(@name, @previousValues[pk])
 			R.controllerManager.updateController(@name, @previousValue)
 			@updateItems(@name)
 			super()
 			return
 
 		update: (name, value)->
-			for pk, item in @items
+			@newValue = value
+			for pk, item of @items
 				item.setParameter(name, value)
 			return
 
-		end: (event)->
-			@newValues = {}
-			for pk, item of @items
-				@newValues[pk] = item.data[@name]
-			super(event)
-			return
+		commandChanged: ()->
+			return true
 
 	# ---- # # ---- # # ---- # # ---- #
 	# ---- # # ---- # # ---- # # ---- #
@@ -480,7 +490,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 
 		undo: ()->
 			@item.modifyPointType(@segment, @previousRType, true, false)
-			@item.changeSegment(@segment, @previousPosition, @previousHandleIn, @previousHandleOut)
+			@item.modifyPoint(@segment, @previousPosition, @previousHandleIn, @previousHandleOut)
 			super()
 			return
 
@@ -525,13 +535,13 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 		# 	return
 
 		do: ()->
-			somethingToLoad = View.moveBy(@newPosition.subtract(@previousPosition), false)
+			somethingToLoad = R.view.moveBy(@newPosition.subtract(@previousPosition), false)
 			# if somethingToLoad then document.addEventListener('command executed', @updateCommandItems)
 			super()
 			return somethingToLoad
 
 		undo: ()->
-			somethingToLoad = View.moveBy(@previousPosition.subtract(@newPosition), false)
+			somethingToLoad = R.view.moveBy(@previousPosition.subtract(@newPosition), false)
 			# if somethingToLoad then document.addEventListener('command executed', @updateCommandItems)
 			super()
 			return somethingToLoad
@@ -731,10 +741,10 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			@duplicateData = item.getDuplicateData()
 			super(item, 'Duplicate item')
 
-	class ModifyTextCommand extends ItemCommand
+	class ModifyTextCommand extends DeferredCommand
 
-		constructor: (item, args)->
-			super("Change text", item)
+		constructor: (items, args)->
+			super("Change text", items)
 			@newText = args[0]
 			@previousText = @item.data.message
 			return
@@ -755,12 +765,8 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			@item.setText(@newText, false)
 			return
 
-		end: (valid)->
-			if @newText == @previousText then return false
-			if not valid then return false
-			@item.update('text')
-			super()
-			return true
+		commandChanged: ()->
+			return @newText != @previousText
 
 	# class CreatePathCommand extends CreateItemCommand
 	# 	constructor: (item, name=null)->

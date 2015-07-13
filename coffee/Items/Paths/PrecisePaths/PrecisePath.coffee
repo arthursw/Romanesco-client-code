@@ -55,15 +55,12 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			segments: true
 			stroke: true
 			fill: true
-			selected: true
 			curves: true
 			handles: true
 			tolerance: 5
 
 		@secureStep = 25
 		@polygonMode = true
-
-		@renderType = 'simple'
 
 		@initializeParameters: ()->
 
@@ -102,6 +99,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 					type: 'checkbox'
 					label: 'Selection box'
 					default: true
+					onChange: R.tools.select.setSelectionRectangleVisibility
 
 			return parameters
 
@@ -131,7 +129,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 
 			@addControlPath()
 			@setControlPath(@data.points, @data.planet)
-			@rectangle = @controlPath.bounds
+			@rectangle = @controlPath.bounds.clone()
 
 			if @data.smooth then @controlPath.smooth()
 
@@ -163,11 +161,9 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			return
 
 		deselectPoint: ()->
-			@selectionHighlight?.remove()
-			@selectionHighlight = null
-
 			@selectedSegment = null
 			@selectedHandle = null
+			@removeSelectionHighlight()
 			return
 
 		performHitTest: (point)->
@@ -180,13 +176,11 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 		# @param point [P.Point] the point to test
 		# @param hitOptions [Object] the [paper hit test options](http://paperjs.org/reference/item/#hittest-point)
 		hitTest: (event)->
-			point = event.point
-
 			@deselectPoint()
-			hitResult = @performHitTest(point)
 
+			hitResult = super(event)
 			if not hitResult? then return
-
+			
 			specialKey = R.specialKey(event)
 			@selectedSegment = hitResult.segment
 
@@ -262,16 +256,16 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 		# @param offset [Number] the offset along the control path to begin drawing
 		# @param step [Boolean] whether it is a key step or not (we must draw something special or not)
 		updateDraw: (offset, step, redrawing)->
-			@path.segments = @controlPath.segments
-			@path.selected = false
-			@applyStylesToPath(@path)
+			@path.add(@controlPath.lastSegment)
 			return
 
 		# default endDraw function, will be redefined by children PrecisePath
 		# @param redrawing [Boolean] (optional) whether the path is being redrawn or the user draws the path (the path is being loaded/updated or the user is drawing it with the mouse)
 		endDraw: (redrawing=false)->
-			@path.segments = @controlPath.segments
-			@path.selected = false
+			return
+
+		checkUpdateDrawing: (segment, redrawing=true)->
+			@updateDraw()
 			return
 
 		# continue drawing the path along the control path if necessary:
@@ -281,19 +275,19 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 		# called when creating the path (by @updateCreate() and @finish()) and in @draw()
 		# @param segment [Paper P.Segment] the segment on the control path where we want to updateDraw
 		# @param redrawing [Boolean] (optional) whether the path is being redrawn or the user draws the path (the path is being loaded/updated or the user is drawing it with the mouse)
-
-		checkUpdateDrawing: (segment, redrawing=true)->
-			step = @data.step
-			controlPathOffset = segment.location.offset
-
-			while @drawingOffset+step<controlPathOffset
-				@drawingOffset += step
-				@updateDraw(@drawingOffset, true, redrawing)
-
-			if @drawingOffset+step>controlPathOffset 	# we can not make a step between drawingOffset and the controlPathOffset
-				@updateDraw(controlPathOffset, false, redrawing)
-
-			return
+		#
+		# checkUpdateDrawing: (segment, redrawing=true)->
+		# 	step = @data.step
+		# 	controlPathOffset = segment.location.offset
+		#
+		# 	while @drawingOffset+step<controlPathOffset
+		# 		@drawingOffset += step
+		# 		@updateDraw(@drawingOffset, true, redrawing)
+		#
+		# 	if @drawingOffset+step>controlPathOffset 	# we can not make a step between drawingOffset and the controlPathOffset
+		# 		@updateDraw(controlPathOffset, false, redrawing)
+		#
+		# 	return
 
 		# redefine {RPath#beginCreate}
 		# begin create action:
@@ -307,13 +301,13 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			if not @data.polygonMode 				# in normal mode: just initialize the control path and begin drawing
 				@addControlPath()
 				@controlPath.add(point)
-				@rectangle = @controlPath.bounds
+				@rectangle = @controlPath.bounds.clone()
 				@beginDraw(false)
 			else 									# in polygon mode:
 				if not @controlPath?					# if the user just started the creation (first point, on mouse down)
 					@addControlPath()
 					@controlPath.add(point)
-					@rectangle = @controlPath.bounds
+					@rectangle = @controlPath.bounds.clone()
 					@controlPath.add(point) 			# add twice the first point because the last point will follow the mouse (in polygon mode)
 					@beginDraw(false)
 				else 									# if the user already added some points: just add the point to the control path
@@ -405,7 +399,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 
 			@drawingOffset = 0
 
-			@rectangle = @controlPath.bounds
+			@rectangle = @controlPath.bounds.clone()
 
 			# if loading and @canvasRaster
 			# 	@draw(false, true) 	# enable to have the correct @canvasRaster size and to have the exact same result after a load or a change
@@ -436,13 +430,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 						delete @previousData[name]
 			return
 
-		simpleProcess: (redrawing)->
-			@beginDraw()
-			@updateDraw()
-			@endDraw()
-			return
-
-		process: (redrawing)->
+		processDrawing: (redrawing)->
 			@beginDraw(redrawing)
 
 			# # update drawing (@updateDraw()) every *step* along the control path
@@ -493,21 +481,12 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 
 			@drawingOffset = 0
 
-			process = if @constructor.renderType == 'simple' then @simpleProcess else @process
-
-			if not R.catchErrors
-				# R.rasterizer.hideOthers(@)
-				# R.startTimer()
-				process.call(@, redrawing)
-				# R.stopTimer("Time to draw")
-				# R.rasterizer.showItems()
-			else
-				try 	# catch errors to log them in the code editor console (if user is making a script)
-					process.call(@, redrawing)
-				catch error
-					console.error error.stack
-					console.error error
-					throw error
+			try 	# catch errors to log them in the code editor console (if user is making a script)
+				@processDrawing(redrawing)
+			catch error
+				console.error error.stack
+				console.error error
+				throw error
 
 			if simplified
 				@simplifiedModeOff()
@@ -559,7 +538,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			# P.project.activeLayer.insertChild(@index, @controlPath)
 			# control path can be null if user is removing the path
 			@controlPath?.selected = false
-			@selectionHighlight?.remove()
+			@removeSelectionHighlight()
 			return true
 
 		# highlight selection path point:
@@ -567,8 +546,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 		# the shape is a circle if point is 'smooth', a square if point is a 'corner' and a triangle otherwise
 		highlightSelectedPoint: ()->
 			if not @controlPath.selected then return
-			@selectionHighlight?.remove()
-			@selectionHighlight = null
+			@removeSelectionHighlight()
 			if not @selectedSegment? then return
 			point = @selectedSegment.point
 			@selectedSegment.rtype ?= 'smooth'
@@ -586,6 +564,16 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			@selectionHighlight.strokeWidth = 1
 			R.view.selectionLayer.addChild(@selectionHighlight)
 			@constructor.parameters['Edit curve'].pointType.controller.setValue(@selectedSegment.rtype)
+			return
+
+		updateSelectionHighlight: ()->
+			if @selectedSegment? and @selectionHighlight then @selectionHighlight.position = @selectedSegment.point
+			# @selectionHighlight.bringToFront()
+			return
+
+		removeSelectionHighlight: ()->
+			@selectionHighlight?.remove()
+			@selectionHighlight = null
 			return
 
 		# # redefine {RPath#initializeSelection}
@@ -658,7 +646,12 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 		# 	@controlPath.scale(scale, center)
 		# 	return
 
-		setRectangle: (rectangle, update=true)->
+		moveTo: (position, update)->
+			super(position, update)
+			@updateSelectionHighlight()
+			return
+
+		setRectangle: (rectangle, update)->
 			previousRectangle = @rectangle.clone()
 			super(rectangle, update)
 			@controlPath.pivot = previousRectangle.center
@@ -666,20 +659,16 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			@controlPath.scale(@rectangle.width/previousRectangle.width, @rectangle.height/previousRectangle.height)
 			# @controlPath.position = @selectionRectangle.pivot
 			# @controlPath.pivot = @selectionRectangle.pivot
-			@controlPath.position = @rectangle.center
-			@controlPath.pivot = @rectangle.center
+			@controlPath.position = @rectangle.center.clone()
+			@controlPath.pivot = @rectangle.center.clone()
 			@controlPath.rotate(@rotation)
+
+			@updateSelectionHighlight()
 			return
 
-		setRotation: (rotation, center, update=true)->
-			# previousRotation = @rotation
-			# @drawing.pivot = @rectangle.center
-			# super(rotation, update)
-			# @controlPath.rotate(rotation-previousRotation)
-			# @drawing.rotate(rotation-previousRotation)
+		setRotation: (rotation, center, update)->
 			super(rotation, center, update)
-
-			@selectionHighlight?.position = @selectedSegment.point
+			@updateSelectionHighlight()
 			return
 
 		# smooth the point of *segment*, i.e. align the handles with the tangent at this point
@@ -753,7 +742,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			return
 
 		addPointAt: (location, update=true)->
-			if not CurveLocation.prototype.isPrototypeOf(location) then location = @controlPath.getLocationAt(location)
+			if not P.CurveLocation.prototype.isPrototypeOf(location) then location = @controlPath.getLocationAt(location)
 			return @addPoint(location.index, location.point, location.offset, update)
 
 		# add a point according to *hitResult*
@@ -790,7 +779,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			if not segment then return
 			if not P.Segment.prototype.isPrototypeOf(segment) then segment = @controlPath.segments[segment]
 			@selectedSegment = if segment.next? then segment.next else segment.previous
-			if @selectedSegment then @selectionHighlight.position = @selectedSegment.point
+			if @selectedSegment? then @highlightSelectedPoint()
 			location = { index: segment.location.index - 1, point: segment.location.point }
 			segment.remove()
 			if @controlPath.segments.length <= 1
@@ -799,7 +788,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			if @data.smooth then @controlPath.smooth()
 			@draw()
 			if not @socketAction
-				@updateSelectionRectangle(true)
+				R.tools.select.updateSelectionRectangle()
 				if update then @update('point')
 				R.socket.emit "bounce", itemPk: @pk, function: "deletePoint", arguments: [segment.index, false]
 			return location
@@ -825,15 +814,14 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			segment.point = new P.Point(position)
 			segment.handleIn = new P.Point(handleIn)
 			segment.handleOut = new P.Point(handleOut)
-			@rectangle = @controlPath.bounds
+			@rectangle = @controlPath.bounds.clone()
 			R.tools.select.updateSelectionRectangle()
 			@draw(fastDraw)
-			if fastDraw and @selectionHighlight?
-				@selectionHighlight.position = segment.point
-				@selectionHighlight.bringToFront()
-			else
+			if not @selectionHighlight?
 				@highlightSelectedPoint()
-			# if @selectionRectangle? then @updateSelectionRectangle(true)
+			else
+				@updateSelectionHighlight()
+
 			if not @socketAction
 				if update then @update('segment')
 				R.socket.emit "bounce", itemPk: @pk, function: "modifyPoint", arguments: [segment.index, position, handleIn, handleOut, fastDraw, false]
@@ -888,7 +876,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 				if @data.smooth then @controlPath.smooth()
 				@draw()
 				@rasterize()
-				@selectionHighlight.bringToFront()
+				@selectionHighlight?.bringToFront()
 				@update('points')
 			return
 
@@ -938,9 +926,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			@setControlPath(pointsAndPlanet.points, pointsAndPlanet.planet)
 			@controlPath.selected = selected
 			if fullySelected then @controlPath.fullySelected = true
-			@selectedSegment = null
-			@selectedHandle = null
-			@highlightSelectedPoint()
+			@deselectPoint()
 			@draw()
 			if not @socketAction
 				if update then @update('point')
@@ -954,15 +940,14 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 				@controlPath.smooth()
 				@controlPath.fullySelected = false
 				@controlPath.selected = true
-				@selectedSegment = null
-				@selectedHandle = null
-				@highlightSelectedPoint()
+				@deselectPoint()
 				for segment in @controlPath.segments
 					segment.rtype = 'smooth'
 				@draw()
 				@modifyControlPathCommand(previousPointsAndPlanet, @getPointsAndPlanet())
 			else
 				@controlPath.fullySelected = true
+				@highlightSelectedPoint()
 			return
 
 		simplifyControlPath: ()->
@@ -979,7 +964,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 		# called when a parameter is changed
 		setParameter: (name, value, updateGUI, update)->
 			super(name, value, updateGUI, update)
-			# switch controller.name
+			# switch name
 			# 	when 'showSelectionRectangle'
 			# 		@selectionRectangle?.selected = @data.showSelectionRectangle
 			# 		@selectionRectangle?.visible = @data.showSelectionRectangle

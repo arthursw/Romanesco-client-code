@@ -11,14 +11,140 @@
         this.loadAndOpenFile = __bind(this.loadAndOpenFile, this);
         this.readTree = __bind(this.readTree, this);
         this.loadTree = __bind(this.loadTree, this);
-        this.fileBrowserJ = $('#Code').find('.files');
+        this.createFork = __bind(this.createFork, this);
+        this.forkCreationResponse = __bind(this.forkCreationResponse, this);
+        this.loadCustomFork = __bind(this.loadCustomFork, this);
+        this.loadFork = __bind(this.loadFork, this);
+        this.loadOwnFork = __bind(this.loadOwnFork, this);
+        this.loadMainRepo = __bind(this.loadMainRepo, this);
+        this.listForks = __bind(this.listForks, this);
+        this.displayForks = __bind(this.displayForks, this);
+        this.forkRowClicked = __bind(this.forkRowClicked, this);
+        this.getUserFork = __bind(this.getUserFork, this);
+        this.codeJ = $('#Code');
+        this.loadMainRepoBtnJ = this.codeJ.find('button.main-repository');
+        this.loadOwnForkBtnJ = this.codeJ.find('li.user-fork > a');
+        this.listForksBtnJ = this.codeJ.find('li.list-forks > a');
+        this.loadCustomForkBtnJ = this.codeJ.find('li.custom-fork > a');
+        this.createForkBtnJ = this.codeJ.find('li.create-fork > a');
+        this.loadOwnForkBtnJ.hide();
+        this.createForkBtnJ.hide();
+        this.getForks(this.getUserFork);
+        this.loadMainRepoBtnJ.click(this.loadMainRepo);
+        this.loadOwnForkBtnJ.click(this.loadOwnFork);
+        this.loadCustomForkBtnJ.click(this.loadCustomFork);
+        this.listForksBtnJ.click(this.listForks);
+        this.createForkBtnJ.click(this.createFork);
+        this.fileBrowserJ = this.codeJ.find('.files');
         this.files = [];
         this.nDirsToLoad = 1;
-        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', this.loadTree);
+        this.loadMainRepo();
         return;
       }
 
-      FileManager.prototype.request = function(request, callback) {
+      FileManager.prototype.getUserFork = function(forks) {
+        var fork, hasFork, _i, _len;
+        hasFork = false;
+        for (_i = 0, _len = forks.length; _i < _len; _i++) {
+          fork = forks[_i];
+          if (fork.owner.login === R.me) {
+            this.loadOwnForkBtnJ.show();
+            this.createForkBtnJ.hide();
+            hasFork = true;
+            break;
+          }
+        }
+        if (!hasFork) {
+          this.loadOwnForkBtnJ.hide();
+          this.createForkBtnJ.show();
+        }
+      };
+
+      FileManager.prototype.getForks = function(callback) {
+        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/forks/', callback);
+      };
+
+      FileManager.prototype.forkRowClicked = function(event) {
+        this.loadFork($(event.target.attr('full_name')));
+      };
+
+      FileManager.prototype.displayForks = function(forks) {
+        var fork, modal, _i, _len;
+        modal = Modal.createModal({
+          title: 'Forks',
+          submit: null
+        });
+        modal.initializeTable();
+        for (_i = 0, _len = forks.length; _i < _len; _i++) {
+          fork = forks[_i];
+          modal.addTableRow(fork.full_name, {
+            click: forkRowClicked
+          });
+        }
+        modal.show();
+      };
+
+      FileManager.prototype.listForks = function(event) {
+        if (event != null) {
+          event.preventDefault();
+        }
+        this.getForks(this.displayForks);
+      };
+
+      FileManager.prototype.loadMainRepo = function(event) {
+        if (event != null) {
+          event.preventDefault();
+        }
+        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', this.loadTree);
+      };
+
+      FileManager.prototype.loadOwnFork = function(event) {
+        if (event != null) {
+          event.preventDefault();
+        }
+        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', this.loadTree);
+      };
+
+      FileManager.prototype.loadFork = function(data) {
+        this.request('https://api.github.com/repos/' + data.user + '/romanesco-client-code/contents/', this.loadTree);
+      };
+
+      FileManager.prototype.loadCustomFork = function(event) {
+        var modal;
+        if (event != null) {
+          event.preventDefault();
+        }
+        modal = Modal.createModal({
+          title: 'Load repository',
+          submit: this.loadFork
+        });
+        modal.addTextInput({
+          name: 'user',
+          placeholder: 'The login name of the fork owner (ex: george)',
+          label: 'Owner',
+          required: true
+        });
+        modal.show();
+      };
+
+      FileManager.prototype.forkCreationResponse = function(response) {
+        var message;
+        if (response.status === 202) {
+          message = 'Congratulation, you just made a new fork!';
+          message += 'It should be available in a few seconds at this adress:' + response.url;
+          message += 'You will then be able to improve or customize it.';
+          R.alertManager.alert(message, 'success');
+        }
+      };
+
+      FileManager.prototype.createFork = function(event) {
+        if (event != null) {
+          event.preventDefault();
+        }
+        this.request('https://api.github.com/repos/' + R.user.githubLogin + '/romanesco-client-code/forks/', this.forkCreationResponse, 'post');
+      };
+
+      FileManager.prototype.request = function(request, callback, method, params, headers) {
         Dajaxice.draw.githubRequest(callback, {
           githubRequest: request
         });

@@ -1,4 +1,4 @@
-define [ 'Items/Item' ], (Item) ->
+define [ 'Items/Item', 'UI/Modal' ], (Item, Modal) ->
 
 	# Lock are locked area which can only be modified by their author
 	# all RItems on the area are also locked, and can be unlocked if the user drags them outside the div
@@ -39,7 +39,9 @@ define [ 'Items/Item' ], (Item) ->
 				lock.update('rectangle') 	# update to add items which are under the lock
 				lock.select()
 				return
-			R.RModal.initialize('Create a locked area', submit)
+
+
+			modal = Modal.createModal( title: 'Create a locked area', submit: submit )
 
 			radioButtons = [
 				{ value: 'lock', checked: true, label: 'Create simple lock', submitShortcut: true, linked: [] }
@@ -48,11 +50,12 @@ define [ 'Items/Item' ], (Item) ->
 				# { value: 'video-game', checked: false, label: 'Create  video game (® x2)', linked: ['message'] }
 			]
 
-			radioGroupJ = R.RModal.addRadioGroup('object_type', radioButtons)
-			R.RModal.addCheckbox('restrictArea', 'Restrict area', "Users visiting your website will not be able to go out of the site boundaries.")
-			R.RModal.addCheckbox('disableToolbar', 'Disable toolbar', "Users will not have access to the toolbar on your site.")
-			R.RModal.addTextInput('linkName', 'Site name', 'text', '', 'Site name')
-			R.RModal.addTextInput('url', 'http://', 'url', 'url', 'URL')
+			radioGroupJ = modal.addRadioGroup(name: 'object_type', radioButtons: radioButtons)
+
+			modal.addCheckbox(name: 'restrictArea', label: 'Restrict area', helpMessage: "Users visiting your website will not be able to go out of the site boundaries.")
+			modal.addCheckbox(name: 'disableToolbar', label: 'Disable toolbar', helpMessage: "Users will not have access to the toolbar on your site.")
+			modal.addTextInput(name: 'linkName', label: 'Site name', type: 'text', placeholder: 'Site name')
+			modal.addTextInput(name: 'url', placeholder: 'http://', type: 'url', class: 'url', label: 'URL')
 			siteURLJ = $("""
 				<div class="form-group siteName">
 					<label for="modalSiteName">Site name</label>
@@ -65,21 +68,21 @@ define [ 'Items/Item' ], (Item) ->
 			siteUrlExtractor = (data, siteURLJ)->
 				data.siteURL = siteURLJ.find("#modalSiteName").val()
 				return true
-			R.RModal.addCustomContent('siteName', siteURLJ, siteUrlExtractor)
-			R.RModal.addTextInput('message', 'Enter the message you want others to see when they look at this link.', 'text', '', 'Message', true)
+			modal.addCustomContent(name: 'siteName', divJ: siteURLJ, extractor: siteUrlExtractor)
+			modal.addTextInput(name: 'message', label: 'Enter the message you want others to see when they look at this link.', type: 'text', placeholder: 'Message', required: true)
 
 			radioGroupJ.click (event)->
 				lockType = radioGroupJ.find('input[type=radio][name=object_type]:checked')[0].value
 				for radioButton in radioButtons
 					if radioButton.value == lockType
-						for name, extractor of R.RModal.extractors
+						for name, extractor of modal.extractors
 							if radioButton.linked.indexOf(name) >= 0
 								extractor.div.show()
 							else if name != 'object_type'
 								extractor.div.hide()
 				return
 			radioGroupJ.click()
-			R.RModal.show()
+			modal.show()
 			radioGroupJ.find('input:first').focus()
 			return
 
@@ -266,7 +269,7 @@ define [ 'Items/Item' ], (Item) ->
 			titleJ.click (event)=>
 				@itemListsJ.toggleClass('closed')
 				if not event.shiftKey
-					R.tools.select.deselectAll()()
+					R.tools.select.deselectAll()
 				@select()
 				return
 
@@ -334,7 +337,7 @@ define [ 'Items/Item' ], (Item) ->
 
 		save: (addCreateCommand=true) ->
 
-			if Grid.rectangleOverlapsTwoPlanets(@rectangle)
+			if R.view.grid.rectangleOverlapsTwoPlanets(@rectangle)
 				return
 
 			if @rectangle.area == 0
@@ -387,7 +390,7 @@ define [ 'Items/Item' ], (Item) ->
 			delete @updateAfterSave
 
 			# check if position is valid
-			if Grid.rectangleOverlapsTwoPlanets(@rectangle)
+			if R.view.grid.rectangleOverlapsTwoPlanets(@rectangle)
 				return
 
 			# initialize data to be saved
@@ -429,11 +432,8 @@ define [ 'Items/Item' ], (Item) ->
 		# called when user deletes the item by pressing delete key or from the gui
 		# @delete() removes the item and delete it in the database
 		# @remove() just removes visually
-		delete: () ->
-			@remove()
-			if not @pk? then return
-			if not @socketAction then Dajaxice.draw.deleteBox( R.loader.checkError, { 'pk': @pk } )
-			super
+		deleteFromDatabase: () ->
+			Dajaxice.draw.deleteBox( R.loader.checkError, { 'pk': @pk } )
 			return
 
 		setRectangle: (rectangle, update=true)->
@@ -618,7 +618,7 @@ define [ 'Items/Item' ], (Item) ->
 					p = new P.Point()
 					p.x = parseFloat(pos[0])
 					p.y = parseFloat(pos[1])
-					View.moveTo(p, 1000)
+					R.view.moveTo(p, 1000)
 					event.preventDefault()
 					return false
 				return

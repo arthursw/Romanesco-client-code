@@ -3,7 +3,7 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Items/Paths/PrecisePaths/PrecisePath'], function(PrecisePath) {
+  define(['Items/Paths/PrecisePaths/StepPath', 'Commands/Command'], function(StepPath, Command) {
     var SpeedPath;
     SpeedPath = (function(_super) {
       __extends(SpeedPath, _super);
@@ -356,24 +356,27 @@
       };
 
       SpeedPath.prototype.hitTest = function(event) {
-        var hitResult, _ref;
+        var hitResult, point, _ref, _ref1;
+        point = event.point;
         if ((_ref = this.speedSelectionHighlight) != null) {
           _ref.remove();
         }
         this.speedSelectionHighlight = null;
-        hitResult = this.speedPath.hitTest(point, this.constructor.hitOptions);
-        if (hitResult.item.name === "speed handle") {
-          this.selectedSpeedHandle = hitResult.item;
-          R.commandManager.beginAction(new Command.ModifySeed(this));
-          return true;
-        } else {
-          return SpeedPath.__super__.hitTest.call(this, event);
+        this.selectedSpeedHandle = null;
+        if ((this.speedGroup != null) && this.speedGroup.visible) {
+          hitResult = this.handleGroup.hitTest(point, this.constructor.hitOptions);
+          if ((hitResult != null ? (_ref1 = hitResult.item) != null ? _ref1.name : void 0 : void 0) === "speed handle") {
+            this.selectedSpeedHandle = hitResult.item;
+            R.commandManager.beginAction(new Command.ModifySpeed(this));
+            return;
+          }
         }
+        SpeedPath.__super__.hitTest.call(this, event);
       };
 
       SpeedPath.prototype.updateModifySpeed = function(event) {
-        var delta, handle, handlePosition, handleToPoint, handlei, i, index, influence, influenceFactor, max, maxSpeed, n, newHandleToPoint, projection, projectionLength, sign, _i, _ref, _ref1;
-        if (this.selectionState.speedHandle != null) {
+        var delta, handle, handlePosition, handleToPoint, handlei, i, index, influence, influenceFactor, max, maxSpeed, n, newHandleToPoint, projection, projectionLength, sign, _i, _ref;
+        if (this.selectedSpeedHandle != null) {
           if ((_ref = this.speedSelectionHighlight) != null) {
             _ref.remove();
           }
@@ -383,7 +386,7 @@
           this.speedSelectionHighlight.strokeWidth = 1;
           this.speedSelectionHighlight.strokeColor = 'blue';
           this.speedGroup.addChild(this.speedSelectionHighlight);
-          handle = this.selectionState.speedHandle;
+          handle = this.selectedSpeedHandle;
           handlePosition = handle.bounds.center;
           handleToPoint = event.point.subtract(handlePosition);
           projection = handleToPoint.project(handle.rnormal);
@@ -422,11 +425,6 @@
           this.speedSelectionHighlight.add(handle.position.add(projection));
           this.speedSelectionHighlight.add(event.point);
           this.draw(true);
-          if (this.selected != null) {
-            if ((_ref1 = this.selectionHighlight) != null) {
-              _ref1.position = this.selectionState.segment.point;
-            }
-          }
         }
       };
 
@@ -455,7 +453,7 @@
 
       return SpeedPath;
 
-    })(PrecisePath);
+    })(StepPath);
     return SpeedPath;
   });
 

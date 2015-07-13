@@ -148,15 +148,10 @@ define [ 'Items/Paths/Path' ], (Path) ->
 			super()
 			return
 
-		setRectangle: (rectangle, update=true)->
+		setRectangle: (rectangle, update)->
 			Utils.Rectangle.updatePathRectangle(@controlPath, rectangle)
 			super(rectangle, update)
 			return
-
-		# setRotation: (rotation, update=true)->
-		# 	super(rotation, update)
-		# 	@shape.rotation = rotation
-		# 	return
 
 		# overload {RPath#getData} and add rectangle to @data
 		getData: ()->

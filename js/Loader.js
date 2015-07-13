@@ -3,22 +3,65 @@
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty;
 
-  define(['Commands/Command', 'Items/Item', 'Items/Lock', 'Items/Divs/Div', 'Items/Divs/Media', 'Items/Divs/Text'], function(Command, Item) {
+  define(['Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Lock', 'Items/Divs/Div', 'Items/Divs/Media', 'Items/Divs/Text'], function(Command, Item, ModuleLoader, Spinner) {
     var Loader;
     Loader = (function() {
       function Loader() {
         this.loadCallback = __bind(this.loadCallback, this);
+        this.hideLoadingBar = __bind(this.hideLoadingBar, this);
+        this.showLoadingBar = __bind(this.showLoadingBar, this);
         this.loadedAreas = [];
         this.debug = false;
+        this.pathsToCreate = {};
+        this.initializeLoadingBar();
+        this.showLoadingBar();
         return;
       }
 
+      Loader.prototype.initializeLoadingBar = function() {
+        var opts, target;
+        opts = {
+          lines: 13,
+          length: 45,
+          width: 41,
+          radius: 0,
+          scale: 0.25,
+          corners: 1,
+          color: '#000',
+          opacity: 0.15,
+          rotate: 0,
+          direction: 1,
+          speed: 1,
+          trail: 42,
+          fps: 20,
+          zIndex: 2e9,
+          className: 'spinner',
+          top: '50%',
+          left: '50%',
+          shadow: false,
+          hwaccel: false,
+          position: 'absolute'
+        };
+        target = document.getElementById('loadingBar');
+        this.spinner = new Spinner(opts).spin(target);
+      };
+
+      Loader.prototype.showDrawingBar = function() {
+        $("#drawingBar").show();
+      };
+
+      Loader.prototype.hideDrawingBar = function() {
+        $("#drawingBar").hide();
+      };
+
       Loader.prototype.showLoadingBar = function() {
         $("#loadingBar").show();
+        this.spinner.spin();
       };
 
       Loader.prototype.hideLoadingBar = function() {
         $("#loadingBar").hide();
+        this.spinner.stop();
       };
 
       Loader.prototype.areaIsLoaded = function(pos, planet, qZoom) {
@@ -259,8 +302,35 @@
         return itemsToLoad;
       };
 
+      Loader.prototype.moduleLoaded = function(args) {
+        var _base;
+        this.createPath(args);
+        delete this.pathsToCreate[args.pk];
+        if (Utils.isEmpty(this.pathsToCreate)) {
+          this.hideLoadingBar();
+          if (typeof (_base = R.rasterizer).checkRasterizeAreasToUpdate === "function") {
+            _base.checkRasterizeAreasToUpdate(true);
+          }
+        }
+      };
+
+      Loader.prototype.loadModuleAndCreatePath = function(args) {
+        this.pathsToCreate[args.pk] = true;
+        ModuleLoader.load(args.path.object_type, (function(_this) {
+          return function() {
+            return _this.moduleLoaded(args);
+          };
+        })(this));
+      };
+
+      Loader.prototype.createPath = function(args) {
+        var path, _ref;
+        path = new R.tools[args.path.object_type].Path(args.date, args.data, args.pk, args.points, args.lock);
+        path.lastUpdateDate = (_ref = args.path.lastUpdate) != null ? _ref.$date : void 0;
+      };
+
       Loader.prototype.createNewItems = function(itemsToLoad) {
-        var box, data, date, div, item, lock, path, pk, planet, point, points, rdiv, rpath, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
+        var args, box, data, date, div, item, lock, path, pk, planet, point, points, rdiv, rpath, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
         for (_i = 0, _len = itemsToLoad.length; _i < _len; _i++) {
           item = itemsToLoad[_i];
           pk = item._id.$oid;
@@ -303,7 +373,7 @@
               }
               rdiv.lastUpdateDate = div.lastUpdate.$date;
               break;
-            case 'P.Path':
+            case 'Path':
               path = item;
               planet = new P.Point(path.planetX, path.planetY);
               if (data != null) {
@@ -316,14 +386,18 @@
                 points.push(Utils.CS.posOnPlanetToProject(point, planet));
               }
               rpath = null;
+              args = {
+                path: path,
+                date: date,
+                data: data,
+                pk: pk,
+                points: points,
+                lock: lock
+              };
               if (R.tools[path.object_type] != null) {
-                rpath = new R.tools[path.object_type].RPath(date, data, pk, points, lock);
-                rpath.lastUpdateDate = path.lastUpdate.$date;
-                if (rpath.constructor.name === "Checkpoint") {
-                  console.log(rpath);
-                }
+                this.createPath(args);
               } else {
-                console.log("Unknown path type: " + path.object_type);
+                this.loadModuleAndCreatePath(args);
               }
               break;
             case 'AreaToUpdate':
@@ -355,11 +429,13 @@
         this.createNewItems(itemsToLoad);
         R.rasterizer.setQZoomToUpdate(results.qZoom);
         if ((results.rasters == null) || results.rasters.length === 0) {
-          R.rasterizer.rasterizeAreasToUpdate();
+          R.rasterizer.checkRasterizeAreasToUpdate();
         }
-        Item.Div.updateZIndex(R.sortedDivs);
+        Item.Div.updateZindex(R.sortedDivs);
         if (!R.rasterizerMode) {
-          this.hideLoadingBar();
+          if (Utils.isEmpty(this.pathsToCreate)) {
+            this.hideLoadingBar();
+          }
           this.dispatchLoadFinished();
         }
         if (typeof window.saveOnServer === "function") {

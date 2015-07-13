@@ -126,11 +126,11 @@
       }
 
       Path.prototype.getDuplicateData = function() {
-        return {
-          data: this.getData(),
-          points: this.pathOnPlanet(),
-          date: this.date
-        };
+        var data;
+        data = Path.__super__.getDuplicateData.call(this);
+        data.points = this.pathOnPlanet();
+        data.date = this.date;
+        return data;
       };
 
       Path.prototype.getDrawingBounds = function() {
@@ -150,10 +150,12 @@
       };
 
       Path.prototype.setRectangle = function(rectangle, update) {
-        if (update == null) {
-          update = true;
-        }
         Path.__super__.setRectangle.call(this, rectangle, update);
+        this.draw(update);
+      };
+
+      Path.prototype.setRotation = function(rotation, center, update) {
+        Path.__super__.setRotation.call(this, rotation, center, update);
         this.draw(update);
       };
 
@@ -480,21 +482,10 @@
         Path.__super__.remove.call(this);
       };
 
-      Path.prototype["delete"] = function() {
-        if ((this.lock != null) && this.lock.owner !== R.me) {
-          return;
-        }
-        this.remove();
-        if (this.pk == null) {
-          return;
-        }
-        console.log(this.pk);
-        if (!this.socketAction) {
-          Dajaxice.draw.deletePath(R.loader.checkError, {
-            pk: this.pk
-          });
-        }
-        Path.__super__["delete"].apply(this, arguments);
+      Path.prototype.deleteFromDatabase = function() {
+        Dajaxice.draw.deletePath(R.loader.checkError, {
+          pk: this.pk
+        });
       };
 
       Path.prototype.pathOnPlanet = function(controlSegments) {

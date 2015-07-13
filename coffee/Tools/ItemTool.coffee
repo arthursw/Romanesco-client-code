@@ -16,6 +16,10 @@ define [ 'Tools/Tool' ], (Tool) ->
 			# test: @isDiv = true
 			return
 
+		updateParameters: ()->
+			R.controllerManager.setSelectedTool(@Item)
+			return
+
 		select: (deselectItems=true, updateParameters=true)->
 			R.rasterizer.drawItems()
 			super
@@ -56,12 +60,12 @@ define [ 'Tools/Tool' ], (Tool) ->
 			R.currentPaths[from].fillColor = null
 
 			bounds = R.currentPaths[from].bounds
-			locks = Lock.getLocksWhichIntersect(bounds)
+			locks = @constructor.Item.Lock.getLocksWhichIntersect(bounds)
 			for lock in locks
 				if lock.owner != R.me or (@name != 'Lock' and not lock.rectangle.contains(bounds))
 					R.currentPaths[from].fillColor = 'red'
 
-			if Grid.rectangleOverlapsTwoPlanets(bounds)
+			if R.view.grid.rectangleOverlapsTwoPlanets(bounds)
 				R.currentPaths[from].fillColor = 'red'
 
 			# if R.me? and from==R.me then R.socket.emit( "update", R.me, point, @name )
@@ -86,14 +90,14 @@ define [ 'Tools/Tool' ], (Tool) ->
 			R.currentPaths[from].remove()
 
 			bounds = R.currentPaths[from].bounds
-			locks = Lock.getLocksWhichIntersect(bounds)
+			locks = @constructor.Item.Lock.getLocksWhichIntersect(bounds)
 			for lock in locks
 				if lock.owner != R.me or (@name != 'Lock' and not lock.rectangle.contains(bounds))
 					R.alertManager.alert 'Your item intersects with a locked area.', 'error'
 					return false
 
 			# check if div if valid (does not overlap two planets, and does not intersects with an Lock), return false otherwise
-			if Grid.rectangleOverlapsTwoPlanets(bounds)
+			if R.view.grid.rectangleOverlapsTwoPlanets(bounds)
 				R.alertManager.alert 'Your item overlaps with two planets.', 'error'
 				return false
 

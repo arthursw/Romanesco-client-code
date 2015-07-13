@@ -89,7 +89,7 @@
           label: 'Stroke width',
           min: 1,
           max: 100,
-          "default": 1
+          "default": 5
         };
         R.parameters.strokeColor = {
           type: 'color',

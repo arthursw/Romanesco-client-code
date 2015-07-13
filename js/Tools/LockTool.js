@@ -27,6 +27,8 @@
         icon: 'key'
       };
 
+      LockTool.order = 4;
+
       LockTool.drawItems = false;
 
       function LockTool() {

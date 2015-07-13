@@ -27,6 +27,8 @@
         icon: 'image'
       };
 
+      MediaTool.order = 6;
+
       function MediaTool() {
         MediaTool.__super__.constructor.call(this, Media);
         return;
@@ -37,7 +39,7 @@
           from = R.me;
         }
         if (MediaTool.__super__.end.call(this, event, from)) {
-          R.Media.initialize(R.currentPaths[from].bounds);
+          Media.initialize(R.currentPaths[from].bounds);
           delete R.currentPaths[from];
         }
       };

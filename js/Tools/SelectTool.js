@@ -9,6 +9,8 @@
     SelectTool = (function(_super) {
       __extends(SelectTool, _super);
 
+      SelectTool.SelectionRectangle = SelectionRectangle;
+
       SelectTool.label = 'Select';
 
       SelectTool.description = '';
@@ -25,18 +27,17 @@
 
       SelectTool.drawItems = false;
 
+      SelectTool.order = 1;
+
       SelectTool.hitOptions = {
         stroke: true,
         fill: true,
-        handles: true,
-        segments: true,
-        curves: true,
-        selected: true,
-        tolerance: 5
+        selected: true
       };
 
       function SelectTool() {
         this.updateSelectionRectangleCallback = __bind(this.updateSelectionRectangleCallback, this);
+        this.setSelectionRectangleVisibility = __bind(this.setSelectionRectangleVisibility, this);
         SelectTool.__super__.constructor.call(this, true);
         this.selectedItem = null;
         this.selectionRectangle = null;
@@ -53,6 +54,13 @@
           this.selectionRectangle = null;
         }
         P.project.activeLayer.selected = false;
+      };
+
+      SelectTool.prototype.setSelectionRectangleVisibility = function(value) {
+        var _ref;
+        if ((_ref = this.selectionRectangle) != null) {
+          _ref.setVisibility(value);
+        }
       };
 
       SelectTool.prototype.updateSelectionRectangle = function(rotation) {
@@ -219,9 +227,7 @@
           }
           controller = hitResult != null ? hitResult.item.controller : void 0;
           if (controller != null) {
-            if (typeof controller.hitTest === "function") {
-              controller.hitTest(event);
-            }
+            controller.hitTest(event);
           }
           itemWasHit = controller != null;
         }

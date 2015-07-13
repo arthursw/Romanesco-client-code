@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Items/Item'], function(Item) {
+  define(['Items/Item', 'UI/Modal'], function(Item, Modal) {
     var Link, Lock, VideoGame, Website;
     Lock = (function(_super) {
       __extends(Lock, _super);
@@ -14,7 +14,7 @@
       Lock.object_type = 'lock';
 
       Lock.initialize = function(rectangle) {
-        var radioButtons, radioGroupJ, siteURLJ, siteUrlExtractor, submit;
+        var modal, radioButtons, radioGroupJ, siteURLJ, siteUrlExtractor, submit;
         submit = function(data) {
           var lock;
           switch (data.object_type) {
@@ -34,7 +34,10 @@
           lock.update('rectangle');
           lock.select();
         };
-        R.RModal.initialize('Create a locked area', submit);
+        modal = Modal.createModal({
+          title: 'Create a locked area',
+          submit: submit
+        });
         radioButtons = [
           {
             value: 'lock',
@@ -54,25 +57,57 @@
             linked: ['restrictArea', 'disableToolbar', 'siteName']
           }
         ];
-        radioGroupJ = R.RModal.addRadioGroup('object_type', radioButtons);
-        R.RModal.addCheckbox('restrictArea', 'Restrict area', "Users visiting your website will not be able to go out of the site boundaries.");
-        R.RModal.addCheckbox('disableToolbar', 'Disable toolbar', "Users will not have access to the toolbar on your site.");
-        R.RModal.addTextInput('linkName', 'Site name', 'text', '', 'Site name');
-        R.RModal.addTextInput('url', 'http://', 'url', 'url', 'URL');
+        radioGroupJ = modal.addRadioGroup({
+          name: 'object_type',
+          radioButtons: radioButtons
+        });
+        modal.addCheckbox({
+          name: 'restrictArea',
+          label: 'Restrict area',
+          helpMessage: "Users visiting your website will not be able to go out of the site boundaries."
+        });
+        modal.addCheckbox({
+          name: 'disableToolbar',
+          label: 'Disable toolbar',
+          helpMessage: "Users will not have access to the toolbar on your site."
+        });
+        modal.addTextInput({
+          name: 'linkName',
+          label: 'Site name',
+          type: 'text',
+          placeholder: 'Site name'
+        });
+        modal.addTextInput({
+          name: 'url',
+          placeholder: 'http://',
+          type: 'url',
+          "class": 'url',
+          label: 'URL'
+        });
         siteURLJ = $("<div class=\"form-group siteName\">\n	<label for=\"modalSiteName\">Site name</label>\n	<div class=\"input-group\">\n		<span class=\"input-group-addon\">romanesco.city/#</span>\n		<input id=\"modalSiteName\" type=\"text\" class=\"name form-control\" placeholder=\"Site name\">\n	</div>\n</div>");
         siteUrlExtractor = function(data, siteURLJ) {
           data.siteURL = siteURLJ.find("#modalSiteName").val();
           return true;
         };
-        R.RModal.addCustomContent('siteName', siteURLJ, siteUrlExtractor);
-        R.RModal.addTextInput('message', 'Enter the message you want others to see when they look at this link.', 'text', '', 'Message', true);
+        modal.addCustomContent({
+          name: 'siteName',
+          divJ: siteURLJ,
+          extractor: siteUrlExtractor
+        });
+        modal.addTextInput({
+          name: 'message',
+          label: 'Enter the message you want others to see when they look at this link.',
+          type: 'text',
+          placeholder: 'Message',
+          required: true
+        });
         radioGroupJ.click(function(event) {
           var extractor, lockType, name, radioButton, _i, _len, _ref;
           lockType = radioGroupJ.find('input[type=radio][name=object_type]:checked')[0].value;
           for (_i = 0, _len = radioButtons.length; _i < _len; _i++) {
             radioButton = radioButtons[_i];
             if (radioButton.value === lockType) {
-              _ref = R.RModal.extractors;
+              _ref = modal.extractors;
               for (name in _ref) {
                 extractor = _ref[name];
                 if (radioButton.linked.indexOf(name) >= 0) {
@@ -85,7 +120,7 @@
           }
         });
         radioGroupJ.click();
-        R.RModal.show();
+        modal.show();
         radioGroupJ.find('input:first').focus();
       };
 
@@ -298,7 +333,7 @@
           return function(event) {
             _this.itemListsJ.toggleClass('closed');
             if (!event.shiftKey) {
-              R.tools.select.deselectAll()();
+              R.tools.select.deselectAll();
             }
             _this.select();
           };
@@ -391,7 +426,7 @@
         if (addCreateCommand == null) {
           addCreateCommand = true;
         }
-        if (Grid.rectangleOverlapsTwoPlanets(this.rectangle)) {
+        if (R.view.grid.rectangleOverlapsTwoPlanets(this.rectangle)) {
           return;
         }
         if (this.rectangle.area === 0) {
@@ -449,7 +484,7 @@
           return;
         }
         delete this.updateAfterSave;
-        if (Grid.rectangleOverlapsTwoPlanets(this.rectangle)) {
+        if (R.view.grid.rectangleOverlapsTwoPlanets(this.rectangle)) {
           return;
         }
         updateBoxArgs = {
@@ -499,17 +534,10 @@
         }
       };
 
-      Lock.prototype["delete"] = function() {
-        this.remove();
-        if (this.pk == null) {
-          return;
-        }
-        if (!this.socketAction) {
-          Dajaxice.draw.deleteBox(R.loader.checkError, {
-            'pk': this.pk
-          });
-        }
-        Lock.__super__["delete"].apply(this, arguments);
+      Lock.prototype.deleteFromDatabase = function() {
+        Dajaxice.draw.deleteBox(R.loader.checkError, {
+          'pk': this.pk
+        });
       };
 
       Lock.prototype.setRectangle = function(rectangle, update) {
@@ -752,7 +780,7 @@
                 p = new P.Point();
                 p.x = parseFloat(pos[0]);
                 p.y = parseFloat(pos[1]);
-                View.moveTo(p, 1000);
+                R.view.moveTo(p, 1000);
                 event.preventDefault();
                 return false;
               }

@@ -186,7 +186,7 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 			return somethingToLoad
 
 
-		addMoveCommand: ()->
+		addMoveCommand: ()=>
 			R.commandManager.add(new Command.MoveView(@previousPosition, P.view.center))
 			@previousPosition = null
 			return
@@ -392,14 +392,6 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 
 			for item in R.animatedItems
 				item.onFrame(event)
-
-			for username, car of R.cars
-				direction = new P.Point(1,0)
-				direction.angle = car.rotation-90
-				car.position = car.position.add(direction.multiply(car.speed))
-				if Date.now() - car.rLastUpdate > 1000
-					R.cars[username].remove()
-					delete R.cars[username]
 
 			return
 

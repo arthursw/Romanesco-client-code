@@ -1,4 +1,4 @@
-define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
+define [ 'Items/Paths/PrecisePaths/StepPath', 'Commands/Command' ], (StepPath, Command) ->
 
 	# SpeedPath extends R.PrecisePath to add speed functionnalities:
 	#  - the speed at which the user has drawn the path is stored and has influence on the drawing,
@@ -6,7 +6,7 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 	#  - when the user drags a handle, it will also influence surrounding speed values depending on how far from the normal the user drags the handle (with a gaussian attenuation)
 	#  - the speed path and handles are added to a speed group, which is added to the main group
 	#  - the speed group can be shown or hidden through the folder 'Edit curve' in the gui
-	class SpeedPath extends PrecisePath
+	class SpeedPath extends StepPath
 		@label = 'Speed path'
 		@description = "This path offers speed."
 		@iconURL = null
@@ -192,6 +192,9 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 
 		# update the speed group (curve and handles to visualize and edit the speeds)
 		updateSpeed: ()->
+			# TODO: Remove unecessary handle group, replace by speedCurve segments...
+			# 		Anyway, this should be replace by a nice, smooth speed curve...
+
 			@speedGroup?.visible = @data.showSpeed
 
 			if not @speeds? or not @data.showSpeed then return
@@ -350,20 +353,24 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 		# 	return
 
 		hitTest: (event)->
+			point = event.point
+
 			@speedSelectionHighlight?.remove()
 			@speedSelectionHighlight = null
+			@selectedSpeedHandle = null
 
-			hitResult = @speedPath.hitTest(point, @constructor.hitOptions)
+			if @speedGroup? and @speedGroup.visible
+				hitResult = @handleGroup.hitTest(point, @constructor.hitOptions)
 
-			if hitResult.item.name == "speed handle"
-				@selectedSpeedHandle =  hitResult.item
-				R.commandManager.beginAction(new Command.ModifySeed(@))
-				return true
-			else
-				return super(event)
+				if hitResult?.item?.name == "speed handle"
+					@selectedSpeedHandle =  hitResult.item
+					R.commandManager.beginAction(new Command.ModifySpeed(@))
+					return
+			super(event)
+			return
 
 		updateModifySpeed: (event)->
-			if @selectionState.speedHandle?
+			if @selectedSpeedHandle?
 				@speedSelectionHighlight?.remove()
 
 				maxSpeed = @constructor.maxSpeed
@@ -376,7 +383,7 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 				@speedSelectionHighlight.strokeColor = 'blue'
 				@speedGroup.addChild(@speedSelectionHighlight)
 
-				handle = @selectionState.speedHandle
+				handle = @selectedSpeedHandle
 				handlePosition = handle.bounds.center
 
 				handleToPoint = event.point.subtract(handlePosition)
@@ -424,8 +431,6 @@ define [ 'Items/Paths/PrecisePaths/PrecisePath' ], (PrecisePath) ->
 				@speedSelectionHighlight.add(event.point)
 
 				@draw(true)
-
-				if @selected? then @selectionHighlight?.position = @selectionState.segment.point
 			return
 
 		endModifySpeed: ()->

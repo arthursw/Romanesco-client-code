@@ -73,10 +73,10 @@
           type = '';
           if (Lock.prototype.isPrototypeOf(item)) {
             type = 'Box';
-          } else if (R.Div.prototype.isPrototypeOf(item)) {
+          } else if (Div.prototype.isPrototypeOf(item)) {
             type = 'Div';
-          } else if (R.RPath.prototype.isPrototypeOf(item)) {
-            type = 'P.Path';
+          } else if (Path.prototype.isPrototypeOf(item)) {
+            type = 'Path';
           }
           itemsDates[pk] = item.lastUpdateDate;
         }

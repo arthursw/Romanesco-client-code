@@ -88,12 +88,12 @@ define [ 'Commands/Command' ], (Command) ->
 			@actionCommand.begin(event)
 			return
 
-		updateAction: (event)->
-			@actionCommand.update(event)
+		updateAction: ()->
+			@actionCommand?.update.apply(@actionCommand, arguments)
 			return
 
 		endAction: (event)=>
-			@actionCommand.end(event)
+			@actionCommand?.end(event)
 			@actionCommand = null
 			return
 
@@ -108,12 +108,16 @@ define [ 'Commands/Command' ], (Command) ->
 
 		mapItemsToCommand: (command)->
 			if not command.items? then return
-			for item in command.items
-				@itemToCommands[item.getPk()] ?= []
-				@itemToCommands[item.getPk()].push(command)
+			for pk, item of command.items
+				@itemToCommands[pk] ?= []
+				@itemToCommands[pk].push(command)
 			return
 
 		setItemPk: (id, pk)->
+			commands = @itemToCommands[id]
+			if commands?
+				for command in commands
+					command.setItemPk(id, pk)
 			@itemToCommands[pk] = @itemToCommands[id]
 			delete @itemToCommands[id]
 			return
@@ -123,6 +127,7 @@ define [ 'Commands/Command' ], (Command) ->
 			if commands?
 				for command in commands
 					command.unloadItem(item)
+			# do not delete @itemToCommands[item.getPk()], we will need it to resurect the item
 			return
 
 		loadItem: (item)->
@@ -136,7 +141,9 @@ define [ 'Commands/Command' ], (Command) ->
 			commands = @itemToCommands[pk]
 			if commands?
 				for command in commands
-					command.resurrectItem(pk, item)
+					command.resurrectItem(item)
+			@itemToCommands[item.getPk()] = commands
+			delete @itemToCommands[pk]
 			return
 
 	return CommandManager

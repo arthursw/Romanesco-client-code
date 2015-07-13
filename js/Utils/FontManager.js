@@ -6,7 +6,7 @@
     var FontManager;
     FontManager = (function() {
       function FontManager() {
-        this.initTextOptions = __bind(this.initTextOptions, this);
+        this.initializeTextOptions = __bind(this.initializeTextOptions, this);
         this.loadFonts = __bind(this.loadFonts, this);
         var jqxhr;
         this.availableFonts = [];
@@ -16,7 +16,7 @@
         jqxhr.done((function(_this) {
           return function(json) {
             console.log('done');
-            _this.initTextOptions(json);
+            _this.initializeTextOptions(json);
           };
         })(this));
         jqxhr.fail(function(jqxhr, textStatus, error) {
@@ -89,7 +89,7 @@
         }
       };
 
-      FontManager.prototype.initTextOptions = function(data, textStatus, jqXHR) {
+      FontManager.prototype.initializeTextOptions = function(data, textStatus, jqXHR) {
         var fontFamilyNames, item, promise, _i, _len, _ref;
         fontFamilyNames = [];
         _ref = data.items;

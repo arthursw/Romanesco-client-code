@@ -18,7 +18,7 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 
 	# There are three main RPaths:
 	# - PrecisePath adds control handles to the control path (which can be hidden): one can edit, add or remove points, to precisely shape the curve.
-	# - SpeedPath which extends PrecisePath to add speed functionnalities:
+	# - SpeedPath which extends StepPath to add speed functionnalities:
 	#    - the speed at which the user has drawn the path is stored and has influence on the drawing,
 	#    - the speed values are displayed as normals of the path, and can be edited thanks to handles
 	#    - when the user drags a handle, it will also influence surrounding speed values depending on how far from the normal the user drags the handle (with a gaussian attenuation)
@@ -134,7 +134,10 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 			return
 
 		getDuplicateData: ()->
-			return data: @getData(), points: @pathOnPlanet(), date: @date
+			data = super()
+			data.points = @pathOnPlanet()
+			data.date = @date
+			return data
 
 		# common to all RItems
 		# return [P.Rectangle] the bounds of the control path (does not necessarly fit the drawing entirely, but is centered on it)
@@ -166,8 +169,13 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 			@rasterize()
 			return
 
-		setRectangle: (rectangle, update=true)->
+		setRectangle: (rectangle, update)->
 			super(rectangle, update)
+			@draw(update)
+			return
+
+		setRotation: (rotation, center, update)->
+			super(rotation, center, update)
 			@draw(update)
 			return
 
@@ -293,7 +301,7 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 
 		# add a path to the drawing group:
 		# - create the path
-		# - initilize it (stroke width, and colors) with @data
+		# - initialize it (stroke width, and colors) with @data
 		# - add to the drawing group
 		# @param path [Paper path] (optional) the path to add to drawing, create an empty one if not provided
 		# @return [Paper path] the resulting path
@@ -578,18 +586,8 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 			super()
 			return
 
-		# common to all RItems
-		# @delete() removes the path, update rasters and delete it in the database
-		# @remove() just removes visually
-		delete: ()->
-			if @lock? and @lock.owner != R.me then return
-			@remove()
-			# R.rasterizeArea(bounds)
-			if not @pk? then return
-			console.log @pk
-			# ajaxPost '/deletePath', { pk: @pk } , @deletePathCallback
-			if not @socketAction then Dajaxice.draw.deletePath(R.loader.checkError, { pk: @pk })
-			super
+		deleteFromDatabase: ()->
+			Dajaxice.draw.deletePath(R.loader.checkError, { pk: @pk })
 			return
 
 		# @param controlSegments [Array<Paper P.Segment>] the control path segments to convert in planet coordinates

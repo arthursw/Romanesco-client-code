@@ -18,7 +18,6 @@
         segments: true,
         stroke: true,
         fill: true,
-        selected: true,
         curves: true,
         handles: true,
         tolerance: 5
@@ -27,8 +26,6 @@
       PrecisePath.secureStep = 25;
 
       PrecisePath.polygonMode = true;
-
-      PrecisePath.renderType = 'simple';
 
       PrecisePath.initializeParameters = function() {
         var parameters;
@@ -108,7 +105,8 @@
           showSelectionRectangle: {
             type: 'checkbox',
             label: 'Selection box',
-            "default": true
+            "default": true,
+            onChange: R.tools.select.setSelectionRectangleVisibility
           }
         };
         return parameters;
@@ -149,7 +147,7 @@
         var distanceMax, flattenedPath, i, index, recordedPoint, resultingPoint, time, _i;
         this.addControlPath();
         this.setControlPath(this.data.points, this.data.planet);
-        this.rectangle = this.controlPath.bounds;
+        this.rectangle = this.controlPath.bounds.clone();
         if (this.data.smooth) {
           this.controlPath.smooth();
         }
@@ -174,13 +172,9 @@
       };
 
       PrecisePath.prototype.deselectPoint = function() {
-        var _ref;
-        if ((_ref = this.selectionHighlight) != null) {
-          _ref.remove();
-        }
-        this.selectionHighlight = null;
         this.selectedSegment = null;
         this.selectedHandle = null;
+        this.removeSelectionHighlight();
       };
 
       PrecisePath.prototype.performHitTest = function(point) {
@@ -192,10 +186,9 @@
       };
 
       PrecisePath.prototype.hitTest = function(event) {
-        var hitResult, modifyPoint, point, specialKey;
-        point = event.point;
+        var hitResult, modifyPoint, specialKey;
         this.deselectPoint();
-        hitResult = this.performHitTest(point);
+        hitResult = PrecisePath.__super__.hitTest.call(this, event);
         if (hitResult == null) {
           return;
         }
@@ -251,33 +244,20 @@
       };
 
       PrecisePath.prototype.updateDraw = function(offset, step, redrawing) {
-        this.path.segments = this.controlPath.segments;
-        this.path.selected = false;
-        this.applyStylesToPath(this.path);
+        this.path.add(this.controlPath.lastSegment);
       };
 
       PrecisePath.prototype.endDraw = function(redrawing) {
         if (redrawing == null) {
           redrawing = false;
         }
-        this.path.segments = this.controlPath.segments;
-        this.path.selected = false;
       };
 
       PrecisePath.prototype.checkUpdateDrawing = function(segment, redrawing) {
-        var controlPathOffset, step;
         if (redrawing == null) {
           redrawing = true;
         }
-        step = this.data.step;
-        controlPathOffset = segment.location.offset;
-        while (this.drawingOffset + step < controlPathOffset) {
-          this.drawingOffset += step;
-          this.updateDraw(this.drawingOffset, true, redrawing);
-        }
-        if (this.drawingOffset + step > controlPathOffset) {
-          this.updateDraw(controlPathOffset, false, redrawing);
-        }
+        this.updateDraw();
       };
 
       PrecisePath.prototype.beginCreate = function(point, event) {
@@ -285,13 +265,13 @@
         if (!this.data.polygonMode) {
           this.addControlPath();
           this.controlPath.add(point);
-          this.rectangle = this.controlPath.bounds;
+          this.rectangle = this.controlPath.bounds.clone();
           this.beginDraw(false);
         } else {
           if (this.controlPath == null) {
             this.addControlPath();
             this.controlPath.add(point);
-            this.rectangle = this.controlPath.bounds;
+            this.rectangle = this.controlPath.bounds.clone();
             this.controlPath.add(point);
             this.beginDraw(false);
           } else {
@@ -365,7 +345,7 @@
         }
         this.endDraw();
         this.drawingOffset = 0;
-        this.rectangle = this.controlPath.bounds;
+        this.rectangle = this.controlPath.bounds.clone();
         if (!PrecisePath.__super__.finish.call(this)) {
           return false;
         }
@@ -404,13 +384,7 @@
         }
       };
 
-      PrecisePath.prototype.simpleProcess = function(redrawing) {
-        this.beginDraw();
-        this.updateDraw();
-        this.endDraw();
-      };
-
-      PrecisePath.prototype.process = function(redrawing) {
+      PrecisePath.prototype.processDrawing = function(redrawing) {
         var i, segment, _i, _len, _ref;
         this.beginDraw(redrawing);
         _ref = this.controlPath.segments;
@@ -425,7 +399,7 @@
       };
 
       PrecisePath.prototype.draw = function(simplified, redrawing) {
-        var controlPathLength, error, nIteration, nf, offset, process, reminder, step;
+        var controlPathLength, error, nIteration, nf, offset, reminder, step;
         if (simplified == null) {
           simplified = false;
         }
@@ -449,18 +423,13 @@
         reminder = nf - nIteration;
         offset = reminder * step / 2;
         this.drawingOffset = 0;
-        process = this.constructor.renderType === 'simple' ? this.simpleProcess : this.process;
-        if (!R.catchErrors) {
-          process.call(this, redrawing);
-        } else {
-          try {
-            process.call(this, redrawing);
-          } catch (_error) {
-            error = _error;
-            console.error(error.stack);
-            console.error(error);
-            throw error;
-          }
+        try {
+          this.processDrawing(redrawing);
+        } catch (_error) {
+          error = _error;
+          console.error(error.stack);
+          console.error(error);
+          throw error;
         }
         if (simplified) {
           this.simplifiedModeOff();
@@ -515,28 +484,23 @@
       };
 
       PrecisePath.prototype.deselect = function() {
-        var _ref, _ref1;
+        var _ref;
         if (!PrecisePath.__super__.deselect.call(this)) {
           return false;
         }
         if ((_ref = this.controlPath) != null) {
           _ref.selected = false;
         }
-        if ((_ref1 = this.selectionHighlight) != null) {
-          _ref1.remove();
-        }
+        this.removeSelectionHighlight();
         return true;
       };
 
       PrecisePath.prototype.highlightSelectedPoint = function() {
-        var offset, point, _base, _ref;
+        var offset, point, _base;
         if (!this.controlPath.selected) {
           return;
         }
-        if ((_ref = this.selectionHighlight) != null) {
-          _ref.remove();
-        }
-        this.selectionHighlight = null;
+        this.removeSelectionHighlight();
         if (this.selectedSegment == null) {
           return;
         }
@@ -563,30 +527,41 @@
         this.constructor.parameters['Edit curve'].pointType.controller.setValue(this.selectedSegment.rtype);
       };
 
+      PrecisePath.prototype.updateSelectionHighlight = function() {
+        if ((this.selectedSegment != null) && this.selectionHighlight) {
+          this.selectionHighlight.position = this.selectedSegment.point;
+        }
+      };
+
+      PrecisePath.prototype.removeSelectionHighlight = function() {
+        var _ref;
+        if ((_ref = this.selectionHighlight) != null) {
+          _ref.remove();
+        }
+        this.selectionHighlight = null;
+      };
+
+      PrecisePath.prototype.moveTo = function(position, update) {
+        PrecisePath.__super__.moveTo.call(this, position, update);
+        this.updateSelectionHighlight();
+      };
+
       PrecisePath.prototype.setRectangle = function(rectangle, update) {
         var previousRectangle;
-        if (update == null) {
-          update = true;
-        }
         previousRectangle = this.rectangle.clone();
         PrecisePath.__super__.setRectangle.call(this, rectangle, update);
         this.controlPath.pivot = previousRectangle.center;
         this.controlPath.rotate(-this.rotation);
         this.controlPath.scale(this.rectangle.width / previousRectangle.width, this.rectangle.height / previousRectangle.height);
-        this.controlPath.position = this.rectangle.center;
-        this.controlPath.pivot = this.rectangle.center;
+        this.controlPath.position = this.rectangle.center.clone();
+        this.controlPath.pivot = this.rectangle.center.clone();
         this.controlPath.rotate(this.rotation);
+        this.updateSelectionHighlight();
       };
 
       PrecisePath.prototype.setRotation = function(rotation, center, update) {
-        var _ref;
-        if (update == null) {
-          update = true;
-        }
         PrecisePath.__super__.setRotation.call(this, rotation, center, update);
-        if ((_ref = this.selectionHighlight) != null) {
-          _ref.position = this.selectedSegment.point;
-        }
+        this.updateSelectionHighlight();
       };
 
       PrecisePath.prototype.smoothPoint = function(segment, offset) {
@@ -646,7 +621,7 @@
         if (update == null) {
           update = true;
         }
-        if (!CurveLocation.prototype.isPrototypeOf(location)) {
+        if (!P.CurveLocation.prototype.isPrototypeOf(location)) {
           location = this.controlPath.getLocationAt(location);
         }
         return this.addPoint(location.index, location.point, location.offset, update);
@@ -699,8 +674,8 @@
           segment = this.controlPath.segments[segment];
         }
         this.selectedSegment = segment.next != null ? segment.next : segment.previous;
-        if (this.selectedSegment) {
-          this.selectionHighlight.position = this.selectedSegment.point;
+        if (this.selectedSegment != null) {
+          this.highlightSelectedPoint();
         }
         location = {
           index: segment.location.index - 1,
@@ -716,7 +691,7 @@
         }
         this.draw();
         if (!this.socketAction) {
-          this.updateSelectionRectangle(true);
+          R.tools.select.updateSelectionRectangle();
           if (update) {
             this.update('point');
           }
@@ -756,14 +731,13 @@
         segment.point = new P.Point(position);
         segment.handleIn = new P.Point(handleIn);
         segment.handleOut = new P.Point(handleOut);
-        this.rectangle = this.controlPath.bounds;
+        this.rectangle = this.controlPath.bounds.clone();
         R.tools.select.updateSelectionRectangle();
         this.draw(fastDraw);
-        if (fastDraw && (this.selectionHighlight != null)) {
-          this.selectionHighlight.position = segment.point;
-          this.selectionHighlight.bringToFront();
-        } else {
+        if (this.selectionHighlight == null) {
           this.highlightSelectedPoint();
+        } else {
+          this.updateSelectionHighlight();
         }
         if (!this.socketAction) {
           if (update) {
@@ -821,13 +795,16 @@
       };
 
       PrecisePath.prototype.endModifyPoint = function(update) {
+        var _ref;
         if (update) {
           if (this.data.smooth) {
             this.controlPath.smooth();
           }
           this.draw();
           this.rasterize();
-          this.selectionHighlight.bringToFront();
+          if ((_ref = this.selectionHighlight) != null) {
+            _ref.bringToFront();
+          }
           this.update('points');
         }
       };
@@ -902,9 +879,7 @@
         if (fullySelected) {
           this.controlPath.fullySelected = true;
         }
-        this.selectedSegment = null;
-        this.selectedHandle = null;
-        this.highlightSelectedPoint();
+        this.deselectPoint();
         this.draw();
         if (!this.socketAction) {
           if (update) {
@@ -926,9 +901,7 @@
           this.controlPath.smooth();
           this.controlPath.fullySelected = false;
           this.controlPath.selected = true;
-          this.selectedSegment = null;
-          this.selectedHandle = null;
-          this.highlightSelectedPoint();
+          this.deselectPoint();
           _ref = this.controlPath.segments;
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             segment = _ref[_i];
@@ -938,6 +911,7 @@
           this.modifyControlPathCommand(previousPointsAndPlanet, this.getPointsAndPlanet());
         } else {
           this.controlPath.fullySelected = true;
+          this.highlightSelectedPoint();
         }
       };
 

@@ -82,7 +82,7 @@ define [ 'UI/Controllers/Controller', 'colorpickersliders' ], (Controller) ->
 
 			@enableCheckboxJ.change(@enableCheckboxChanged)
 
-			@setColor(value, false)
+			@setColor(value, false, @parameter.defaultCheck)
 			return
 
 		popoverOnShow: (event)=>
@@ -180,8 +180,8 @@ define [ 'UI/Controllers/Controller', 'colorpickersliders' ], (Controller) ->
 					@selectTool.select(false, false)
 			return
 
-		setColor: (color, updateColorPicker=true)->
-			@enableCheckboxJ[0].checked = color?
+		setColor: (color, updateColorPicker=true, defaultCheck=null)->
+			@enableCheckboxJ[0].checked = if defaultCheck? then defaultCheck else color?
 
 			if @gradient
 				@colorInputJ.val('Gradient')

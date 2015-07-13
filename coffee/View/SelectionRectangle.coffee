@@ -62,7 +62,7 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 			y = new P.Point(0,1)
 			return new P.Point(x.rotate(rotation).dot(d), y.rotate(rotation).dot(d))
 
-		@setRectangle: (items, previousRectangle, rectangle, rotation)->
+		@setRectangle: (items, previousRectangle, rectangle, rotation, update)->
 			scale = new P.Point(rectangle.size.divide(previousRectangle.size))
 			previousCenter = previousRectangle.center
 
@@ -74,12 +74,12 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 				# scale
 				itemRectangle = itemRectangle.scale(scale.x, scale.y)
 				# set rectangle
-				item.setRectangle(itemRectangle)
+				item.setRectangle(itemRectangle, update)
 			return
 
-		constructor: ()->
-			@items = R.selectedItems
-			@rectangle = @getBoundingRectangle(@items)
+		constructor: (@rectangle)->
+			@items = if not @rectangle? then R.selectedItems else []
+			@rectangle ?= @getBoundingRectangle(@items)
 
 			@transformState = null
 
@@ -104,10 +104,11 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 			return
 
 		getBoundingRectangle: (items)->
+			if items.length == 0 then return
 			bounds = items[0].getBounds()
 			for item in items
 				bounds = bounds.unite(item.getBounds())
-			return bounds
+			return bounds.expand(5)
 
 		addHandles: (bounds)->
 			@path.insert(1, new P.Point(bounds.left, bounds.center.y))
@@ -160,6 +161,20 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 			@path.rotation = @rotation or 0
 			return
 
+		show: ()->
+			@group.visible = true
+			@path.visible = true
+			return
+
+		hide: ()->
+			@group.visible = false
+			@path.visible = false
+			return
+
+		setVisibility: (show)->
+			if show then @show() else @hide()
+			return
+
 		remove: ()->
 			@group.remove()
 			@rectangle = null
@@ -174,7 +189,7 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 			@rectangle = @rectangle.translate(delta)
 			@path.translate(delta)
 			for item in @items
-				item.translate(delta)
+				item.translate(delta, false)
 			return
 
 		snapPosition: (event)->
@@ -332,7 +347,7 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 
 			@cancelNegativeSize(rectangle, center)
 
-			@constructor.setRectangle(@items, @rectangle, rectangle, rotation)
+			@constructor.setRectangle(@items, @rectangle, rectangle, rotation, false)
 			@rectangle = rectangle
 			@updatePath()
 			return
@@ -462,7 +477,7 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 			@rotation += angle
 			@path.rotate(angle)
 			for item in @items
-				item.rotate(angle, @rectangle.center)
+				item.rotate(angle, @rectangle.center, false)
 			return
 
 		beginRotate: ()->
@@ -544,4 +559,5 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 
 			return
 
+	R.SelectionRectangle = SelectionRectangle
 	return SelectionRectangle

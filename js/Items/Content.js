@@ -31,7 +31,6 @@
         }
         this.rotation = this.data.rotation || 0;
         this.liJ = $("<li>");
-        this.setZindexLabel();
         this.liJ.attr("data-pk", this.pk);
         this.liJ.click(this.onLiClick);
         this.liJ.mouseover((function(_this) {
@@ -47,51 +46,40 @@
         this.liJ.rItem = this;
         itemListJ.prepend(this.liJ);
         $("#RItems .mCustomScrollbar").mCustomScrollbar("scrollTo", "bottom");
-        if (this.pk != null) {
-          this.updateZIndex();
-        }
+        this.updateZindex();
         return;
       }
+
+      Content.prototype.getDuplicateData = function() {
+        var data, _ref;
+        data = Content.__super__.getDuplicateData.call(this);
+        data.lock = (_ref = this.lock) != null ? _ref.getPk() : void 0;
+        return data;
+      };
 
       Content.prototype.onLiClick = function(event) {
         var bounds;
         if (!event.shiftKey) {
-          R.tools.select.deselectAll()();
+          R.tools.select.deselectAll();
           bounds = this.getBounds();
           if (!P.view.bounds.intersects(bounds)) {
-            View.moveTo(bounds.center, 1000);
+            R.view.moveTo(bounds.center, 1000);
           }
         }
         this.select();
       };
 
-      Content.prototype.setZindexLabel = function() {
-        var dateLabel, zindexLabel;
-        dateLabel = '' + this.date;
-        dateLabel = dateLabel.substring(dateLabel.length - 7, dateLabel.length - 3);
-        zindexLabel = this.constructor.label;
-        if (dateLabel.length > 0) {
-          zindexLabel += ' - ' + dateLabel;
-        }
-        this.liJ.text(zindexLabel);
-      };
-
       Content.prototype.rotate = function(rotation, center, update) {
-        this.setRotation(this.rotation + rotation, center);
+        this.setRotation(this.rotation + rotation, center, update);
       };
 
       Content.prototype.setRotation = function(rotation, center, update) {
-        var deltaRotation, previousPivot;
-        if (update == null) {
-          update = true;
-        }
+        var delta, deltaRotation;
         deltaRotation = rotation - this.rotation;
-        previousPivot = this.group.pivot;
-        this.group.pivot = center;
         this.rotation = rotation;
-        this.group.rotate(deltaRotation);
-        this.group.pivot = previousPivot;
-        this.rectangle = this.group.bounds;
+        this.group.rotate(deltaRotation, center);
+        delta = this.rectangle.center.subtract(center);
+        this.rectangle.center = center.add(delta.rotate(deltaRotation));
         if (!this.socketAction) {
           if (update) {
             this.update('rotation');
@@ -99,7 +87,7 @@
           R.socket.emit("bounce", {
             itemPk: this.pk,
             "function": "setRotation",
-            "arguments": [this.rotation, false]
+            "arguments": [rotation, center, false]
           });
         }
       };
@@ -118,28 +106,36 @@
         return Utils.Rectangle.getRotatedBounds(this.rectangle, this.rotation);
       };
 
-      Content.prototype.updateZIndex = function() {
-        var found, i, item, _i, _len, _ref;
+      Content.prototype.setZindex = function() {
+        var dateLabel, zindexLabel;
+        dateLabel = '' + this.date;
+        dateLabel = dateLabel.substring(dateLabel.length - 7, dateLabel.length - 3);
+        zindexLabel = this.constructor.label;
+        if (dateLabel.length > 0) {
+          zindexLabel += ' - ' + dateLabel;
+        }
+        this.liJ.text(zindexLabel);
+      };
+
+      Content.prototype.updateZindex = function() {
+        var i, item, _i, _len, _ref;
         if (this.date == null) {
           return;
         }
         if (this.sortedItems.length === 0) {
           this.sortedItems.push(this);
+          this.setZindex();
           return;
         }
-        found = false;
         _ref = this.sortedItems;
         for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
           item = _ref[i];
           if (this.date < item.date) {
             this.insertBelow(item, i);
-            found = true;
-            break;
+            return;
           }
         }
-        if (!found) {
-          this.insertAbove(_.last(this.sortedItems));
-        }
+        this.insertAbove(_.last(this.sortedItems));
       };
 
       Content.prototype.insertAbove = function(item, index, update) {
@@ -167,7 +163,7 @@
           }
           this.update('z-index');
         }
-        this.setZindexLabel();
+        this.setZindex();
       };
 
       Content.prototype.insertBelow = function(item, index, update) {
@@ -195,7 +191,7 @@
           }
           this.update('z-index');
         }
-        this.setZindexLabel();
+        this.setZindex();
       };
 
       Content.prototype.setPK = function(pk) {
@@ -258,6 +254,13 @@
         if ((_ref = this.liJ) != null) {
           _ref.remove();
         }
+      };
+
+      Content.prototype["delete"] = function() {
+        if ((this.lock != null) && this.lock.owner !== R.me) {
+          return;
+        }
+        Content.__super__["delete"].call(this);
       };
 
       Content.prototype.update = function() {};

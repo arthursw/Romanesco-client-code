@@ -12,7 +12,7 @@
 
       GradientTool.description = '';
 
-      GradientTool.favorite = true;
+      GradientTool.favorite = false;
 
       GradientTool.category = '';
 
