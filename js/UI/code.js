@@ -7,8 +7,12 @@
     FileManager = (function() {
       function FileManager() {
         this.registerModuleInModuleLoader = __bind(this.registerModuleInModuleLoader, this);
+        this.run = __bind(this.run, this);
+        this.onDeleteFile = __bind(this.onDeleteFile, this);
         this.onFileMoved = __bind(this.onFileMoved, this);
-        this.loadAndOpenFile = __bind(this.loadAndOpenFile, this);
+        this.onCreateFile = __bind(this.onCreateFile, this);
+        this.openFile = __bind(this.openFile, this);
+        this.onNodeClicked = __bind(this.onNodeClicked, this);
         this.readTree = __bind(this.readTree, this);
         this.loadTree = __bind(this.loadTree, this);
         this.createFork = __bind(this.createFork, this);
@@ -35,6 +39,14 @@
         this.loadCustomForkBtnJ.click(this.loadCustomFork);
         this.listForksBtnJ.click(this.listForks);
         this.createForkBtnJ.click(this.createFork);
+        this.createFileBtnJ = this.codeJ.find('button.create-file');
+        this.runBtnJ = this.codeJ.find('button.run');
+        this.commitBtnJ = this.codeJ.find('button.commit');
+        this.createPullRequestBtnJ = this.codeJ.find('button.pull-request');
+        this.createFileBtnJ.click(this.onCreateFile);
+        this.runBtnJ.click(this.run);
+        this.commitBtnJ.click(this.commit);
+        this.createPullRequestBtnJ.click(this.createPullRequest);
         this.fileBrowserJ = this.codeJ.find('.files');
         this.files = [];
         this.nDirsToLoad = 1;
@@ -64,23 +76,45 @@
         this.request('https://api.github.com/repos/arthursw/romanesco-client-code/forks/', callback);
       };
 
-      FileManager.prototype.forkRowClicked = function(event) {
-        this.loadFork($(event.target.attr('full_name')));
+      FileManager.prototype.forkRowClicked = function(field, value, row, $element) {
+        if (field === 'githubURL') {
+          window.location.href = value;
+        } else {
+          this.loadFork(row);
+        }
       };
 
       FileManager.prototype.displayForks = function(forks) {
-        var fork, modal, _i, _len;
+        var fork, modal, tableData, tableJ, _i, _len;
         modal = Modal.createModal({
           title: 'Forks',
           submit: null
         });
-        modal.initializeTable();
+        tableData = {
+          columns: [
+            {
+              field: 'author',
+              title: 'Author'
+            }, {
+              field: 'date',
+              title: 'Date'
+            }, {
+              field: 'githubURL',
+              title: 'Github URL'
+            }
+          ],
+          data: []
+        };
         for (_i = 0, _len = forks.length; _i < _len; _i++) {
           fork = forks[_i];
-          modal.addTableRow(fork.full_name, {
-            click: forkRowClicked
+          tableData.data.push({
+            author: fork.author,
+            date: fork.date,
+            githubURL: fork.url
           });
         }
+        tableJ = modal.addTable(tableData);
+        tableJ.on('click-cell.bs.table', this.forkRowClicked);
         modal.show();
       };
 
@@ -106,7 +140,7 @@
       };
 
       FileManager.prototype.loadFork = function(data) {
-        this.request('https://api.github.com/repos/' + data.user + '/romanesco-client-code/contents/', this.loadTree);
+        this.request('https://api.github.com/repos/' + data.author + '/romanesco-client-code/contents/', this.loadTree);
       };
 
       FileManager.prototype.loadCustomFork = function(event) {
@@ -119,7 +153,7 @@
           submit: this.loadFork
         });
         modal.addTextInput({
-          name: 'user',
+          name: 'author',
           placeholder: 'The login name of the fork owner (ex: george)',
           label: 'Owner',
           required: true
@@ -146,15 +180,23 @@
 
       FileManager.prototype.request = function(request, callback, method, params, headers) {
         Dajaxice.draw.githubRequest(callback, {
-          githubRequest: request
+          githubRequest: request,
+          method: method,
+          params: params,
+          headers: headers
         });
       };
 
-      FileManager.prototype.createFile = function() {};
-
-      FileManager.prototype.updateFile = function() {};
-
-      FileManager.prototype.deleteFile = function() {};
+      FileManager.prototype.getNodeFromPath = function(path) {
+        var dirName, dirs, i, node, _i, _len;
+        dirs = path.split('/');
+        node = this.tree;
+        for (i = _i = 0, _len = dirs.length; _i < _len; i = ++_i) {
+          dirName = dirs[i];
+          node = node.leaves[dirName];
+        }
+        return node;
+      };
 
       FileManager.prototype.getParentNode = function(file, node) {
         var dirName, dirs, i, _base, _i, _len;
@@ -162,50 +204,54 @@
         file.name = dirs.pop();
         for (i = _i = 0, _len = dirs.length; _i < _len; i = ++_i) {
           dirName = dirs[i];
-          if ((_base = node.children)[dirName] == null) {
+          if ((_base = node.leaves)[dirName] == null) {
             _base[dirName] = {
-              children: {}
+              leaves: {},
+              children: []
             };
           }
-          node = node.children[dirName];
+          node = node.leaves[dirName];
         }
         return node;
       };
 
       FileManager.prototype.buildTree = function(files) {
-        var file, node, tree, _base, _i, _len, _name;
+        var file, i, name, parentNode, tree, _base, _i, _len;
         tree = {
-          children: {}
+          leaves: {},
+          children: []
         };
-        for (_i = 0, _len = files.length; _i < _len; _i++) {
-          file = files[_i];
-          node = tree;
-          node = this.getParentNode(file, node);
-          if ((_base = node.children)[_name = file.name] == null) {
-            _base[_name] = {
-              children: {}
+        for (i = _i = 0, _len = files.length; _i < _len; i = ++_i) {
+          file = files[i];
+          parentNode = this.getParentNode(file, tree);
+          name = file.name;
+          if ((_base = parentNode.leaves)[name] == null) {
+            _base[name] = {
+              leaves: {},
+              children: []
             };
           }
-          node.children[file.name].type = file.type;
-          node.children[file.name].path = file.path;
+          parentNode.leaves[name].type = file.type;
+          parentNode.leaves[name].path = file.path;
+          parentNode.leaves[name].label = name;
+          parentNode.leaves[name].id = i;
+          parentNode.children.push(parentNode.leaves[name]);
         }
         return tree;
       };
 
-      FileManager.prototype.buildJqTree = function(tree, jqTree) {
-        var jqTreeNode, name, node, _ref;
+      FileManager.prototype.updateTree = function(tree) {
+        var i, jqNode, node, _i, _len, _ref;
+        if (tree == null) {
+          tree = this.tree;
+        }
         _ref = tree.children;
-        for (name in _ref) {
-          node = _ref[name];
-          jqTreeNode = {
-            label: name,
-            type: node.type,
-            path: node.path,
-            children: []
-          };
-          node.jqTreeNode = jqTreeNode;
-          jqTree.children.push(jqTreeNode);
-          this.buildJqTree(node, jqTreeNode);
+        for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+          node = _ref[i];
+          jqNode = this.fileBrowserJ.tree('getNodeById', node.id);
+          tree.leaves[node.label] = jqNode;
+          tree.children[i] = jqNode;
+          this.updateTree(node);
         }
       };
 
@@ -220,46 +266,269 @@
         }
       };
 
+      FileManager.prototype.onCanMoveTo = function(moved_node, target_node, position) {
+        var nameExistsInTargetNode, targetIsFolder;
+        targetIsFolder = target_node.type === 'tree';
+        nameExistsInTargetNode = target_node.leaves[moved_node.label] != null;
+        return (targetIsFolder && !nameExistsInTargetNode) || position !== 'inside';
+      };
+
+      FileManager.prototype.onCreateLi = function(node, liJ) {
+        var deleteButtonJ;
+        deleteButtonJ = $("<button type=\"button\" class=\"close delete\" aria-label=\"Close\">\n	<span aria-hidden=\"true\">&times;</span>\n</button>");
+        deleteButtonJ.attr('data-path', node.path);
+        deleteButtonJ.click(this.onDeleteFile);
+        liJ.find('.jqtree-element').append(deleteButtonJ);
+      };
+
       FileManager.prototype.readTree = function(content) {
-        var jqTreeData;
         this.tree = this.buildTree(content.tree);
-        jqTreeData = {
-          children: []
-        };
-        this.buildJqTree(this.tree, jqTreeData);
         this.fileBrowserJ.tree({
-          data: jqTreeData.children,
+          data: this.tree.children,
           autoOpen: true,
           dragAndDrop: true,
-          onCanMoveTo: function(moved_node, target_node, position) {
-            return target_node.type === 'tree' || position !== 'inside';
-          }
+          onCanMoveTo: this.onCanMoveTo,
+          onCreateLi: this.onCreateLi
         });
-        this.fileBrowserJ.bind('tree.click', this.loadAndOpenFile);
+        this.updateTree();
+        this.fileBrowserJ.bind('tree.click', this.onNodeClicked);
         this.fileBrowserJ.bind('tree.move', this.onFileMoved);
       };
 
-      FileManager.prototype.loadAndOpenFile = function(event) {
+      FileManager.prototype.onNodeClicked = function(event) {
+        var elementIsTitle, elementIsToggler;
         if (event.node.type === 'tree') {
-          this.fileBrowserJ.tree('toggle', event.node);
+          elementIsToggler = $(event.click_event.target).hasClass('jqtree-toggler');
+          elementIsTitle = $(event.click_event.target).hasClass('jqtree-title-folder');
+          if (elementIsToggler || elementIsTitle) {
+            this.fileBrowserJ.tree('toggle', event.node);
+          }
           return;
         }
-        this.loadFile(event.node.path, this.openFile);
+        if (event.node.content != null) {
+          R.showCodeEditor(event.node);
+        } else {
+          this.loadFile(event.node.path, this.openFile);
+        }
       };
 
-      FileManager.prototype.openFile = function(content) {
-        R.showCodeEditor(atob(content.content));
+      FileManager.prototype.openFile = function(file) {
+        var fileNode, path;
+        path = file.path.replace('coffee/', '');
+        fileNode = this.getNodeFromPath(path);
+        fileNode.content = file.content;
+        R.showCodeEditor(fileNode);
+      };
+
+      FileManager.prototype.onCreateFile = function() {
+        var newNode, node, parentNode;
+        node = this.fileBrowserJ.tree('getSelectedNode');
+        newNode = {
+          label: 'NewScript.coffee',
+          type: 'blob',
+          children: [],
+          leaves: {},
+          content: ''
+        };
+        parentNode = null;
+        if (node === false) {
+          newNode.path = newNode.label;
+          newNode = this.fileBrowserJ.tree('appendNode', newNode);
+          parentNode = this.tree;
+        } else if (node.type === 'tree') {
+          newNode.path = node.path + '/' + newNode.label;
+          newNode = this.fileBrowserJ.tree('appendNode', newNode, node);
+          parentNode = node;
+        } else {
+          newNode.path = node.parent.path ? node.parent.path + '/' + newNode.label : newNode.label;
+          newNode = this.fileBrowserJ.tree('addNodeAfter', newNode, node);
+          parentNode = node.parent;
+        }
+        parentNode.leaves[newNode.label] = newNode;
+        R.showCodeEditor(newNode);
       };
 
       FileManager.prototype.onFileMoved = function(event) {
+        var _base;
         console.log('moved_node', event.move_info.moved_node);
         console.log('target_node', event.move_info.target_node);
         console.log('position', event.move_info.position);
         console.log('previous_parent', event.move_info.previous_parent);
+        if ((_base = event.move_info.moved_node).oldPath == null) {
+          _base.oldPath = event.move_info.previous_parent.path + '/' + event.move_info.moved_node.label;
+        }
+        this.save();
+      };
+
+      FileManager.prototype.saveFile = function(fileNode, source) {
+        fileNode.source = source;
+        $(fileNode.element).addClass('modified');
+        this.save();
+      };
+
+      FileManager.prototype.onDeleteFile = function(event) {
+        var node, path;
+        path = $(event.target).attr('data-path');
+        node = this.getNodeFromPath(path);
+        node["delete"] = true;
       };
 
       FileManager.prototype.loadFile = function(path, callback) {
         this.request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/coffee/' + path, callback);
+      };
+
+      FileManager.prototype.getNodes = function(tree, nodes) {
+        var name, node, _ref;
+        if (tree == null) {
+          tree = this.tree;
+        }
+        if (nodes == null) {
+          nodes = [];
+        }
+        _ref = tree.leaves;
+        for (name in _ref) {
+          node = _ref[name];
+          if (node.type === 'tree') {
+            nodes = this.getNodes(node, nodes);
+          }
+          nodes.push(node);
+        }
+        return nodes;
+      };
+
+      FileManager.prototype.save = function() {
+        var nodes;
+        nodes = this.getNodes();
+        Utils.LocalStorage.set('files', nodes);
+      };
+
+      FileManager.prototype.load = function() {
+        var files;
+        files = Utils.LocalStorage.get('files');
+        this.readTree({
+          content: files
+        });
+      };
+
+      FileManager.prototype.checkError = function(message) {
+        console.log(message);
+      };
+
+      FileManager.prototype.fileToParameters = function(file, commitMessage, content, sha) {
+        var params;
+        if (content == null) {
+          content = false;
+        }
+        if (sha == null) {
+          sha = false;
+        }
+        params = {
+          path: file.path,
+          message: commitMessage
+        };
+        if (content) {
+          params.content = btoa(file.source);
+        }
+        if (sha) {
+          params.sha = file.sha;
+        }
+        return params;
+      };
+
+      FileManager.prototype.requestFile = function(file, params, method) {
+        var path;
+        if (method == null) {
+          method = 'put';
+        }
+        path = file.oldPath || file.path;
+        this.request('https://api.github.com/repos/' + this.author + '/romanesco-client-code/contents/' + path, this.checkError, method, params);
+        delete file.oldPath;
+      };
+
+      FileManager.prototype.createFile = function(file, commitMessage) {
+        var params;
+        params = this.fileToParameters(file, commitMessage, true);
+        this.requestFile(file, params);
+      };
+
+      FileManager.prototype.updateFile = function(file, commitMessage) {
+        var params;
+        params = this.fileToParameters(file, commitMessage, true, true);
+        $(file.element).removeClass('modified');
+        this.requestFile(file, params);
+      };
+
+      FileManager.prototype.deleteFile = function(file, commitMessage) {
+        var params;
+        params = this.fileToParameters(file, commitMessage, false, true);
+        this.requestFile(file, params, 'delete');
+        delete file["delete"];
+      };
+
+      FileManager.prototype.runLastCommit = function(commits) {
+        R.repository.commit = _.last(commits).sha;
+        R.view.updateHash();
+        location.reload();
+      };
+
+      FileManager.prototype.run = function() {
+        this.request('https://api.github.com/repos/' + this.author + '/romanesco-client-code/commits/', this.runLastCommit);
+      };
+
+      FileManager.prototype.commit = function(commitMessage) {
+        var file, nodes, _i, _len;
+        nodes = this.getNodes();
+        for (_i = 0, _len = nodes.length; _i < _len; _i++) {
+          file = nodes[_i];
+          if (file["delete"]) {
+            this.deleteFile(file, commitMessage);
+            continue;
+          } else if (file.source != null) {
+            if (file["new"] != null) {
+              this.createFile(file, commitMessage);
+            } else {
+              this.updateFile(file, commitMessage);
+            }
+          }
+        }
+      };
+
+      FileManager.prototype.createPullRequest = function() {
+        var modal;
+        modal = Modal.createModal({
+          title: 'Create pull request',
+          submit: this.createPullRequestSubmit
+        });
+        modal.addTextInput({
+          name: 'title',
+          placeholder: 'Amazing new feature',
+          label: 'Title of the pull request',
+          required: true
+        });
+        modal.addTextInput({
+          name: 'branch',
+          placeholder: 'master',
+          label: 'Branch',
+          required: true
+        });
+        modal.addTextInput({
+          name: 'body',
+          placeholder: 'Please pull this in!',
+          label: 'Message',
+          required: false
+        });
+        modal.show();
+      };
+
+      FileManager.prototype.createPullRequestSubmit = function(data) {
+        var params;
+        params = {
+          title: data.title,
+          head: this.owner + ':' + data.branch,
+          base: 'master',
+          body: data.body
+        };
+        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/pulls/', this.checkError, 'post', params);
       };
 
       FileManager.prototype.createButton = function(content) {
@@ -315,7 +584,7 @@
 
       FileManager.prototype.createButtons = function(pathDirectory) {
         var name, node, _ref;
-        _ref = pathDirectory.children;
+        _ref = pathDirectory.leaves;
         for (name in _ref) {
           node = _ref[name];
           if (node.type !== 'tree') {
@@ -327,12 +596,12 @@
       };
 
       FileManager.prototype.loadButtons = function() {
-        this.createButtons(this.tree.children['Items'].children['Paths']);
+        this.createButtons(this.tree.leaves['Items'].leaves['Paths']);
       };
 
       FileManager.prototype.registerModule = function(module) {
         this.module = module;
-        this.loadFile(this.tree.children['ModuleLoader'].path, this.registerModuleInModuleLoader);
+        this.loadFile(this.tree.leaves['ModuleLoader'].path, this.registerModuleInModuleLoader);
       };
 
       FileManager.prototype.insertModule = function(source, module, position) {

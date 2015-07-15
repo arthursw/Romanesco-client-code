@@ -52,18 +52,18 @@
         window.setPageFullyLoaded(true);
       }
     });
-    R.showCodeEditor = function(source) {
+    R.showCodeEditor = function(fileNode) {
       if (R.codeEditor == null) {
         require(['UI/Editor'], function(CodeEditor) {
           R.codeEditor = new CodeEditor();
-          if (source) {
-            R.codeEditor.setSource(source);
+          if (fileNode) {
+            R.codeEditor.setFile(fileNode);
           }
           R.codeEditor.open();
         });
       } else {
-        if (source) {
-          R.codeEditor.setSource(source);
+        if (fileNode) {
+          R.codeEditor.setFile(fileNode);
         }
         R.codeEditor.open();
       }

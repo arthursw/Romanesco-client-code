@@ -202,6 +202,16 @@
         return divJ;
       };
 
+      Modal.prototype.addTable = function(data) {
+        var tableJ;
+        tableJ = $("<table class='.table'>");
+        this.modalBodyJ.append(tableJ);
+        require(['table'], function() {
+          tableJ.bootstrapTable(data);
+        });
+        return tableJ;
+      };
+
       Modal.prototype.addCustomContent = function(args) {
         if (args.args == null) {
           args.args = args.divJ;

@@ -156,6 +156,14 @@ define [ 'Utils/Utils' ], () ->
 
 			return divJ
 
+		addTable: (data)->
+			tableJ = $("<table class='.table'>")
+			@modalBodyJ.append(tableJ)
+			require ['table'], ()->
+				tableJ.bootstrapTable(data)
+				return
+			return tableJ
+
 		addCustomContent: (args)->
 			args.args ?= args.divJ
 			args.divJ.attr('id', 'modal-' + args.name)

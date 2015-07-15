@@ -1,10 +1,46 @@
+Utils = {}
+Utils.URL = {}
+
+Utils.URL.getParameters = (hash)->
+	# queryString = queryString.split('+').join(' ')
+	hash = hash.replace('#', '')
+	parameters = {}
+	re = /[?&]?([^=]+)=([^&]*)/g
+	while tokens = re.exec(hash)
+		parameters[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2])
+	return parameters
+
+Utils.URL.setParameters = (parameters)->
+	hash = ''
+	for name, value of parameters
+		hash += '&' + name + "=" + value
+	hash = hash.replace('&', '')
+	return hash
+
+window.Utils = Utils
+window.R = {}
+window.P = {}
+R.DajaxiceXMLHttpRequest = window.XMLHttpRequest
+window.XMLHttpRequest = window.RXMLHttpRequest
+
 libs = '../../libs/'
+
+parameters = Utils.URL.getParameters(document.location.search)
+
+if parameters['repository-owner']? and parameters['repository-commit']?
+	prefix = if parameters['repository-use-cdn']? then '//cdn.' else '//'
+	baseUrl = prefix + 'rawgit.com/' + parameters['repository-owner'] + '/romanesco-client-code/' + parameters['repository-commit'] + '/js'
+	window.R.repository = owner: parameters['repository-owner'], commit: parameters['repository-commit']
+else
+	baseUrl = '../static/romanesco-client-code/js'
+
 # Place third party dependencies in the lib folder
 #
 # Configure loading modules from the lib directory,
 # except 'app' ones,
 requirejs.config
-	baseUrl: '../static/romanesco-client-code/js'
+	baseUrl: baseUrl
+
 	# enforceDefine: true 	# to make fallback work?? but throws Uncaught Error: No define call for app
 	paths:
 		'domReady': ['//cdnjs.cloudflare.com/ajax/libs/require-domReady/2.0.1/domReady.min', libs + 'domReady']
@@ -28,7 +64,7 @@ requirejs.config
 		'howler': ['//cdnjs.cloudflare.com/ajax/libs/howler/1.1.26/howler.min', libs + 'howler']
 		'spin': ['//cdnjs.cloudflare.com/ajax/libs/spin.js/2.0.1/spin.min', libs + 'spin.min']
 		'pinit': ['//assets.pinterest.com/js/pinit', libs + 'pinit']
-		'table': ['//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.8.1/bootstrap-table.min', libs + 'table']
+		'table': ['//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.8.1/bootstrap-table.min', libs + 'table/bootstrap-table.min']
 		'zeroClipboard': ['//cdnjs.cloudflare.com/ajax/libs/zeroclipboard/2.2.0/ZeroClipboard.min', libs + 'ZeroClipboard.min']
 
 
@@ -85,11 +121,6 @@ requirejs.config
 			exports: '_'
 		'jquery':
 			exports: '$'
-
-window.R = {}
-window.P = {}
-R.DajaxiceXMLHttpRequest = window.XMLHttpRequest
-window.XMLHttpRequest = window.RXMLHttpRequest
 
 # Load the main app module to start the app
 requirejs [ 'main' ]

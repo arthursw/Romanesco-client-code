@@ -285,15 +285,15 @@ define [
 
 		return
 
-	R.showCodeEditor = (source)->
+	R.showCodeEditor = (fileNode)->
 		if not R.codeEditor?
 			require ['UI/Editor'], (CodeEditor)->
 				R.codeEditor = new CodeEditor()
-				if source then R.codeEditor.setSource(source)
+				if fileNode then R.codeEditor.setFile(fileNode)
 				R.codeEditor.open()
 				return
 		else
-			if source then R.codeEditor.setSource(source)
+			if fileNode then R.codeEditor.setFile(fileNode)
 			R.codeEditor.open()
 		return
 

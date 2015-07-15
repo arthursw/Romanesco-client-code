@@ -340,8 +340,14 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 
 		### set, compile and run scripts ###
 
+		setFile: (@fileNode)->
+			@setSource(atob(@fileNode.content))
+			return
+
 		setSource: (source)->
+			@editor.getSession().off('change', @onChange)
 			@editor.getSession().setValue(source)
+			@editor.getSession().on('change', @onChange)
 			return
 
 		compile: (source)->
@@ -390,6 +396,16 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 
 			@run(code)
 			window.define = requirejsDefine
+			return
+
+		# save on change:
+
+		onChange: ()=>
+			if @fileNode? then Utils.deferredExecution(@save, 'save:'+@fileNode.path)
+			return
+
+		save: ()=>
+			if @fileNode? then R.fileManager.saveFile(@fileNode, @editor.getValue())
 			return
 
 	return CodeEditor

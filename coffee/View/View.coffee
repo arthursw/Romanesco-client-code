@@ -80,6 +80,7 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 		# @param pos [P.Point] destination
 		# @param delay [Number] time of the animation to go to destination in millisecond
 		moveTo: (pos, delay, addCommand=true) ->
+			pos ?= new P.Point()
 			if not delay?
 				somethingToLoad = @moveBy(pos.subtract(P.view.center), addCommand)
 			else
@@ -195,12 +196,17 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 
 		# Update hash (the string after '#' in the url bar) according to the location of the (center of the) view
 		# set *@ignoreHashChange* flag to ignore this change in *window.onhashchange* callback
-		updateHash: ()->
+		updateHash: ()=>
 			@ignoreHashChange = true
-			prefix = ''
+			hashParameters = {}
+			if R.fileManager.owner? and R.fileManager.owner != 'arthursw' and R.fileManager.commit?
+				hashParameters['repository-owner'] = R.repository.owner
+				hashParameters['repository-commit'] = R.repository.commit
 			if R.city.owner? and R.city.name? and R.city.owner != 'RomanescoOrg' and R.city.name != 'Romanesco'
-				prefix = R.city.owner + '/' + R.city.name + '/'
-			location.hash = prefix + P.view.center.x.toFixed(2) + ',' + P.view.center.y.toFixed(2)
+				hashParameters['city-owner'] = R.city.owner
+				hashParameters['city-name'] = R.city.name
+			hashParameters['location'] = P.view.center.x.toFixed(2) + ',' + P.view.center.y.toFixed(2)
+			location.hash = Utils.URL.setParameters(hashParameters)
 			return
 
 		# Update hash (the string after '#' in the url bar) according to the location of the (center of the) view
@@ -210,22 +216,22 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 				@ignoreHashChange = false
 				return
 
-			p = new P.Point()
+			parameters = Utils.URL.getParameters(document.location.hash)
 
-			fields = location.hash.substr(1).split('/')
+			if R.repository?.owner != parameters['repository-owner'] or R.repository?.commit != parameters['repository-commit']
+				location.reload()
+				return
 
-			if fields.length>=3
-				owner = fields[0]
-				name = fields[1]
-				if R.city.name != name or R.city.owner != owner
-					R.loadCity(name, owner)
+			if parameters['location']?
+				pos = parameters['location'].split(',')
+				p = new P.Point(pos[0], pos[1])
+				if not _.isFinite(p.x) then p.x = 0
+				if not _.isFinite(p.y) then p.y = 0
 
-			pos = _.last(fields).split(',')
-			p.x = parseFloat(pos[0])
-			p.y = parseFloat(pos[1])
+			if R.city.name != parameters['city-name'] or R.city.owner != parameters['city-owner']
+				R.city.loadCity(parameters['city-name'], parameters['city-owner'], p)
+				return
 
-			if not _.isFinite(p.x) then p.x = 0
-			if not _.isFinite(p.y) then p.y = 0
 			@moveTo(p)
 			return
 
@@ -237,9 +243,9 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 			if R.rasterizerMode then return
 
 			R.city =
-				owner: R.canvasJ.attr("data-owner")
-				city: R.canvasJ.attr("data-city")
-				site: R.canvasJ.attr("data-site")
+				owner: if R.canvasJ.attr("data-owner") != '' then R.canvasJ.attr("data-owner") else undefined
+				city: if R.canvasJ.attr("data-city") != '' then R.canvasJ.attr("data-city") else undefined
+				site: if R.canvasJ.attr("data-site") != '' then R.canvasJ.attr("data-site") else undefined
 
 			# check if canvas has an attribute 'data-box'
 			boxString = R.canvasJ.attr("data-box")
@@ -509,5 +515,10 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 		mousewheel: (event)=>
 			@moveBy(new P.Point(-event.deltaX, event.deltaY))
 			return
+
+		# hash format: [repo-owner=repo-owner-name&commit-hash=commit-hash][&city-owner=city-owner&city-name=city-name][&location=location-x,location-y]
+		# default values: repo=arthursw:main&city-owner=RomanescoOrg&city-name=Romanesco&location=0.0,0.0
+		# examples: repo-owner=arthursw:247c64eae291e6551646f8785fd19d92333969de&city-owner=John&city-name=Paris&location=100.0,-9850.0
+
 
 	return View

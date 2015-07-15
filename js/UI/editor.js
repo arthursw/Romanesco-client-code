@@ -133,6 +133,8 @@
     })();
     CodeEditor = (function() {
       function CodeEditor() {
+        this.save = __bind(this.save, this);
+        this.onChange = __bind(this.onChange, this);
         this.onLoadLinkedFile = __bind(this.onLoadLinkedFile, this);
         this.readLinkedFile = __bind(this.readLinkedFile, this);
         this.close = __bind(this.close, this);
@@ -361,8 +363,15 @@
 
       /* set, compile and run scripts */
 
+      CodeEditor.prototype.setFile = function(fileNode) {
+        this.fileNode = fileNode;
+        this.setSource(atob(this.fileNode.content));
+      };
+
       CodeEditor.prototype.setSource = function(source) {
+        this.editor.getSession().off('change', this.onChange);
         this.editor.getSession().setValue(source);
+        this.editor.getSession().on('change', this.onChange);
       };
 
       CodeEditor.prototype.compile = function(source) {
@@ -426,6 +435,18 @@
         define = this.define;
         this.run(code);
         window.define = requirejsDefine;
+      };
+
+      CodeEditor.prototype.onChange = function() {
+        if (this.fileNode != null) {
+          Utils.deferredExecution(this.save, 'save:' + this.fileNode.path);
+        }
+      };
+
+      CodeEditor.prototype.save = function() {
+        if (this.fileNode != null) {
+          R.fileManager.saveFile(this.fileNode, this.editor.getValue());
+        }
       };
 
       return CodeEditor;

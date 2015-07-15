@@ -18,6 +18,7 @@
         this.onMouseDrag = __bind(this.onMouseDrag, this);
         this.onMouseDown = __bind(this.onMouseDown, this);
         this.onHashChange = __bind(this.onHashChange, this);
+        this.updateHash = __bind(this.updateHash, this);
         this.addMoveCommand = __bind(this.addMoveCommand, this);
         R.stageJ = $("#stage");
         R.canvasJ = R.stageJ.find("#canvas");
@@ -83,6 +84,9 @@
         var initialPosition, somethingToLoad, tween;
         if (addCommand == null) {
           addCommand = true;
+        }
+        if (pos == null) {
+          pos = new P.Point();
         }
         if (delay == null) {
           somethingToLoad = this.moveBy(pos.subtract(P.view.center), addCommand);
@@ -162,38 +166,45 @@
       };
 
       View.prototype.updateHash = function() {
-        var prefix;
+        var hashParameters;
         this.ignoreHashChange = true;
-        prefix = '';
-        if ((R.city.owner != null) && (R.city.name != null) && R.city.owner !== 'RomanescoOrg' && R.city.name !== 'Romanesco') {
-          prefix = R.city.owner + '/' + R.city.name + '/';
+        hashParameters = {};
+        if ((R.fileManager.owner != null) && R.fileManager.owner !== 'arthursw' && (R.fileManager.commit != null)) {
+          hashParameters['repository-owner'] = R.repository.owner;
+          hashParameters['repository-commit'] = R.repository.commit;
         }
-        location.hash = prefix + P.view.center.x.toFixed(2) + ',' + P.view.center.y.toFixed(2);
+        if ((R.city.owner != null) && (R.city.name != null) && R.city.owner !== 'RomanescoOrg' && R.city.name !== 'Romanesco') {
+          hashParameters['city-owner'] = R.city.owner;
+          hashParameters['city-name'] = R.city.name;
+        }
+        hashParameters['location'] = P.view.center.x.toFixed(2) + ',' + P.view.center.y.toFixed(2);
+        location.hash = Utils.URL.setParameters(hashParameters);
       };
 
       View.prototype.onHashChange = function(event) {
-        var fields, name, owner, p, pos;
+        var p, parameters, pos, _ref, _ref1;
         if (this.ignoreHashChange) {
           this.ignoreHashChange = false;
           return;
         }
-        p = new P.Point();
-        fields = location.hash.substr(1).split('/');
-        if (fields.length >= 3) {
-          owner = fields[0];
-          name = fields[1];
-          if (R.city.name !== name || R.city.owner !== owner) {
-            R.loadCity(name, owner);
+        parameters = Utils.URL.getParameters(document.location.hash);
+        if (((_ref = R.repository) != null ? _ref.owner : void 0) !== parameters['repository-owner'] || ((_ref1 = R.repository) != null ? _ref1.commit : void 0) !== parameters['repository-commit']) {
+          location.reload();
+          return;
+        }
+        if (parameters['location'] != null) {
+          pos = parameters['location'].split(',');
+          p = new P.Point(pos[0], pos[1]);
+          if (!_.isFinite(p.x)) {
+            p.x = 0;
+          }
+          if (!_.isFinite(p.y)) {
+            p.y = 0;
           }
         }
-        pos = _.last(fields).split(',');
-        p.x = parseFloat(pos[0]);
-        p.y = parseFloat(pos[1]);
-        if (!_.isFinite(p.x)) {
-          p.x = 0;
-        }
-        if (!_.isFinite(p.y)) {
-          p.y = 0;
+        if (R.city.name !== parameters['city-name'] || R.city.owner !== parameters['city-owner']) {
+          R.city.loadCity(parameters['city-name'], parameters['city-owner'], p);
+          return;
         }
         this.moveTo(p);
       };
@@ -204,9 +215,9 @@
           return;
         }
         R.city = {
-          owner: R.canvasJ.attr("data-owner"),
-          city: R.canvasJ.attr("data-city"),
-          site: R.canvasJ.attr("data-site")
+          owner: R.canvasJ.attr("data-owner") !== '' ? R.canvasJ.attr("data-owner") : void 0,
+          city: R.canvasJ.attr("data-city") !== '' ? R.canvasJ.attr("data-city") : void 0,
+          site: R.canvasJ.attr("data-site") !== '' ? R.canvasJ.attr("data-site") : void 0
         };
         boxString = R.canvasJ.attr("data-box");
         if (!boxString || boxString.length === 0) {

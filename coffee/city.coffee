@@ -3,10 +3,16 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 	class CityManager
 
 		constructor: ()->
-			@cityListJ = $('#cities')
-			@createCityBtnJ = $('#createCity')
+			@cityPanelJ = $('#CityPanel')
+			@citiesListJ = @cityPanelJ.find('.city-list')
+
+			@createCityBtnJ = @cityPanelJ.find('.create-city')
+			@citiesListBtnJ = @cityPanelJ.find('.load-city')
+
 			@createCityBtnJ.click @createCityModal
-			Dajaxice.draw.loadCities(@loadCities)
+			@citiesListBtnJ.click @citiesModal
+
+			Dajaxice.draw.loadPrivateCities(@addPrivateCities)
 			return
 
 		createCity: (data)->
@@ -20,7 +26,7 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 			modal.show()
 			return
 
-		loadCities: (result)->
+		addPrivateCities: (result)->
 			if not R.loader.checkError(result) then return
 
 			userCities = JSON.parse(result.userCities)
@@ -33,7 +39,7 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 				btnJ = $('<button type="button"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>')
 				btnJ.click @openCitySettings
 				cityJ.append(btnJ)
-				@cityListJ.apppend(cityJ)
+				@citiesListJ.apppend(cityJ)
 
 			return
 
@@ -49,8 +55,7 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 			R.view.updateHash()
 			return
 
-		openCitySettings: ()->
-
+		openCitySettings: (event)->
 			event.stopPropagation()
 
 			buttonJ = $(this)
@@ -83,8 +88,43 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 			rowJ.find('.public').text(if city.public then 'Public' else 'Private')
 			return
 
+		displayCities: ()->
+			Dajaxice.draw.loadPublicCities(@loadPublicCitiesCallback)
+			return
 
+		cityRowClicked: (field, value, row, $element)=>
+			console.log row.pk
+			@loadCity(row.name, row.author)
+			return
 
+		loadPublicCitiesCallback: (result)->
+			if not R.loader.checkError(result) then return
+
+			modal = Modal.createModal( title: 'Cities', submit: null )
+
+			tableData =
+				columns: [
+					field: 'name'
+					title: 'Name'
+				,
+					field: 'author'
+					title: 'Author'
+				,
+					field: 'date'
+					title: 'Date'
+				,
+					field: 'public'
+					title: 'Public'
+				]
+				data: []
+
+			for city in publicCities
+				tableData.data.push( name: city.name, author: city.author, date: city.date, public: city.public, pk: city._id.$oid )
+
+			tableJ = modal.addTable(tableData)
+			tableJ.on 'click-cell.bs.table', @cityRowClicked
+			modal.show()
+			return
 
 	# R.initializeCities = ()->
 	# 	R.toolsJ.find("[data-name='Create']").click ()->
@@ -236,6 +276,4 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 
 	# 	return
 
-
-
-	return
+	return CityManager

@@ -3,7 +3,7 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 	# window._ = _
 	window.tinycolor = tinycolor
 	paper.install(window.P)
-	Utils = {}
+	# Utils = {}
 	Utils.CS = CS
 
 	# Display a R.alertManager.alert message when a dajaxice error happens (problem on the server)
@@ -63,6 +63,7 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 	window.setInterval.isPolyfill = true
 
 	Utils.LocalStorage = {}
+
 	Utils.LocalStorage.set = (key, value)->
 		localStorage.setItem(key, JSON.stringify(value))
 		return
@@ -575,5 +576,5 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 		console.log a
 		return
 
-	window.Utils = Utils
+	# window.Utils = Utils
 	return Utils
