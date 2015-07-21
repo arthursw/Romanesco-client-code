@@ -16,7 +16,7 @@ define [
 	'Tools/ToolManager'
 ], (Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager) ->
 
-	# top ! test test comment ça alors c'est fou didonc mieux
+	# top ! test test comment Ã§a alors c'est fou didonc mieux
 	# R.rasterizerMode = window.rasterizerMode
 
 	# if R.rasterizerMode
