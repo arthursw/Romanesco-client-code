@@ -25,7 +25,11 @@ window.XMLHttpRequest = window.RXMLHttpRequest
 
 libs = '../../libs/'
 
-parameters = Utils.URL.getParameters(document.location.search)
+parameters = Utils.URL.getParameters(document.location.hash)
+
+window.R.repository = owner: 'arthursw', commit: null
+
+debugger
 
 if parameters['repository-owner']? and parameters['repository-commit']?
 	prefix = if parameters['repository-use-cdn']? then '//cdn.' else '//'

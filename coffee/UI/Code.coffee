@@ -1,22 +1,22 @@
-define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
+define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 	class FileManager
 
 		constructor: ()->
 			@codeJ = $('#Code')
 
-			@loadMainRepoBtnJ = @codeJ.find('button.main-repository')
-			@loadOwnForkBtnJ = @codeJ.find('li.user-fork > a')
-			@listForksBtnJ = @codeJ.find('li.list-forks > a')
-			@loadCustomForkBtnJ = @codeJ.find('li.custom-fork > a')
-			@createForkBtnJ = @codeJ.find('li.create-fork > a')
+			@runForkBtnJ = @codeJ.find('button.run-fork')
+			@loadOwnForkBtnJ = @codeJ.find('li.user-fork')
+			@listForksBtnJ = @codeJ.find('li.list-forks')
+			@loadCustomForkBtnJ = @codeJ.find('li.custom-fork')
+			@createForkBtnJ = @codeJ.find('li.create-fork')
 
 			@loadOwnForkBtnJ.hide()
 			@createForkBtnJ.hide()
 
 			@getForks(@getUserFork)
 
-			@loadMainRepoBtnJ.click @loadMainRepo
+			@runForkBtnJ.click @runFork
 			@loadOwnForkBtnJ.click @loadOwnFork
 			@loadCustomForkBtnJ.click @loadCustomFork
 			@listForksBtnJ.click @listForks
@@ -28,14 +28,18 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 			@createPullRequestBtnJ = @codeJ.find('button.pull-request')
 
 			@createFileBtnJ.click @onCreateFile
-			@runBtnJ.click @run
-			@commitBtnJ.click @commit
+			@runBtnJ.click @runFork
+			@commitBtnJ.click @onCommitClicked
 			@createPullRequestBtnJ.click @createPullRequest
 
 			@fileBrowserJ = @codeJ.find('.files')
 			@files = []
 			@nDirsToLoad = 1
-			@loadMainRepo()
+
+			if R.repositoryOwner?
+				@loadFork(owner: R.repositoryOwner)
+			else
+				@loadMainRepo()
 			# $.get('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', @loadFiles)
 			# @state = '' + Math.random()
 			# parameters =
@@ -60,14 +64,12 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 			return
 
 		getForks: (callback)->
-			@request('https://api.github.com/repos/arthursw/romanesco-client-code/forks/', callback)
+			@request('https://api.github.com/repos/arthursw/romanesco-client-code/forks', callback)
 			return
 
-		forkRowClicked: (field, value, row, $element)=>
-			if field == 'githubURL'
-				window.location.href = value
-			else
-				@loadFork(row)
+		forkRowClicked: (event, field, value, row, $element)=>
+			@loadFork(row)
+			Modal.getModalByTitle('Forks').hide()
 			return
 
 		displayForks: (forks)=>
@@ -75,8 +77,8 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 
 			tableData =
 				columns: [
-					field: 'author'
-					title: 'Author'
+					field: 'owner'
+					title: 'Owner'
 				,
 					field: 'date'
 					title: 'Date'
@@ -85,9 +87,12 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 					title: 'Github URL'
 				]
 				data: []
+				formatter: (value, row, index)->
+					return "<a href='#{value}'>value</a>"
 
 			for fork in forks
-				tableData.data.push( author: fork.author, date: fork.date, githubURL: fork.url )
+				date = new Date(fork.updated_at)
+				tableData.data.push( owner: fork.owner.login, date: date.toLocaleString(), githubURL: fork.html_url )
 
 			tableJ = modal.addTable(tableData)
 			tableJ.on 'click-cell.bs.table', @forkRowClicked
@@ -101,22 +106,23 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 
 		loadMainRepo: (event)=>
 			event?.preventDefault()
-			@request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', @loadTree)
+			@loadFork(owner: 'arthursw')
 			return
 
 		loadOwnFork: (event)=>
 			event?.preventDefault()
-			@request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', @loadTree)
+			@loadFork(owner: R.githubLogin)
 			return
 
 		loadFork: (data)=>
-			@request('https://api.github.com/repos/' + data.author + '/romanesco-client-code/contents/', @loadTree)
+			@owner = data.owner
+			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/contents/', @loadTree)
 			return
 
 		loadCustomFork: (event)=>
 			event?.preventDefault()
 			modal = Modal.createModal( title: 'Load repository', submit: @loadFork )
-			modal.addTextInput(name: 'author', placeholder: 'The login name of the fork owner (ex: george)', label: 'Owner', required: true)
+			modal.addTextInput(name: 'owner', placeholder: 'The login name of the fork owner (ex: george)', label: 'Owner', required: true)
 			modal.show()
 			return
 
@@ -130,11 +136,11 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 
 		createFork: (event)=>
 			event?.preventDefault()
-			@request('https://api.github.com/repos/' + R.user.githubLogin + '/romanesco-client-code/forks/', @forkCreationResponse, 'post')
+			@request('https://api.github.com/repos/' + R.githubLogin + '/romanesco-client-code/forks', @forkCreationResponse, 'post')
 			return
 
-		request: (request, callback, method, params, headers)->
-			Dajaxice.draw.githubRequest(callback, {githubRequest: request, method: method, params: params, headers: headers})
+		request: (request, callback, method, data, params, headers)->
+			Dajaxice.draw.githubRequest(callback, {githubRequest: request, method: method, data: data, params: params, headers: headers})
 			return
 
 		getNodeFromPath: (path)->
@@ -160,19 +166,21 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 				parentNode = @getParentNode(file, tree)
 				name = file.name
 				parentNode.leaves[name] ?= { leaves: {}, children: [] }
-				parentNode.leaves[name].type = file.type
-				parentNode.leaves[name].path = file.path
-				parentNode.leaves[name].label = name
-				parentNode.leaves[name].id = i
-				parentNode.children.push(parentNode.leaves[name])
+				node = parentNode.leaves[name]
+				node.type = file.type
+				node.path = file.path
+				node.sha = file.sha
+				node.label = name
+				node.id = i
+				parentNode.children.push(node)
 
+			tree.id = i
 			return tree
 
 		updateTree: (tree=@tree)->
+			tree.leaves = {}
 			for node, i in tree.children
-				jqNode = @fileBrowserJ.tree('getNodeById', node.id)
-				tree.leaves[node.label] = jqNode
-				tree.children[i] = jqNode
+				tree.leaves[node.name] = node
 				@updateTree(node)
 			return
 
@@ -181,11 +189,13 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 				if file.name == 'coffee'
 					@request(file.git_url + '?recursive=1', @readTree)
 					break
+			btnName = if @owner != 'arthursw' then @owner else 'Main repository'
+			@runForkBtnJ.text(btnName)
 			return
 
 		onCanMoveTo: (moved_node, target_node, position)->
 			targetIsFolder = target_node.type == 'tree'
-			nameExistsInTargetNode = target_node.leaves[moved_node.label]?
+			nameExistsInTargetNode = target_node.leaves[moved_node.name]?
 			return (targetIsFolder and not nameExistsInTargetNode) or position != 'inside'
 
 		onCreateLi: (node, liJ)->
@@ -200,19 +210,27 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 			return
 
 		readTree: (content)=>
+			treeExists = @tree?
 			@tree = @buildTree(content.tree)
 
-			@fileBrowserJ.tree(
-				data: @tree.children
-				autoOpen: true
-				dragAndDrop: true
-				onCanMoveTo: @onCanMoveTo
-				onCreateLi: @onCreateLi
-			)
-			@updateTree()
+			if treeExists
+				@fileBrowserJ.tree('loadData', @tree.children)
+			else
+				@fileBrowserJ.tree(
+					data: @tree.children
+					autoOpen: true
+					dragAndDrop: true
+					onCanMoveTo: @onCanMoveTo
+					onCreateLi: @onCreateLi
+				)
+				@fileBrowserJ.bind('tree.click', @onNodeClicked)
+				@fileBrowserJ.bind('tree.dblclick', @onNodeDoubleClicked)
+				@fileBrowserJ.bind('tree.move', @onFileMoved)
 
-			@fileBrowserJ.bind('tree.click', @onNodeClicked)
-			@fileBrowserJ.bind('tree.move', @onFileMoved)
+			@tree = @fileBrowserJ.tree('getTree')
+			@tree.path = ''
+			@updateTree()
+			@load()
 			return
 
 		onNodeClicked: (event)=>
@@ -222,17 +240,61 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 				if elementIsToggler or elementIsTitle
 					@fileBrowserJ.tree('toggle', event.node)
 				return
-			if event.node.content?
+			if event.node.source?
 				R.showCodeEditor(event.node)
 			else
 				@loadFile(event.node.path, @openFile)
 			return
 
+		submitNewName: (event)=>
+			if event.type == 'keyup' and event.which != 13 then return
+			inputGroupJ = $(event.target).parents('.input-group')
+			newName = inputGroupJ.find('.name-input').val()
+			id = inputGroupJ.attr('data-node-id')
+			node = @fileBrowserJ.tree('getNodeById', id)
+			if newName == '' then newName = node.name
+			inputGroupJ.replaceWith('<span class="jqtree-title jqtree_common">' + newName + '</span>')
+			$(node.element).find('button.delete:first').show()
+			delete node.parent.leaves[node.name]
+			node.parent.leaves[newName] = node
+			node.newPath = node.path.replace(node.name, newName)
+			node.name = newName
+			# @fileBrowserJ.tree('updateNode', node, newName)
+			return
+
+		onNodeDoubleClicked: (event)=>
+			node = event.node
+			inputGroupJ = $("""
+			<div class="input-group">
+				<input type="text" class="form-control name-input" placeholder="">
+				<span class="input-group-btn">
+					<button class="btn btn-default" type="button">Ok</button>
+				</span>
+			</div>
+			""")
+			inputGroupJ.attr('data-node-id', node.id)
+			inputJ = inputGroupJ.find('.name-input')
+			inputJ.attr('placeholder', node.name)
+			inputJ.keyup @submitNewName
+			inputJ.blur @submitNewName
+			buttonJ = inputGroupJ.find('.btn')
+			buttonJ.click @submitNewName
+			$(node.element).find('.jqtree-title:first').replaceWith(inputGroupJ)
+			inputJ.focus()
+			$(node.element).find('button.delete:first').hide()
+			return
+
 		openFile: (file)=>
 			path = file.path.replace('coffee/', '')			# @tree is built from the 'coffee' directory
 			fileNode = @getNodeFromPath(path)
-			fileNode.content = file.content
+			fileNode.source = atob(file.content)
 			R.showCodeEditor(fileNode)
+			return
+
+		createName: (newNode, parentTree)->
+			i = 1
+			while parentTree.leaves[newNode.label]?
+				newNode.label = 'NewScript' + i + '.coffee'
 			return
 
 		onCreateFile: ()=>
@@ -242,23 +304,30 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 				type: 'blob'
 				children: []
 				leaves: {}
-				content: ''
+				source: ''
+				id: @tree.id++
 			parentNode = null
+			parentTree = null
+			method = 'appendNode'
 			# add new node in jqTree
 			if node == false
 				newNode.path = newNode.label
-				newNode = @fileBrowserJ.tree('appendNode', newNode)
-				parentNode = @tree
+				parentTree = @tree
 			else if node.type == 'tree'
 				newNode.path = node.path + '/' + newNode.label
-				newNode = @fileBrowserJ.tree('appendNode', newNode, node)
 				parentNode = node
+				parentTree = parentNode
 			else
 				newNode.path = if node.parent.path then node.parent.path + '/' + newNode.label else newNode.label
-				newNode = @fileBrowserJ.tree('addNodeAfter', newNode, node)
+				method = 'addNodeAfter'
 				parentNode = node.parent
+				parentTree = parentNode or @tree
+
+			@createName(newNode, parentTree)
+			newNode = @fileBrowserJ.tree(method, newNode, parentNode)
 			# update leaves
-			parentNode.leaves[newNode.label] = newNode
+			parentTree.leaves[newNode.name] = newNode
+
 			# show in code editor
 			R.showCodeEditor(newNode)
 			return
@@ -268,7 +337,9 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 			console.log('target_node', event.move_info.target_node)
 			console.log('position', event.move_info.position)
 			console.log('previous_parent', event.move_info.previous_parent)
-			event.move_info.moved_node.oldPath ?= event.move_info.previous_parent.path + '/' + event.move_info.moved_node.label
+			parent = event.move_info.moved_node.parent
+			parentPath = if parent? and parent.path != '' then parent.path + '/' else ''
+			event.move_info.moved_node.newPath = parentPath + event.move_info.moved_node.name
 			@save()
 			return
 
@@ -299,12 +370,34 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 
 		save: ()->
 			nodes = @getNodes()
-			Utils.LocalStorage.set('files', nodes)
+			forkFiles = []
+			for node in nodes
+				if node.type == 'tree' then continue
+				if node.source? or node.create? or node.delete?
+					file =
+						name: node.name,
+						type: node.type,
+						path: node.path,
+						newPath: node.newPath,
+						source: node.source,
+						create: node.create,
+						delete: node.delete
+					forkFiles.push(file)
+			files = {}
+			files[@owner] = forkFiles
+			Utils.LocalStorage.set('files', files)
 			return
 
 		load: ()->
 			files = Utils.LocalStorage.get('files')
-			@readTree(content: files)
+			if files[@owner]?
+				for file in files[@owner]
+					node = @getNodeFromPath(file.path)
+					node.source = file.source
+					node.create = file.create
+					node.delete = file.delete
+					node.newPath = file.newPath
+					$(node.element).addClass('modified')
 			return
 
 		# Create, Update & Delete files
@@ -313,63 +406,77 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 			console.log message
 			return
 
-		fileToParameters: (file, commitMessage, content=false, sha=false)->
-			params =
-				path: file.path
+		fileToData: (file, commitMessage, content=false, sha=false)->
+			data =
+				path: file.newPath or file.path
 				message: commitMessage
-			if content then params.content = btoa(file.source)
-			if sha then params.sha = file.sha
-			return params
+			if content then data.content = btoa(file.source)
+			if sha then data.sha = file.sha
+			return data
 
-		requestFile: (file, params, method='put')->
-			path = file.oldPath or file.path
-			@request('https://api.github.com/repos/' + @author + '/romanesco-client-code/contents/'+path, @checkError, method, params)
-			delete file.oldPath # to improve
+		requestFile: (file, data, method='put')->
+			path = 'coffee/' + file.path
+			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/contents/'+path, @checkError, method, data)
+			if file.newPath?
+				file.path = file.newPath 	# to improve: there might be an error during the update
+				delete file.newPath
 			return
 
 		createFile: (file, commitMessage)->
-			params = @fileToParameters(file, commitMessage, true)
-			@requestFile(file, params)
+			data = @fileToData(file, commitMessage, true)
+			@requestFile(file, data)
 			return
 
 		updateFile: (file, commitMessage)->
-			params = @fileToParameters(file, commitMessage, true, true)
+			data = @fileToData(file, commitMessage, true, true)
 			$(file.element).removeClass('modified')
-			@requestFile(file, params)
+			@requestFile(file, data)
 			return
 
 		deleteFile: (file, commitMessage)->
-			params = @fileToParameters(file, commitMessage, false, true)
-			@requestFile(file, params, 'delete')
+			data = @fileToData(file, commitMessage, false, true)
+			@requestFile(file, data, 'delete')
 			delete file.delete
 			return
 
 		# Run, Commit & Push request
 
-		runLastCommit: (commits)->
-			R.repository.commit = _.last(commits).sha
+		runLastCommit: (branch)=>
+			R.repository.owner = @owner
+			R.repository.commit = branch.commit.sha
 			R.view.updateHash()
 			location.reload()
 			return
 
-		run: ()=>
-			@request('https://api.github.com/repos/' + @author + '/romanesco-client-code/commits/', @runLastCommit)
+		runFork: (data)=>
+			if data?.owner? then @owner = data.owner
+			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/branches/master', @runLastCommit)
 			return
 
-		commit: (commitMessage)->
+		onCommitClicked: (event)=>
+			modal = Modal.createModal( title: 'Commit', submit: @commit )
+			modal.addTextInput(name: 'commitMessage', placeholder: 'Added the coffee maker feature.', label: 'Message', required: true)
+			modal.show()
+			return
+
+		commit: (data)=>
 			nodes = @getNodes()
+			nothingToCommit = true
 			for file in nodes
+				if file.delete or file.source? then nothingToCommit = false
 				if file.delete
-					@deleteFile(file, commitMessage)
+					@deleteFile(file, data.commitMessage)
 					continue
 				else if file.source?
-					if file.new?
-						@createFile(file, commitMessage)
+					if file.create
+						@createFile(file, data.commitMessage)
 					else
-						@updateFile(file, commitMessage)
+						@updateFile(file, data.commitMessage)
+			if nothingToCommit
+				R.alertManager.alert 'Nothing to commit.', 'Info'
 			return
 
-		createPullRequest: ()->
+		createPullRequest: ()=>
 			modal = Modal.createModal( title: 'Create pull request', submit: @createPullRequestSubmit )
 			modal.addTextInput(name: 'title', placeholder: 'Amazing new feature', label: 'Title of the pull request', required: true)
 			modal.addTextInput(name: 'branch', placeholder: 'master', label: 'Branch', required: true)
@@ -377,13 +484,13 @@ define [ 'coffee', 'jqtree' ], (CoffeeScript) ->
 			modal.show()
 			return
 
-		createPullRequestSubmit: (data)->
-			params =
+		createPullRequestSubmit: (data)=>
+			data =
 				title: data.title
 				head: @owner + ':' + data.branch
 				base: 'master'
 				body: data.body
-			@request('https://api.github.com/repos/arthursw/romanesco-client-code/pulls/', @checkError, 'post', params)
+			@request('https://api.github.com/repos/arthursw/romanesco-client-code/pulls', @checkError, 'post', data)
 			return
 
 		# loadFiles: (content)=>

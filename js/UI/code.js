@@ -2,16 +2,23 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  define(['coffee', 'jqtree'], function(CoffeeScript) {
+  define(['UI/Modal', 'coffee', 'jqtree'], function(Modal, CoffeeScript) {
     var FileManager;
     FileManager = (function() {
       function FileManager() {
         this.registerModuleInModuleLoader = __bind(this.registerModuleInModuleLoader, this);
-        this.run = __bind(this.run, this);
+        this.createPullRequestSubmit = __bind(this.createPullRequestSubmit, this);
+        this.createPullRequest = __bind(this.createPullRequest, this);
+        this.commit = __bind(this.commit, this);
+        this.onCommitClicked = __bind(this.onCommitClicked, this);
+        this.runFork = __bind(this.runFork, this);
+        this.runLastCommit = __bind(this.runLastCommit, this);
         this.onDeleteFile = __bind(this.onDeleteFile, this);
         this.onFileMoved = __bind(this.onFileMoved, this);
         this.onCreateFile = __bind(this.onCreateFile, this);
         this.openFile = __bind(this.openFile, this);
+        this.onNodeDoubleClicked = __bind(this.onNodeDoubleClicked, this);
+        this.submitNewName = __bind(this.submitNewName, this);
         this.onNodeClicked = __bind(this.onNodeClicked, this);
         this.readTree = __bind(this.readTree, this);
         this.loadTree = __bind(this.loadTree, this);
@@ -26,15 +33,15 @@
         this.forkRowClicked = __bind(this.forkRowClicked, this);
         this.getUserFork = __bind(this.getUserFork, this);
         this.codeJ = $('#Code');
-        this.loadMainRepoBtnJ = this.codeJ.find('button.main-repository');
-        this.loadOwnForkBtnJ = this.codeJ.find('li.user-fork > a');
-        this.listForksBtnJ = this.codeJ.find('li.list-forks > a');
-        this.loadCustomForkBtnJ = this.codeJ.find('li.custom-fork > a');
-        this.createForkBtnJ = this.codeJ.find('li.create-fork > a');
+        this.runForkBtnJ = this.codeJ.find('button.run-fork');
+        this.loadOwnForkBtnJ = this.codeJ.find('li.user-fork');
+        this.listForksBtnJ = this.codeJ.find('li.list-forks');
+        this.loadCustomForkBtnJ = this.codeJ.find('li.custom-fork');
+        this.createForkBtnJ = this.codeJ.find('li.create-fork');
         this.loadOwnForkBtnJ.hide();
         this.createForkBtnJ.hide();
         this.getForks(this.getUserFork);
-        this.loadMainRepoBtnJ.click(this.loadMainRepo);
+        this.runForkBtnJ.click(this.runFork);
         this.loadOwnForkBtnJ.click(this.loadOwnFork);
         this.loadCustomForkBtnJ.click(this.loadCustomFork);
         this.listForksBtnJ.click(this.listForks);
@@ -44,13 +51,19 @@
         this.commitBtnJ = this.codeJ.find('button.commit');
         this.createPullRequestBtnJ = this.codeJ.find('button.pull-request');
         this.createFileBtnJ.click(this.onCreateFile);
-        this.runBtnJ.click(this.run);
-        this.commitBtnJ.click(this.commit);
+        this.runBtnJ.click(this.runFork);
+        this.commitBtnJ.click(this.onCommitClicked);
         this.createPullRequestBtnJ.click(this.createPullRequest);
         this.fileBrowserJ = this.codeJ.find('.files');
         this.files = [];
         this.nDirsToLoad = 1;
-        this.loadMainRepo();
+        if (R.repositoryOwner != null) {
+          this.loadFork({
+            owner: R.repositoryOwner
+          });
+        } else {
+          this.loadMainRepo();
+        }
         return;
       }
 
@@ -73,19 +86,16 @@
       };
 
       FileManager.prototype.getForks = function(callback) {
-        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/forks/', callback);
+        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/forks', callback);
       };
 
-      FileManager.prototype.forkRowClicked = function(field, value, row, $element) {
-        if (field === 'githubURL') {
-          window.location.href = value;
-        } else {
-          this.loadFork(row);
-        }
+      FileManager.prototype.forkRowClicked = function(event, field, value, row, $element) {
+        this.loadFork(row);
+        Modal.getModalByTitle('Forks').hide();
       };
 
       FileManager.prototype.displayForks = function(forks) {
-        var fork, modal, tableData, tableJ, _i, _len;
+        var date, fork, modal, tableData, tableJ, _i, _len;
         modal = Modal.createModal({
           title: 'Forks',
           submit: null
@@ -93,8 +103,8 @@
         tableData = {
           columns: [
             {
-              field: 'author',
-              title: 'Author'
+              field: 'owner',
+              title: 'Owner'
             }, {
               field: 'date',
               title: 'Date'
@@ -103,14 +113,18 @@
               title: 'Github URL'
             }
           ],
-          data: []
+          data: [],
+          formatter: function(value, row, index) {
+            return "<a href='" + value + "'>value</a>";
+          }
         };
         for (_i = 0, _len = forks.length; _i < _len; _i++) {
           fork = forks[_i];
+          date = new Date(fork.updated_at);
           tableData.data.push({
-            author: fork.author,
-            date: fork.date,
-            githubURL: fork.url
+            owner: fork.owner.login,
+            date: date.toLocaleString(),
+            githubURL: fork.html_url
           });
         }
         tableJ = modal.addTable(tableData);
@@ -129,18 +143,23 @@
         if (event != null) {
           event.preventDefault();
         }
-        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', this.loadTree);
+        this.loadFork({
+          owner: 'arthursw'
+        });
       };
 
       FileManager.prototype.loadOwnFork = function(event) {
         if (event != null) {
           event.preventDefault();
         }
-        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', this.loadTree);
+        this.loadFork({
+          owner: R.githubLogin
+        });
       };
 
       FileManager.prototype.loadFork = function(data) {
-        this.request('https://api.github.com/repos/' + data.author + '/romanesco-client-code/contents/', this.loadTree);
+        this.owner = data.owner;
+        this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/contents/', this.loadTree);
       };
 
       FileManager.prototype.loadCustomFork = function(event) {
@@ -153,7 +172,7 @@
           submit: this.loadFork
         });
         modal.addTextInput({
-          name: 'author',
+          name: 'owner',
           placeholder: 'The login name of the fork owner (ex: george)',
           label: 'Owner',
           required: true
@@ -175,13 +194,14 @@
         if (event != null) {
           event.preventDefault();
         }
-        this.request('https://api.github.com/repos/' + R.user.githubLogin + '/romanesco-client-code/forks/', this.forkCreationResponse, 'post');
+        this.request('https://api.github.com/repos/' + R.githubLogin + '/romanesco-client-code/forks', this.forkCreationResponse, 'post');
       };
 
-      FileManager.prototype.request = function(request, callback, method, params, headers) {
+      FileManager.prototype.request = function(request, callback, method, data, params, headers) {
         Dajaxice.draw.githubRequest(callback, {
           githubRequest: request,
           method: method,
+          data: data,
           params: params,
           headers: headers
         });
@@ -216,7 +236,7 @@
       };
 
       FileManager.prototype.buildTree = function(files) {
-        var file, i, name, parentNode, tree, _base, _i, _len;
+        var file, i, name, node, parentNode, tree, _base, _i, _len;
         tree = {
           leaves: {},
           children: []
@@ -231,32 +251,34 @@
               children: []
             };
           }
-          parentNode.leaves[name].type = file.type;
-          parentNode.leaves[name].path = file.path;
-          parentNode.leaves[name].label = name;
-          parentNode.leaves[name].id = i;
-          parentNode.children.push(parentNode.leaves[name]);
+          node = parentNode.leaves[name];
+          node.type = file.type;
+          node.path = file.path;
+          node.sha = file.sha;
+          node.label = name;
+          node.id = i;
+          parentNode.children.push(node);
         }
+        tree.id = i;
         return tree;
       };
 
       FileManager.prototype.updateTree = function(tree) {
-        var i, jqNode, node, _i, _len, _ref;
+        var i, node, _i, _len, _ref;
         if (tree == null) {
           tree = this.tree;
         }
+        tree.leaves = {};
         _ref = tree.children;
         for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
           node = _ref[i];
-          jqNode = this.fileBrowserJ.tree('getNodeById', node.id);
-          tree.leaves[node.label] = jqNode;
-          tree.children[i] = jqNode;
+          tree.leaves[node.name] = node;
           this.updateTree(node);
         }
       };
 
       FileManager.prototype.loadTree = function(content) {
-        var file, _i, _len;
+        var btnName, file, _i, _len;
         for (_i = 0, _len = content.length; _i < _len; _i++) {
           file = content[_i];
           if (file.name === 'coffee') {
@@ -264,12 +286,14 @@
             break;
           }
         }
+        btnName = this.owner !== 'arthursw' ? this.owner : 'Main repository';
+        this.runForkBtnJ.text(btnName);
       };
 
       FileManager.prototype.onCanMoveTo = function(moved_node, target_node, position) {
         var nameExistsInTargetNode, targetIsFolder;
         targetIsFolder = target_node.type === 'tree';
-        nameExistsInTargetNode = target_node.leaves[moved_node.label] != null;
+        nameExistsInTargetNode = target_node.leaves[moved_node.name] != null;
         return (targetIsFolder && !nameExistsInTargetNode) || position !== 'inside';
       };
 
@@ -282,17 +306,27 @@
       };
 
       FileManager.prototype.readTree = function(content) {
+        var treeExists;
+        treeExists = this.tree != null;
         this.tree = this.buildTree(content.tree);
-        this.fileBrowserJ.tree({
-          data: this.tree.children,
-          autoOpen: true,
-          dragAndDrop: true,
-          onCanMoveTo: this.onCanMoveTo,
-          onCreateLi: this.onCreateLi
-        });
+        if (treeExists) {
+          this.fileBrowserJ.tree('loadData', this.tree.children);
+        } else {
+          this.fileBrowserJ.tree({
+            data: this.tree.children,
+            autoOpen: true,
+            dragAndDrop: true,
+            onCanMoveTo: this.onCanMoveTo,
+            onCreateLi: this.onCreateLi
+          });
+          this.fileBrowserJ.bind('tree.click', this.onNodeClicked);
+          this.fileBrowserJ.bind('tree.dblclick', this.onNodeDoubleClicked);
+          this.fileBrowserJ.bind('tree.move', this.onFileMoved);
+        }
+        this.tree = this.fileBrowserJ.tree('getTree');
+        this.tree.path = '';
         this.updateTree();
-        this.fileBrowserJ.bind('tree.click', this.onNodeClicked);
-        this.fileBrowserJ.bind('tree.move', this.onFileMoved);
+        this.load();
       };
 
       FileManager.prototype.onNodeClicked = function(event) {
@@ -305,58 +339,107 @@
           }
           return;
         }
-        if (event.node.content != null) {
+        if (event.node.source != null) {
           R.showCodeEditor(event.node);
         } else {
           this.loadFile(event.node.path, this.openFile);
         }
       };
 
+      FileManager.prototype.submitNewName = function(event) {
+        var id, inputGroupJ, newName, node;
+        if (event.type === 'keyup' && event.which !== 13) {
+          return;
+        }
+        inputGroupJ = $(event.target).parents('.input-group');
+        newName = inputGroupJ.find('.name-input').val();
+        id = inputGroupJ.attr('data-node-id');
+        node = this.fileBrowserJ.tree('getNodeById', id);
+        if (newName === '') {
+          newName = node.name;
+        }
+        inputGroupJ.replaceWith('<span class="jqtree-title jqtree_common">' + newName + '</span>');
+        $(node.element).find('button.delete:first').show();
+        delete node.parent.leaves[node.name];
+        node.parent.leaves[newName] = node;
+        node.newPath = node.path.replace(node.name, newName);
+        node.name = newName;
+      };
+
+      FileManager.prototype.onNodeDoubleClicked = function(event) {
+        var buttonJ, inputGroupJ, inputJ, node;
+        node = event.node;
+        inputGroupJ = $("<div class=\"input-group\">\n	<input type=\"text\" class=\"form-control name-input\" placeholder=\"\">\n	<span class=\"input-group-btn\">\n		<button class=\"btn btn-default\" type=\"button\">Ok</button>\n	</span>\n</div>");
+        inputGroupJ.attr('data-node-id', node.id);
+        inputJ = inputGroupJ.find('.name-input');
+        inputJ.attr('placeholder', node.name);
+        inputJ.keyup(this.submitNewName);
+        inputJ.blur(this.submitNewName);
+        buttonJ = inputGroupJ.find('.btn');
+        buttonJ.click(this.submitNewName);
+        $(node.element).find('.jqtree-title:first').replaceWith(inputGroupJ);
+        inputJ.focus();
+        $(node.element).find('button.delete:first').hide();
+      };
+
       FileManager.prototype.openFile = function(file) {
         var fileNode, path;
         path = file.path.replace('coffee/', '');
         fileNode = this.getNodeFromPath(path);
-        fileNode.content = file.content;
+        fileNode.source = atob(file.content);
         R.showCodeEditor(fileNode);
       };
 
+      FileManager.prototype.createName = function(newNode, parentTree) {
+        var i;
+        i = 1;
+        while (parentTree.leaves[newNode.label] != null) {
+          newNode.label = 'NewScript' + i + '.coffee';
+        }
+      };
+
       FileManager.prototype.onCreateFile = function() {
-        var newNode, node, parentNode;
+        var method, newNode, node, parentNode, parentTree;
         node = this.fileBrowserJ.tree('getSelectedNode');
         newNode = {
           label: 'NewScript.coffee',
           type: 'blob',
           children: [],
           leaves: {},
-          content: ''
+          source: '',
+          id: this.tree.id++
         };
         parentNode = null;
+        parentTree = null;
+        method = 'appendNode';
         if (node === false) {
           newNode.path = newNode.label;
-          newNode = this.fileBrowserJ.tree('appendNode', newNode);
-          parentNode = this.tree;
+          parentTree = this.tree;
         } else if (node.type === 'tree') {
           newNode.path = node.path + '/' + newNode.label;
-          newNode = this.fileBrowserJ.tree('appendNode', newNode, node);
           parentNode = node;
+          parentTree = parentNode;
         } else {
           newNode.path = node.parent.path ? node.parent.path + '/' + newNode.label : newNode.label;
-          newNode = this.fileBrowserJ.tree('addNodeAfter', newNode, node);
+          method = 'addNodeAfter';
           parentNode = node.parent;
+          parentTree = parentNode || this.tree;
         }
-        parentNode.leaves[newNode.label] = newNode;
+        this.createName(newNode, parentTree);
+        newNode = this.fileBrowserJ.tree(method, newNode, parentNode);
+        parentTree.leaves[newNode.name] = newNode;
         R.showCodeEditor(newNode);
       };
 
       FileManager.prototype.onFileMoved = function(event) {
-        var _base;
+        var parent, parentPath;
         console.log('moved_node', event.move_info.moved_node);
         console.log('target_node', event.move_info.target_node);
         console.log('position', event.move_info.position);
         console.log('previous_parent', event.move_info.previous_parent);
-        if ((_base = event.move_info.moved_node).oldPath == null) {
-          _base.oldPath = event.move_info.previous_parent.path + '/' + event.move_info.moved_node.label;
-        }
+        parent = event.move_info.moved_node.parent;
+        parentPath = (parent != null) && parent.path !== '' ? parent.path + '/' : '';
+        event.move_info.moved_node.newPath = parentPath + event.move_info.moved_node.name;
         this.save();
       };
 
@@ -397,99 +480,158 @@
       };
 
       FileManager.prototype.save = function() {
-        var nodes;
+        var file, files, forkFiles, node, nodes, _i, _len;
         nodes = this.getNodes();
-        Utils.LocalStorage.set('files', nodes);
+        forkFiles = [];
+        for (_i = 0, _len = nodes.length; _i < _len; _i++) {
+          node = nodes[_i];
+          if (node.type === 'tree') {
+            continue;
+          }
+          if ((node.source != null) || (node.create != null) || (node["delete"] != null)) {
+            file = {
+              name: node.name,
+              type: node.type,
+              path: node.path,
+              newPath: node.newPath,
+              source: node.source,
+              create: node.create,
+              "delete": node["delete"]
+            };
+            forkFiles.push(file);
+          }
+        }
+        files = {};
+        files[this.owner] = forkFiles;
+        Utils.LocalStorage.set('files', files);
       };
 
       FileManager.prototype.load = function() {
-        var files;
+        var file, files, node, _i, _len, _ref;
         files = Utils.LocalStorage.get('files');
-        this.readTree({
-          content: files
-        });
+        if (files[this.owner] != null) {
+          _ref = files[this.owner];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            file = _ref[_i];
+            node = this.getNodeFromPath(file.path);
+            node.source = file.source;
+            node.create = file.create;
+            node["delete"] = file["delete"];
+            node.newPath = file.newPath;
+            $(node.element).addClass('modified');
+          }
+        }
       };
 
       FileManager.prototype.checkError = function(message) {
         console.log(message);
       };
 
-      FileManager.prototype.fileToParameters = function(file, commitMessage, content, sha) {
-        var params;
+      FileManager.prototype.fileToData = function(file, commitMessage, content, sha) {
+        var data;
         if (content == null) {
           content = false;
         }
         if (sha == null) {
           sha = false;
         }
-        params = {
-          path: file.path,
+        data = {
+          path: file.newPath || file.path,
           message: commitMessage
         };
         if (content) {
-          params.content = btoa(file.source);
+          data.content = btoa(file.source);
         }
         if (sha) {
-          params.sha = file.sha;
+          data.sha = file.sha;
         }
-        return params;
+        return data;
       };
 
-      FileManager.prototype.requestFile = function(file, params, method) {
+      FileManager.prototype.requestFile = function(file, data, method) {
         var path;
         if (method == null) {
           method = 'put';
         }
-        path = file.oldPath || file.path;
-        this.request('https://api.github.com/repos/' + this.author + '/romanesco-client-code/contents/' + path, this.checkError, method, params);
-        delete file.oldPath;
+        path = 'coffee/' + file.path;
+        this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/contents/' + path, this.checkError, method, data);
+        if (file.newPath != null) {
+          file.path = file.newPath;
+          delete file.newPath;
+        }
       };
 
       FileManager.prototype.createFile = function(file, commitMessage) {
-        var params;
-        params = this.fileToParameters(file, commitMessage, true);
-        this.requestFile(file, params);
+        var data;
+        data = this.fileToData(file, commitMessage, true);
+        this.requestFile(file, data);
       };
 
       FileManager.prototype.updateFile = function(file, commitMessage) {
-        var params;
-        params = this.fileToParameters(file, commitMessage, true, true);
+        var data;
+        data = this.fileToData(file, commitMessage, true, true);
         $(file.element).removeClass('modified');
-        this.requestFile(file, params);
+        this.requestFile(file, data);
       };
 
       FileManager.prototype.deleteFile = function(file, commitMessage) {
-        var params;
-        params = this.fileToParameters(file, commitMessage, false, true);
-        this.requestFile(file, params, 'delete');
+        var data;
+        data = this.fileToData(file, commitMessage, false, true);
+        this.requestFile(file, data, 'delete');
         delete file["delete"];
       };
 
-      FileManager.prototype.runLastCommit = function(commits) {
-        R.repository.commit = _.last(commits).sha;
+      FileManager.prototype.runLastCommit = function(branch) {
+        R.repository.owner = this.owner;
+        R.repository.commit = branch.commit.sha;
         R.view.updateHash();
         location.reload();
       };
 
-      FileManager.prototype.run = function() {
-        this.request('https://api.github.com/repos/' + this.author + '/romanesco-client-code/commits/', this.runLastCommit);
+      FileManager.prototype.runFork = function(data) {
+        if ((data != null ? data.owner : void 0) != null) {
+          this.owner = data.owner;
+        }
+        this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/branches/master', this.runLastCommit);
       };
 
-      FileManager.prototype.commit = function(commitMessage) {
-        var file, nodes, _i, _len;
+      FileManager.prototype.onCommitClicked = function(event) {
+        var modal;
+        modal = Modal.createModal({
+          title: 'Commit',
+          submit: this.commit
+        });
+        modal.addTextInput({
+          name: 'commitMessage',
+          placeholder: 'Added the coffee maker feature.',
+          label: 'Message',
+          required: true
+        });
+        modal.show();
+      };
+
+      FileManager.prototype.commit = function(data) {
+        var file, nodes, nothingToCommit, _i, _len;
         nodes = this.getNodes();
+        nothingToCommit = true;
         for (_i = 0, _len = nodes.length; _i < _len; _i++) {
           file = nodes[_i];
+          if (file["delete"] || (file.source != null)) {
+            nothingToCommit = false;
+          }
           if (file["delete"]) {
-            this.deleteFile(file, commitMessage);
+            this.deleteFile(file, data.commitMessage);
             continue;
           } else if (file.source != null) {
-            if (file["new"] != null) {
-              this.createFile(file, commitMessage);
+            if (file.create) {
+              this.createFile(file, data.commitMessage);
             } else {
-              this.updateFile(file, commitMessage);
+              this.updateFile(file, data.commitMessage);
             }
           }
+        }
+        if (nothingToCommit) {
+          R.alertManager.alert('Nothing to commit.', 'Info');
         }
       };
 
@@ -521,14 +663,13 @@
       };
 
       FileManager.prototype.createPullRequestSubmit = function(data) {
-        var params;
-        params = {
+        data = {
           title: data.title,
           head: this.owner + ':' + data.branch,
           base: 'master',
           body: data.body
         };
-        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/pulls/', this.checkError, 'post', params);
+        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/pulls', this.checkError, 'post', data);
       };
 
       FileManager.prototype.createButton = function(content) {

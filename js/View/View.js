@@ -169,7 +169,7 @@
         var hashParameters;
         this.ignoreHashChange = true;
         hashParameters = {};
-        if ((R.fileManager.owner != null) && R.fileManager.owner !== 'arthursw' && (R.fileManager.commit != null)) {
+        if (R.repository.commit != null) {
           hashParameters['repository-owner'] = R.repository.owner;
           hashParameters['repository-commit'] = R.repository.commit;
         }
@@ -182,13 +182,13 @@
       };
 
       View.prototype.onHashChange = function(event) {
-        var p, parameters, pos, _ref, _ref1;
+        var p, parameters, pos;
         if (this.ignoreHashChange) {
           this.ignoreHashChange = false;
           return;
         }
         parameters = Utils.URL.getParameters(document.location.hash);
-        if (((_ref = R.repository) != null ? _ref.owner : void 0) !== parameters['repository-owner'] || ((_ref1 = R.repository) != null ? _ref1.commit : void 0) !== parameters['repository-commit']) {
+        if ((R.repository.commit != null) && (R.repository.owner !== parameters['repository-owner'] || R.repository.commit !== parameters['repository-commit'])) {
           location.reload();
           return;
         }
@@ -214,6 +214,7 @@
         if (R.rasterizerMode) {
           return;
         }
+        R.githubLogin = R.canvasJ.attr("data-github-login");
         R.city = {
           owner: R.canvasJ.attr("data-owner") !== '' ? R.canvasJ.attr("data-owner") : void 0,
           city: R.canvasJ.attr("data-city") !== '' ? R.canvasJ.attr("data-city") : void 0,

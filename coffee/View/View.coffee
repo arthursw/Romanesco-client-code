@@ -199,7 +199,7 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 		updateHash: ()=>
 			@ignoreHashChange = true
 			hashParameters = {}
-			if R.fileManager.owner? and R.fileManager.owner != 'arthursw' and R.fileManager.commit?
+			if R.repository.commit?
 				hashParameters['repository-owner'] = R.repository.owner
 				hashParameters['repository-commit'] = R.repository.commit
 			if R.city.owner? and R.city.name? and R.city.owner != 'RomanescoOrg' and R.city.name != 'Romanesco'
@@ -218,7 +218,7 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 
 			parameters = Utils.URL.getParameters(document.location.hash)
 
-			if R.repository?.owner != parameters['repository-owner'] or R.repository?.commit != parameters['repository-commit']
+			if R.repository.commit? and ( R.repository.owner != parameters['repository-owner'] or R.repository.commit != parameters['repository-commit'] )
 				location.reload()
 				return
 
@@ -241,6 +241,8 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 		# update sidebar according to site settings
 		initializePosition: ()->
 			if R.rasterizerMode then return
+
+			R.githubLogin = R.canvasJ.attr("data-github-login")
 
 			R.city =
 				owner: if R.canvasJ.attr("data-owner") != '' then R.canvasJ.attr("data-owner") else undefined

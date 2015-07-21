@@ -1,102 +1,5 @@
 define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ext-language_tools', required?
 
-	class Console
-
-		constructor: (@codeEditor)->
-			@consoleJ = @codeEditor.editorJ.find(".console")
-			@consoleContentJ = @consoleJ.find(".content")
-			@consoleHandleJ = @codeEditor.editorJ.find(".console-handle")
-			@consoleToggleBtnJ = @consoleHandleJ.find(".close")
-
-			@consoleToggleBtnJ.click @toggle
-			@consoleHandleJ.mousedown @onConsoleHandleDown
-
-			@height = 200
-
-			return
-
-		close: (height=null)->
-			@height = height or @consoleJ.height()
-			@consoleJ.css( height: 0 ).addClass('closed')
-			@consoleToggleBtnJ.find('.glyphicon').removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-up')
-			@codeEditor.resize()
-			return
-
-		open: (consoleHeight=null)->
-			if @consoleJ.hasClass('closed')
-				@consoleJ.removeClass("highlight")
-				@consoleJ.css( height: consoleHeight or @consoleHeight ).removeClass('closed')
-				@consoleToggleBtnJ.find('.glyphicon').removeClass('glyphicon-chevron-up').addClass('glyphicon-chevron-down')
-				@codeEditor.resize()
-			return
-
-		toggle: ()=>
-			if @consoleJ.hasClass('closed')
-				@open()
-			else
-				@close()
-			return
-
-		### mouse interaction ###
-
-		onConsoleHandleDown: ()=>
-			@draggingConsole = true
-			$("body").css( 'user-select': 'none' )
-			return
-
-		onMouseMove: (event)->
-			if @draggingConsole
-				footerHeight = @codeEditor.footerJ.outerHeight()
-				bottom = @codeEditor.editorJ.outerHeight() - footerHeight
-				height = Math.min(bottom - event.pageY, window.innerHeight - footerHeight )
-				@consoleJ.css( height: height )
-				minHeight = 20
-				if @consoleJ.hasClass('closed') 			# the console is closed
-					if height > minHeight 						# user manually opened it
-						@open(height)
-				else 										# the console is opened
-					if height <= minHeight 						# user manually closed it
-						@close(200)
-			return
-
-		onMouseUp: (event)=>
-			if @draggingConsole
-				@coeEditor.editor.resize()
-			@draggingConsole = false
-			return
-
-		### log functions ###
-
-		logMessage: (message)->
-			@nativeLog(message)
-			if typeof message != 'string' or not message instanceof String
-				message = JSON.stringify(message)
-			@consoleContentJ.append( $("<p>").append(message) )
-			@consoleContentJ.scrollTop(@consoleContentJ[0].scrollHeight)
-			if @consoleJ.hasClass("closed")
-				@consoleJ.addClass("highlight")
-			return
-
-		logError: (message)->
-			@nativeError(message)
-			@consoleContentJ.append( $("<p>").append(message).addClass("error") )
-			@consoleContentJ.scrollTop(@consoleContentJ[0].scrollHeight)
-			@openConsole()
-			message = "An error occured, you can open the debug console (Command + Option + I)"
-			message += " to have more information about the problem."
-			R.alertManager.alert message, "info"
-			return
-
-		setNativeLogs: ()->
-			@nativeLog = console.log
-			@nativeError = console.error
-			return
-
-		resetNativeLogs: ()->
-			console.log = @nativeLog
-			console.error = @nativeError
-			return
-
 	class CodeEditor
 
 		constructor: ()->
@@ -111,6 +14,8 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 			# handle
 			@handleJ = @editorJ.find(".editor-handle")
 			@handleJ.mousedown @onHandleDown
+			@handleJ.find('.handle-left').click(@setHalfSize)
+			@handleJ.find('.handle-right').click(@setFullSize)
 
 			# header
 			@fileNameJ = @editorJ.find(".header .fileName input")
@@ -267,6 +172,16 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 			$("body").css( 'user-select': 'none' )
 			return
 
+		setHalfSize: ()=>
+			@editorJ.css(right: '50%')
+			@resize()
+			return
+
+		setFullSize: ()=>
+			@editorJ.css(right: 0)
+			@resize()
+			return
+
 		resize: ()=>
 			@editor.resize()
 			return
@@ -341,7 +256,7 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 		### set, compile and run scripts ###
 
 		setFile: (@fileNode)->
-			@setSource(atob(@fileNode.content))
+			@setSource(@fileNode.source)
 			return
 
 		setSource: (source)->
@@ -406,6 +321,103 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 
 		save: ()=>
 			if @fileNode? then R.fileManager.saveFile(@fileNode, @editor.getValue())
+			return
+
+	class Console
+
+		constructor: (@codeEditor)->
+			@consoleJ = @codeEditor.editorJ.find(".console")
+			@consoleContentJ = @consoleJ.find(".content")
+			@consoleHandleJ = @codeEditor.editorJ.find(".console-handle")
+			@consoleToggleBtnJ = @consoleHandleJ.find(".close")
+
+			@consoleToggleBtnJ.click @toggle
+			@consoleHandleJ.mousedown @onConsoleHandleDown
+
+			@height = 200
+
+			return
+
+		close: (height=null)->
+			@height = height or @consoleJ.height()
+			@consoleJ.css( height: 0 ).addClass('closed')
+			@consoleToggleBtnJ.find('.glyphicon').removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-up')
+			@codeEditor.resize()
+			return
+
+		open: (consoleHeight=null)->
+			if @consoleJ.hasClass('closed')
+				@consoleJ.removeClass("highlight")
+				@consoleJ.css( height: consoleHeight or @consoleHeight ).removeClass('closed')
+				@consoleToggleBtnJ.find('.glyphicon').removeClass('glyphicon-chevron-up').addClass('glyphicon-chevron-down')
+				@codeEditor.resize()
+			return
+
+		toggle: ()=>
+			if @consoleJ.hasClass('closed')
+				@open()
+			else
+				@close()
+			return
+
+		### mouse interaction ###
+
+		onConsoleHandleDown: ()=>
+			@draggingConsole = true
+			$("body").css( 'user-select': 'none' )
+			return
+
+		onMouseMove: (event)->
+			if @draggingConsole
+				footerHeight = @codeEditor.footerJ.outerHeight()
+				bottom = @codeEditor.editorJ.outerHeight() - footerHeight
+				height = Math.min(bottom - event.pageY, window.innerHeight - footerHeight )
+				@consoleJ.css( height: height )
+				minHeight = 20
+				if @consoleJ.hasClass('closed') 			# the console is closed
+					if height > minHeight 						# user manually opened it
+						@open(height)
+				else 										# the console is opened
+					if height <= minHeight 						# user manually closed it
+						@close(200)
+			return
+
+		onMouseUp: (event)=>
+			if @draggingConsole
+				@coeEditor.editor.resize()
+			@draggingConsole = false
+			return
+
+		### log functions ###
+
+		logMessage: (message)->
+			@nativeLog(message)
+			if typeof message != 'string' or not message instanceof String
+				message = JSON.stringify(message)
+			@consoleContentJ.append( $("<p>").append(message) )
+			@consoleContentJ.scrollTop(@consoleContentJ[0].scrollHeight)
+			if @consoleJ.hasClass("closed")
+				@consoleJ.addClass("highlight")
+			return
+
+		logError: (message)->
+			@nativeError(message)
+			@consoleContentJ.append( $("<p>").append(message).addClass("error") )
+			@consoleContentJ.scrollTop(@consoleContentJ[0].scrollHeight)
+			@openConsole()
+			message = "An error occured, you can open the debug console (Command + Option + I)"
+			message += " to have more information about the problem."
+			R.alertManager.alert message, "info"
+			return
+
+		setNativeLogs: ()->
+			@nativeLog = console.log
+			@nativeError = console.error
+			return
+
+		resetNativeLogs: ()->
+			console.log = @nativeLog
+			console.error = @nativeError
 			return
 
 	return CodeEditor

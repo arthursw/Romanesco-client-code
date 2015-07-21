@@ -40,7 +40,14 @@
 
   libs = '../../libs/';
 
-  parameters = Utils.URL.getParameters(document.location.search);
+  parameters = Utils.URL.getParameters(document.location.hash);
+
+  window.R.repository = {
+    owner: 'arthursw',
+    commit: null
+  };
+
+  debugger;
 
   if ((parameters['repository-owner'] != null) && (parameters['repository-commit'] != null)) {
     prefix = parameters['repository-use-cdn'] != null ? '//cdn.' : '//';

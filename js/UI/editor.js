@@ -4,133 +4,6 @@
 
   define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
     var CodeEditor, Console;
-    Console = (function() {
-      function Console(codeEditor) {
-        this.codeEditor = codeEditor;
-        this.onMouseUp = __bind(this.onMouseUp, this);
-        this.onConsoleHandleDown = __bind(this.onConsoleHandleDown, this);
-        this.toggle = __bind(this.toggle, this);
-        this.consoleJ = this.codeEditor.editorJ.find(".console");
-        this.consoleContentJ = this.consoleJ.find(".content");
-        this.consoleHandleJ = this.codeEditor.editorJ.find(".console-handle");
-        this.consoleToggleBtnJ = this.consoleHandleJ.find(".close");
-        this.consoleToggleBtnJ.click(this.toggle);
-        this.consoleHandleJ.mousedown(this.onConsoleHandleDown);
-        this.height = 200;
-        return;
-      }
-
-      Console.prototype.close = function(height) {
-        if (height == null) {
-          height = null;
-        }
-        this.height = height || this.consoleJ.height();
-        this.consoleJ.css({
-          height: 0
-        }).addClass('closed');
-        this.consoleToggleBtnJ.find('.glyphicon').removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-up');
-        this.codeEditor.resize();
-      };
-
-      Console.prototype.open = function(consoleHeight) {
-        if (consoleHeight == null) {
-          consoleHeight = null;
-        }
-        if (this.consoleJ.hasClass('closed')) {
-          this.consoleJ.removeClass("highlight");
-          this.consoleJ.css({
-            height: consoleHeight || this.consoleHeight
-          }).removeClass('closed');
-          this.consoleToggleBtnJ.find('.glyphicon').removeClass('glyphicon-chevron-up').addClass('glyphicon-chevron-down');
-          this.codeEditor.resize();
-        }
-      };
-
-      Console.prototype.toggle = function() {
-        if (this.consoleJ.hasClass('closed')) {
-          this.open();
-        } else {
-          this.close();
-        }
-      };
-
-
-      /* mouse interaction */
-
-      Console.prototype.onConsoleHandleDown = function() {
-        this.draggingConsole = true;
-        $("body").css({
-          'user-select': 'none'
-        });
-      };
-
-      Console.prototype.onMouseMove = function(event) {
-        var bottom, footerHeight, height, minHeight;
-        if (this.draggingConsole) {
-          footerHeight = this.codeEditor.footerJ.outerHeight();
-          bottom = this.codeEditor.editorJ.outerHeight() - footerHeight;
-          height = Math.min(bottom - event.pageY, window.innerHeight - footerHeight);
-          this.consoleJ.css({
-            height: height
-          });
-          minHeight = 20;
-          if (this.consoleJ.hasClass('closed')) {
-            if (height > minHeight) {
-              this.open(height);
-            }
-          } else {
-            if (height <= minHeight) {
-              this.close(200);
-            }
-          }
-        }
-      };
-
-      Console.prototype.onMouseUp = function(event) {
-        if (this.draggingConsole) {
-          this.coeEditor.editor.resize();
-        }
-        this.draggingConsole = false;
-      };
-
-
-      /* log functions */
-
-      Console.prototype.logMessage = function(message) {
-        this.nativeLog(message);
-        if (typeof message !== 'string' || !message instanceof String) {
-          message = JSON.stringify(message);
-        }
-        this.consoleContentJ.append($("<p>").append(message));
-        this.consoleContentJ.scrollTop(this.consoleContentJ[0].scrollHeight);
-        if (this.consoleJ.hasClass("closed")) {
-          this.consoleJ.addClass("highlight");
-        }
-      };
-
-      Console.prototype.logError = function(message) {
-        this.nativeError(message);
-        this.consoleContentJ.append($("<p>").append(message).addClass("error"));
-        this.consoleContentJ.scrollTop(this.consoleContentJ[0].scrollHeight);
-        this.openConsole();
-        message = "An error occured, you can open the debug console (Command + Option + I)";
-        message += " to have more information about the problem.";
-        R.alertManager.alert(message, "info");
-      };
-
-      Console.prototype.setNativeLogs = function() {
-        this.nativeLog = console.log;
-        this.nativeError = console.error;
-      };
-
-      Console.prototype.resetNativeLogs = function() {
-        console.log = this.nativeLog;
-        console.error = this.nativeError;
-      };
-
-      return Console;
-
-    })();
     CodeEditor = (function() {
       function CodeEditor() {
         this.save = __bind(this.save, this);
@@ -140,6 +13,8 @@
         this.close = __bind(this.close, this);
         this.onMouseUp = __bind(this.onMouseUp, this);
         this.resize = __bind(this.resize, this);
+        this.setFullSize = __bind(this.setFullSize, this);
+        this.setHalfSize = __bind(this.setHalfSize, this);
         this.onHandleDown = __bind(this.onHandleDown, this);
         this.nextCommand = __bind(this.nextCommand, this);
         this.previousCommand = __bind(this.previousCommand, this);
@@ -151,6 +26,8 @@
         }
         this.handleJ = this.editorJ.find(".editor-handle");
         this.handleJ.mousedown(this.onHandleDown);
+        this.handleJ.find('.handle-left').click(this.setHalfSize);
+        this.handleJ.find('.handle-right').click(this.setFullSize);
         this.fileNameJ = this.editorJ.find(".header .fileName input");
         this.linkFileInputJ = this.editorJ.find("input.link-file");
         this.linkFileInputJ.change(this.linkFile);
@@ -285,6 +162,20 @@
         });
       };
 
+      CodeEditor.prototype.setHalfSize = function() {
+        this.editorJ.css({
+          right: '50%'
+        });
+        this.resize();
+      };
+
+      CodeEditor.prototype.setFullSize = function() {
+        this.editorJ.css({
+          right: 0
+        });
+        this.resize();
+      };
+
       CodeEditor.prototype.resize = function() {
         this.editor.resize();
       };
@@ -365,7 +256,7 @@
 
       CodeEditor.prototype.setFile = function(fileNode) {
         this.fileNode = fileNode;
-        this.setSource(atob(this.fileNode.content));
+        this.setSource(this.fileNode.source);
       };
 
       CodeEditor.prototype.setSource = function(source) {
@@ -450,6 +341,133 @@
       };
 
       return CodeEditor;
+
+    })();
+    Console = (function() {
+      function Console(codeEditor) {
+        this.codeEditor = codeEditor;
+        this.onMouseUp = __bind(this.onMouseUp, this);
+        this.onConsoleHandleDown = __bind(this.onConsoleHandleDown, this);
+        this.toggle = __bind(this.toggle, this);
+        this.consoleJ = this.codeEditor.editorJ.find(".console");
+        this.consoleContentJ = this.consoleJ.find(".content");
+        this.consoleHandleJ = this.codeEditor.editorJ.find(".console-handle");
+        this.consoleToggleBtnJ = this.consoleHandleJ.find(".close");
+        this.consoleToggleBtnJ.click(this.toggle);
+        this.consoleHandleJ.mousedown(this.onConsoleHandleDown);
+        this.height = 200;
+        return;
+      }
+
+      Console.prototype.close = function(height) {
+        if (height == null) {
+          height = null;
+        }
+        this.height = height || this.consoleJ.height();
+        this.consoleJ.css({
+          height: 0
+        }).addClass('closed');
+        this.consoleToggleBtnJ.find('.glyphicon').removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-up');
+        this.codeEditor.resize();
+      };
+
+      Console.prototype.open = function(consoleHeight) {
+        if (consoleHeight == null) {
+          consoleHeight = null;
+        }
+        if (this.consoleJ.hasClass('closed')) {
+          this.consoleJ.removeClass("highlight");
+          this.consoleJ.css({
+            height: consoleHeight || this.consoleHeight
+          }).removeClass('closed');
+          this.consoleToggleBtnJ.find('.glyphicon').removeClass('glyphicon-chevron-up').addClass('glyphicon-chevron-down');
+          this.codeEditor.resize();
+        }
+      };
+
+      Console.prototype.toggle = function() {
+        if (this.consoleJ.hasClass('closed')) {
+          this.open();
+        } else {
+          this.close();
+        }
+      };
+
+
+      /* mouse interaction */
+
+      Console.prototype.onConsoleHandleDown = function() {
+        this.draggingConsole = true;
+        $("body").css({
+          'user-select': 'none'
+        });
+      };
+
+      Console.prototype.onMouseMove = function(event) {
+        var bottom, footerHeight, height, minHeight;
+        if (this.draggingConsole) {
+          footerHeight = this.codeEditor.footerJ.outerHeight();
+          bottom = this.codeEditor.editorJ.outerHeight() - footerHeight;
+          height = Math.min(bottom - event.pageY, window.innerHeight - footerHeight);
+          this.consoleJ.css({
+            height: height
+          });
+          minHeight = 20;
+          if (this.consoleJ.hasClass('closed')) {
+            if (height > minHeight) {
+              this.open(height);
+            }
+          } else {
+            if (height <= minHeight) {
+              this.close(200);
+            }
+          }
+        }
+      };
+
+      Console.prototype.onMouseUp = function(event) {
+        if (this.draggingConsole) {
+          this.coeEditor.editor.resize();
+        }
+        this.draggingConsole = false;
+      };
+
+
+      /* log functions */
+
+      Console.prototype.logMessage = function(message) {
+        this.nativeLog(message);
+        if (typeof message !== 'string' || !message instanceof String) {
+          message = JSON.stringify(message);
+        }
+        this.consoleContentJ.append($("<p>").append(message));
+        this.consoleContentJ.scrollTop(this.consoleContentJ[0].scrollHeight);
+        if (this.consoleJ.hasClass("closed")) {
+          this.consoleJ.addClass("highlight");
+        }
+      };
+
+      Console.prototype.logError = function(message) {
+        this.nativeError(message);
+        this.consoleContentJ.append($("<p>").append(message).addClass("error"));
+        this.consoleContentJ.scrollTop(this.consoleContentJ[0].scrollHeight);
+        this.openConsole();
+        message = "An error occured, you can open the debug console (Command + Option + I)";
+        message += " to have more information about the problem.";
+        R.alertManager.alert(message, "info");
+      };
+
+      Console.prototype.setNativeLogs = function() {
+        this.nativeLog = console.log;
+        this.nativeError = console.error;
+      };
+
+      Console.prototype.resetNativeLogs = function() {
+        console.log = this.nativeLog;
+        console.error = this.nativeError;
+      };
+
+      return Console;
 
     })();
     return CodeEditor;
