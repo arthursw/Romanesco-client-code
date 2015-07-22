@@ -233,7 +233,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				)
 				@fileBrowserJ.bind('tree.click', @onNodeClicked)
 				@fileBrowserJ.bind('tree.dblclick', @onNodeDoubleClicked)
-				@fileBrowserJ.bind('tree.move', @onFileMoved)
+				@fileBrowserJ.bind('tree.move', @onFileMove)
 
 			@tree = @fileBrowserJ.tree('getTree')
 			@tree.path = ''
@@ -342,12 +342,12 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			R.showCodeEditor(newNode)
 			return
 
-		onFileMoved: (event)=>
+		onFileMove: (event)=>
 			console.log('moved_node', event.move_info.moved_node)
 			console.log('target_node', event.move_info.target_node)
 			console.log('position', event.move_info.position)
 			console.log('previous_parent', event.move_info.previous_parent)
-			parent = event.move_info.moved_node.parent
+			parent = if event.move_info.position == 'inside' then event.move_info.target_node else event.move_info.target_node.parent
 			parentPath = if parent? and parent.path != '' then parent.path + '/' else ''
 			event.move_info.moved_node.newPath = parentPath + event.move_info.moved_node.name
 			@save()
@@ -369,7 +369,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			return
 
 		confirmDeleteFile: (data)=>
-			@deleteNode(data.node)
+			@deleteNode(data.data)
 			return
 
 		onDeleteFile: (event)=>
@@ -377,7 +377,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			path = $(event.target).closest('button.delete').attr('data-path')
 			node = @getNodeFromPath(path)
 			if not node? then return
-			modal = Modal.createModal( title: 'Delete file?', submit: @confirmDeleteFile, data: node: node )
+			modal = Modal.createModal( title: 'Delete file?', submit: @confirmDeleteFile, data: node )
 			modal.addText('Do you really want to delete "' + node.name + '"?')
 			modal.show()
 			return

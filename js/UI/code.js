@@ -15,7 +15,7 @@
         this.runLastCommit = __bind(this.runLastCommit, this);
         this.onDeleteFile = __bind(this.onDeleteFile, this);
         this.confirmDeleteFile = __bind(this.confirmDeleteFile, this);
-        this.onFileMoved = __bind(this.onFileMoved, this);
+        this.onFileMove = __bind(this.onFileMove, this);
         this.onCreateFile = __bind(this.onCreateFile, this);
         this.openFile = __bind(this.openFile, this);
         this.onNodeDoubleClicked = __bind(this.onNodeDoubleClicked, this);
@@ -340,7 +340,7 @@
           });
           this.fileBrowserJ.bind('tree.click', this.onNodeClicked);
           this.fileBrowserJ.bind('tree.dblclick', this.onNodeDoubleClicked);
-          this.fileBrowserJ.bind('tree.move', this.onFileMoved);
+          this.fileBrowserJ.bind('tree.move', this.onFileMove);
         }
         this.tree = this.fileBrowserJ.tree('getTree');
         this.tree.path = '';
@@ -454,13 +454,13 @@
         R.showCodeEditor(newNode);
       };
 
-      FileManager.prototype.onFileMoved = function(event) {
+      FileManager.prototype.onFileMove = function(event) {
         var parent, parentPath;
         console.log('moved_node', event.move_info.moved_node);
         console.log('target_node', event.move_info.target_node);
         console.log('position', event.move_info.position);
         console.log('previous_parent', event.move_info.previous_parent);
-        parent = event.move_info.moved_node.parent;
+        parent = event.move_info.position === 'inside' ? event.move_info.target_node : event.move_info.target_node.parent;
         parentPath = (parent != null) && parent.path !== '' ? parent.path + '/' : '';
         event.move_info.moved_node.newPath = parentPath + event.move_info.moved_node.name;
         this.save();
@@ -487,7 +487,7 @@
       };
 
       FileManager.prototype.confirmDeleteFile = function(data) {
-        this.deleteNode(data.node);
+        this.deleteNode(data.data);
       };
 
       FileManager.prototype.onDeleteFile = function(event) {
@@ -501,9 +501,7 @@
         modal = Modal.createModal({
           title: 'Delete file?',
           submit: this.confirmDeleteFile,
-          data: {
-            node: node
-          }
+          data: node
         });
         modal.addText('Do you really want to delete "' + node.name + '"?');
         modal.show();

@@ -316,7 +316,7 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 		# save on change:
 
 		onChange: ()=>
-			if @fileNode? then Utils.deferredExecution(@save, 'save:'+@fileNode.path)
+			if R.codeEditor.fileNode? then Utils.deferredExecution(R.codeEditor.save, 'save:'+R.codeEditor.fileNode.path)
 			return
 
 		save: ()=>

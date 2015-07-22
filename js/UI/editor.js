@@ -329,8 +329,8 @@
       };
 
       CodeEditor.prototype.onChange = function() {
-        if (this.fileNode != null) {
-          Utils.deferredExecution(this.save, 'save:' + this.fileNode.path);
+        if (R.codeEditor.fileNode != null) {
+          Utils.deferredExecution(R.codeEditor.save, 'save:' + R.codeEditor.fileNode.path);
         }
       };
 
