@@ -47,8 +47,6 @@
     commit: null
   };
 
-  debugger;
-
   if ((parameters['repository-owner'] != null) && (parameters['repository-commit'] != null)) {
     prefix = parameters['repository-use-cdn'] != null ? '//cdn.' : '//';
     baseUrl = prefix + 'rawgit.com/' + parameters['repository-owner'] + '/romanesco-client-code/' + parameters['repository-commit'] + '/js';

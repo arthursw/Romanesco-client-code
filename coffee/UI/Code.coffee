@@ -51,6 +51,8 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			return
 
 		getUserFork: (forks)=>
+			forks = @checkError(forks)
+			if not forks then return
 			hasFork = false
 			for fork in forks
 				if fork.owner.login == R.me
@@ -73,6 +75,8 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			return
 
 		displayForks: (forks)=>
+			forks = @checkError(forks)
+			if not forks then return
 			modal = Modal.createModal( title: 'Forks', submit: null )
 
 			tableData =
@@ -122,7 +126,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		loadCustomFork: (event)=>
 			event?.preventDefault()
 			modal = Modal.createModal( title: 'Load repository', submit: @loadFork )
-			modal.addTextInput(name: 'owner', placeholder: 'The login name of the fork owner (ex: george)', label: 'Owner', required: true)
+			modal.addTextInput(name: 'owner', placeholder: 'The login name of the fork owner (ex: george)', label: 'Owner', required: true, submitShortcut: true)
 			modal.show()
 			return
 
@@ -185,6 +189,8 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			return
 
 		loadTree: (content)=>
+			content = @checkError(content)
+			if not content then return
 			for file in content
 				if file.name == 'coffee'
 					@request(file.git_url + '?recursive=1', @readTree)
@@ -198,7 +204,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			nameExistsInTargetNode = target_node.leaves[moved_node.name]?
 			return (targetIsFolder and not nameExistsInTargetNode) or position != 'inside'
 
-		onCreateLi: (node, liJ)->
+		onCreateLi: (node, liJ)=>
 			deleteButtonJ = $("""
 			<button type="button" class="close delete" aria-label="Close">
 				<span aria-hidden="true">&times;</span>
@@ -210,6 +216,8 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			return
 
 		readTree: (content)=>
+			content = @checkError(content)
+			if not content then return
 			treeExists = @tree?
 			@tree = @buildTree(content.tree)
 
@@ -285,6 +293,8 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			return
 
 		openFile: (file)=>
+			file = @checkError(file)
+			if not file then return
 			path = file.path.replace('coffee/', '')			# @tree is built from the 'coffee' directory
 			fileNode = @getNodeFromPath(path)
 			fileNode.source = atob(file.content)
@@ -345,14 +355,31 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 		saveFile: (fileNode, source)->
 			fileNode.source = source
+			fileNode.update = true
 			$(fileNode.element).addClass('modified')
 			@save()
 			return
 
-		onDeleteFile: (event)=>
-			path = $(event.target).attr('data-path')
-			node = @getNodeFromPath(path)
+		deleteNode: (node)->
+			if node.type == 'tree'
+				for child in node.children
+					@deleteNode(child)
 			node.delete = true
+			@fileBrowserJ.tree('removeNode', node)
+			return
+
+		confirmDeleteFile: (data)=>
+			@deleteNode(data.node)
+			return
+
+		onDeleteFile: (event)=>
+			event.stopPropagation()
+			path = $(event.target).closest('button.delete').attr('data-path')
+			node = @getNodeFromPath(path)
+			if not node? then return
+			modal = Modal.createModal( title: 'Delete file?', submit: @confirmDeleteFile, data: node: node )
+			modal.addText('Do you really want to delete "' + node.name + '"?')
+			modal.show()
 			return
 
 		loadFile: (path, callback)->
@@ -375,12 +402,13 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				if node.type == 'tree' then continue
 				if node.source? or node.create? or node.delete?
 					file =
-						name: node.name,
-						type: node.type,
-						path: node.path,
-						newPath: node.newPath,
-						source: node.source,
-						create: node.create,
+						name: node.name
+						type: node.type
+						path: node.path
+						newPath: node.newPath
+						update: node.update
+						source: node.source
+						create: node.create
 						delete: node.delete
 					forkFiles.push(file)
 			files = {}
@@ -390,11 +418,12 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 		load: ()->
 			files = Utils.LocalStorage.get('files')
-			if files[@owner]?
+			if files?[@owner]?
 				for file in files[@owner]
 					node = @getNodeFromPath(file.path)
 					node.source = file.source
 					node.create = file.create
+					node.update = file.update
 					node.delete = file.delete
 					node.newPath = file.newPath
 					$(node.element).addClass('modified')
@@ -402,13 +431,15 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 		# Create, Update & Delete files
 
-		checkError: (message)->
-			console.log message
-			return
+		checkError: (response)->
+			if response.status < 200 or response.status >= 300
+				R.alertManager.alert('Error: ' + response.content.message, 'error')
+				return false
+			return response.content
 
 		fileToData: (file, commitMessage, content=false, sha=false)->
 			data =
-				path: file.newPath or file.path
+				path: 'coffee/' + (file.newPath or file.path)
 				message: commitMessage
 			if content then data.content = btoa(file.source)
 			if sha then data.sha = file.sha
@@ -416,10 +447,14 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 		requestFile: (file, data, method='put')->
 			path = 'coffee/' + file.path
-			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/contents/'+path, @checkError, method, data)
-			if file.newPath?
-				file.path = file.newPath 	# to improve: there might be an error during the update
-				delete file.newPath
+			callback = (response)->
+				if not R.fileManager.checkError(response) then return
+				if file.newPath?
+					file.path = file.newPath
+					delete file.newPath
+				R.alertManager.alert('Successfully committed ' + file.name + '.', 'success')
+				return
+			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/contents/'+path, callback, method, data)
 			return
 
 		createFile: (file, commitMessage)->
@@ -442,6 +477,8 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		# Run, Commit & Push request
 
 		runLastCommit: (branch)=>
+			branch = @checkError(branch)
+			if not branch then return
 			R.repository.owner = @owner
 			R.repository.commit = branch.commit.sha
 			R.view.updateHash()
@@ -455,31 +492,30 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 		onCommitClicked: (event)=>
 			modal = Modal.createModal( title: 'Commit', submit: @commit )
-			modal.addTextInput(name: 'commitMessage', placeholder: 'Added the coffee maker feature.', label: 'Message', required: true)
+			modal.addTextInput(name: 'commitMessage', placeholder: 'Added the coffee maker feature.', label: 'Message', required: true, submitShortcut: true)
 			modal.show()
 			return
 
 		commit: (data)=>
 			nodes = @getNodes()
 			nothingToCommit = true
+			@filesToCommit = 0
 			for file in nodes
-				if file.delete or file.source? then nothingToCommit = false
+				if file.delete or file.create or file.update or file.newPath? then @filesToCommit++
 				if file.delete
 					@deleteFile(file, data.commitMessage)
-					continue
-				else if file.source?
-					if file.create
-						@createFile(file, data.commitMessage)
-					else
-						@updateFile(file, data.commitMessage)
-			if nothingToCommit
+				else if file.create
+					@createFile(file, data.commitMessage)
+				else if file.update or file.newPath?
+					@updateFile(file, data.commitMessage)
+			if @filesToCommit==0
 				R.alertManager.alert 'Nothing to commit.', 'Info'
 			return
 
 		createPullRequest: ()=>
 			modal = Modal.createModal( title: 'Create pull request', submit: @createPullRequestSubmit )
 			modal.addTextInput(name: 'title', placeholder: 'Amazing new feature', label: 'Title of the pull request', required: true)
-			modal.addTextInput(name: 'branch', placeholder: 'master', label: 'Branch', required: true)
+			modal.addTextInput(name: 'branch', placeholder: 'master', label: 'Branch', required: true, submitShortcut: true)
 			modal.addTextInput(name: 'body', placeholder: 'Please pull this in!', label: 'Message', required: false)
 			modal.show()
 			return
@@ -590,6 +626,8 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			return
 
 		registerModuleInModuleLoader: (content)=>
+			content = @checkError(content)
+			if not content then return
 			source = atob(content.content)
 			buttonsResult = /buttons = \[/.exec(source)
 

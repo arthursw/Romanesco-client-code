@@ -29,8 +29,6 @@ parameters = Utils.URL.getParameters(document.location.hash)
 
 window.R.repository = owner: 'arthursw', commit: null
 
-debugger
-
 if parameters['repository-owner']? and parameters['repository-commit']?
 	prefix = if parameters['repository-use-cdn']? then '//cdn.' else '//'
 	baseUrl = prefix + 'rawgit.com/' + parameters['repository-owner'] + '/romanesco-client-code/' + parameters['repository-commit'] + '/js'

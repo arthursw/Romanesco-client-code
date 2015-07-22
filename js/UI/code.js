@@ -14,6 +14,7 @@
         this.runFork = __bind(this.runFork, this);
         this.runLastCommit = __bind(this.runLastCommit, this);
         this.onDeleteFile = __bind(this.onDeleteFile, this);
+        this.confirmDeleteFile = __bind(this.confirmDeleteFile, this);
         this.onFileMoved = __bind(this.onFileMoved, this);
         this.onCreateFile = __bind(this.onCreateFile, this);
         this.openFile = __bind(this.openFile, this);
@@ -21,6 +22,7 @@
         this.submitNewName = __bind(this.submitNewName, this);
         this.onNodeClicked = __bind(this.onNodeClicked, this);
         this.readTree = __bind(this.readTree, this);
+        this.onCreateLi = __bind(this.onCreateLi, this);
         this.loadTree = __bind(this.loadTree, this);
         this.createFork = __bind(this.createFork, this);
         this.forkCreationResponse = __bind(this.forkCreationResponse, this);
@@ -69,6 +71,10 @@
 
       FileManager.prototype.getUserFork = function(forks) {
         var fork, hasFork, _i, _len;
+        forks = this.checkError(forks);
+        if (!forks) {
+          return;
+        }
         hasFork = false;
         for (_i = 0, _len = forks.length; _i < _len; _i++) {
           fork = forks[_i];
@@ -96,6 +102,10 @@
 
       FileManager.prototype.displayForks = function(forks) {
         var date, fork, modal, tableData, tableJ, _i, _len;
+        forks = this.checkError(forks);
+        if (!forks) {
+          return;
+        }
         modal = Modal.createModal({
           title: 'Forks',
           submit: null
@@ -175,7 +185,8 @@
           name: 'owner',
           placeholder: 'The login name of the fork owner (ex: george)',
           label: 'Owner',
-          required: true
+          required: true,
+          submitShortcut: true
         });
         modal.show();
       };
@@ -279,6 +290,10 @@
 
       FileManager.prototype.loadTree = function(content) {
         var btnName, file, _i, _len;
+        content = this.checkError(content);
+        if (!content) {
+          return;
+        }
         for (_i = 0, _len = content.length; _i < _len; _i++) {
           file = content[_i];
           if (file.name === 'coffee') {
@@ -307,6 +322,10 @@
 
       FileManager.prototype.readTree = function(content) {
         var treeExists;
+        content = this.checkError(content);
+        if (!content) {
+          return;
+        }
         treeExists = this.tree != null;
         this.tree = this.buildTree(content.tree);
         if (treeExists) {
@@ -384,6 +403,10 @@
 
       FileManager.prototype.openFile = function(file) {
         var fileNode, path;
+        file = this.checkError(file);
+        if (!file) {
+          return;
+        }
         path = file.path.replace('coffee/', '');
         fileNode = this.getNodeFromPath(path);
         fileNode.source = atob(file.content);
@@ -445,15 +468,45 @@
 
       FileManager.prototype.saveFile = function(fileNode, source) {
         fileNode.source = source;
+        fileNode.update = true;
         $(fileNode.element).addClass('modified');
         this.save();
       };
 
-      FileManager.prototype.onDeleteFile = function(event) {
-        var node, path;
-        path = $(event.target).attr('data-path');
-        node = this.getNodeFromPath(path);
+      FileManager.prototype.deleteNode = function(node) {
+        var child, _i, _len, _ref;
+        if (node.type === 'tree') {
+          _ref = node.children;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            child = _ref[_i];
+            this.deleteNode(child);
+          }
+        }
         node["delete"] = true;
+        this.fileBrowserJ.tree('removeNode', node);
+      };
+
+      FileManager.prototype.confirmDeleteFile = function(data) {
+        this.deleteNode(data.node);
+      };
+
+      FileManager.prototype.onDeleteFile = function(event) {
+        var modal, node, path;
+        event.stopPropagation();
+        path = $(event.target).closest('button.delete').attr('data-path');
+        node = this.getNodeFromPath(path);
+        if (node == null) {
+          return;
+        }
+        modal = Modal.createModal({
+          title: 'Delete file?',
+          submit: this.confirmDeleteFile,
+          data: {
+            node: node
+          }
+        });
+        modal.addText('Do you really want to delete "' + node.name + '"?');
+        modal.show();
       };
 
       FileManager.prototype.loadFile = function(path, callback) {
@@ -494,6 +547,7 @@
               type: node.type,
               path: node.path,
               newPath: node.newPath,
+              update: node.update,
               source: node.source,
               create: node.create,
               "delete": node["delete"]
@@ -509,13 +563,14 @@
       FileManager.prototype.load = function() {
         var file, files, node, _i, _len, _ref;
         files = Utils.LocalStorage.get('files');
-        if (files[this.owner] != null) {
+        if ((files != null ? files[this.owner] : void 0) != null) {
           _ref = files[this.owner];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             file = _ref[_i];
             node = this.getNodeFromPath(file.path);
             node.source = file.source;
             node.create = file.create;
+            node.update = file.update;
             node["delete"] = file["delete"];
             node.newPath = file.newPath;
             $(node.element).addClass('modified');
@@ -523,8 +578,12 @@
         }
       };
 
-      FileManager.prototype.checkError = function(message) {
-        console.log(message);
+      FileManager.prototype.checkError = function(response) {
+        if (response.status < 200 || response.status >= 300) {
+          R.alertManager.alert('Error: ' + response.content.message, 'error');
+          return false;
+        }
+        return response.content;
       };
 
       FileManager.prototype.fileToData = function(file, commitMessage, content, sha) {
@@ -536,7 +595,7 @@
           sha = false;
         }
         data = {
-          path: file.newPath || file.path,
+          path: 'coffee/' + (file.newPath || file.path),
           message: commitMessage
         };
         if (content) {
@@ -549,16 +608,22 @@
       };
 
       FileManager.prototype.requestFile = function(file, data, method) {
-        var path;
+        var callback, path;
         if (method == null) {
           method = 'put';
         }
         path = 'coffee/' + file.path;
-        this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/contents/' + path, this.checkError, method, data);
-        if (file.newPath != null) {
-          file.path = file.newPath;
-          delete file.newPath;
-        }
+        callback = function(response) {
+          if (!R.fileManager.checkError(response)) {
+            return;
+          }
+          if (file.newPath != null) {
+            file.path = file.newPath;
+            delete file.newPath;
+          }
+          R.alertManager.alert('Successfully committed ' + file.name + '.', 'success');
+        };
+        this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/contents/' + path, callback, method, data);
       };
 
       FileManager.prototype.createFile = function(file, commitMessage) {
@@ -582,6 +647,10 @@
       };
 
       FileManager.prototype.runLastCommit = function(branch) {
+        branch = this.checkError(branch);
+        if (!branch) {
+          return;
+        }
         R.repository.owner = this.owner;
         R.repository.commit = branch.commit.sha;
         R.view.updateHash();
@@ -605,7 +674,8 @@
           name: 'commitMessage',
           placeholder: 'Added the coffee maker feature.',
           label: 'Message',
-          required: true
+          required: true,
+          submitShortcut: true
         });
         modal.show();
       };
@@ -614,23 +684,21 @@
         var file, nodes, nothingToCommit, _i, _len;
         nodes = this.getNodes();
         nothingToCommit = true;
+        this.filesToCommit = 0;
         for (_i = 0, _len = nodes.length; _i < _len; _i++) {
           file = nodes[_i];
-          if (file["delete"] || (file.source != null)) {
-            nothingToCommit = false;
+          if (file["delete"] || file.create || file.update || (file.newPath != null)) {
+            this.filesToCommit++;
           }
           if (file["delete"]) {
             this.deleteFile(file, data.commitMessage);
-            continue;
-          } else if (file.source != null) {
-            if (file.create) {
-              this.createFile(file, data.commitMessage);
-            } else {
-              this.updateFile(file, data.commitMessage);
-            }
+          } else if (file.create) {
+            this.createFile(file, data.commitMessage);
+          } else if (file.update || (file.newPath != null)) {
+            this.updateFile(file, data.commitMessage);
           }
         }
-        if (nothingToCommit) {
+        if (this.filesToCommit === 0) {
           R.alertManager.alert('Nothing to commit.', 'Info');
         }
       };
@@ -651,7 +719,8 @@
           name: 'branch',
           placeholder: 'master',
           label: 'Branch',
-          required: true
+          required: true,
+          submitShortcut: true
         });
         modal.addTextInput({
           name: 'body',
@@ -753,6 +822,10 @@
 
       FileManager.prototype.registerModuleInModuleLoader = function(content) {
         var buttonsResult, source;
+        content = this.checkError(content);
+        if (!content) {
+          return;
+        }
         source = atob(content.content);
         buttonsResult = /buttons = \[/.exec(source);
         if ((buttonsResult != null) && buttonsResult.length > 1) {
