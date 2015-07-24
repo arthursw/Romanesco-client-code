@@ -661,7 +661,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			data =
 				message: @commit.message
 				tree: tree.sha
-				parent: @commit.lastCommitSha
+				parents: [@commit.lastCommitSha]
 			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/git/commits', @updateHead, 'post', data)
 			return
 
@@ -671,9 +671,10 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/git/refs/heads/master', @checkCommit, 'patch', sha: commit.sha)
 			return
 
-		checkCommit: (commit)=>
-			commit = @checkError(commit)
-			if not commit then return
+		checkCommit: (response)=>
+			response = @checkError(response)
+			if not response then return
+			@commit.lastCommitSha = commit.object.sha
 			R.alertManager.alert('Successfully committed!', 'success')
 			Utils.LocalStorage.set('files:' + @owner, null)
 			return

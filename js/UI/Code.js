@@ -801,7 +801,7 @@
         data = {
           message: this.commit.message,
           tree: tree.sha,
-          parent: this.commit.lastCommitSha
+          parents: [this.commit.lastCommitSha]
         };
         this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/git/commits', this.updateHead, 'post', data);
       };
@@ -816,11 +816,12 @@
         });
       };
 
-      FileManager.prototype.checkCommit = function(commit) {
-        commit = this.checkError(commit);
-        if (!commit) {
+      FileManager.prototype.checkCommit = function(response) {
+        response = this.checkError(response);
+        if (!response) {
           return;
         }
+        this.commit.lastCommitSha = commit.object.sha;
         R.alertManager.alert('Successfully committed!', 'success');
         Utils.LocalStorage.set('files:' + this.owner, null);
       };
