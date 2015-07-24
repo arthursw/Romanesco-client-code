@@ -16,7 +16,6 @@ define [
 	'Tools/ToolManager'
 ], (Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager) ->
 
-	# top ! test test comment ça alors c'est fou didonc mieux
 	# R.rasterizerMode = window.rasterizerMode
 
 	# if R.rasterizerMode
@@ -276,8 +275,6 @@ define [
 		R.fontManager = new FontManager()
 		R.view.initializePosition()
 		R.sidebar.initialize()
-
-		$('body').css(background:'yellow')
 
 		window.setPageFullyLoaded?(true)
 
