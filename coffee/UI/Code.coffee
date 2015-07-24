@@ -159,8 +159,8 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		coffeeToJsPath: (coffeePath)->
 			return coffeePath.replace(/^coffee/, 'js').replace(/coffee$/, 'js')
 
-		getJsFile: (node)->
-			return @getFileFromPath(@coffeeToJsPath(node.file.path))
+		getJsFile: (file)->
+			return @getFileFromPath(@coffeeToJsPath(file.path))
 
 		getFileFromPath: (path)->
 			for file in @gitTree.tree
@@ -213,13 +213,13 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		# Open file
 
 		loadFile: (path, callback)->
-			@request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/coffee/'+path, callback)
+			@request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/'+path, callback)
 			return
 
 		openFile: (file)=>
 			file = @checkError(file)
 			if not file then return
-			node = @getNodeFromPath(file.file.path)
+			node = @getNodeFromPath(file.path)
 			node.source = atob(file.content)
 			R.showCodeEditor(node)
 			return
@@ -278,7 +278,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		updatePath: (node, parent)->
 			newPath = parent.file.path + '/' + node.name
 			if node.file.type == 'blob'
-				jsFile = @getJsFile(node)
+				jsFile = @getJsFile(node.file)
 				jsFile.path = @coffeeToJsPath(newPath)
 			node.file.path = newPath
 			if node.file.type == 'tree'
@@ -349,14 +349,15 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 		updateFile: (node, source, compiledSource)->
 			node.source = source
-			node.file.content = btoa(source)
-			jsFile = @getJsFile(node)
+			node.file.content = source
+			jsFile = @getJsFile(node.file)
 			if compiledSource?
-				jsFile.content = btoa(compiledSource)
+				jsFile.content = compiledSource
 				delete jsFile.sha
-				delete jsFile.coffee
+				delete jsFile.size
+				delete node.file.compile
 			else
-				jsFile.coffee = node
+				node.file.compile = true
 			delete node.file.sha
 			$(node.element).addClass('modified')
 			@saveToLocalStorage()
@@ -370,7 +371,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 					@deleteFile(child)
 			Utils.Array.remove(@gitTree.tree, node.file)
 			if node.file.type == 'blob'
-				jsFile = @getJsFile(node)
+				jsFile = @getJsFile(node.file)
 				Utils.Array.remove(@gitTree.tree, jsFile)
 			@fileBrowserJ.tree('removeNode', node)
 			return
@@ -407,7 +408,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		# 	data =
 		# 		path: file.newPath or file.path
 		# 		message: commitMessage
-		# 	if content then data.content = btoa(file.source)
+		# 	if content then data.content = file.source
 		# 	if sha then data.sha = file.sha
 		# 	return data
 		#
@@ -625,25 +626,33 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 		compileCoffee: ()->
 			for file in @gitTree.tree
-				if file.coffee?
-					js = R.editor.compile(file.coffee.source)
-					if not js? then return
-					file.content = btoa(js)
-					delete file.sha
-			return
+				if file.compile
+					jsFile = @getJsFile(file)
+					node = @getNodeFromPath(file.path)
+					js = R.codeEditor.compile(node.source)
+					if not js? then return false
+					jsFile.content = js
+					delete jsFile.sha
+					delete jsFile.size
+					delete file.compile
+			return true
 
 		filterTree: ()->
 			tree = []
 			for file in @gitTree.tree
 				if file.type != 'tree'
-					tree.push(file)
+					f = Utils.clone(file)
+					delete f.size
+					delete f.url
+					delete f.name
+					tree.push(f)
 			return tree
 
 		commitChanges: (data)=>
 			@commit.message = data.commitMessage
-			@compileCoffee()
+			if not @compileCoffee() then return
 			tree = @filterTree()
-			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/git/trees', @createCommit, 'post', tree)
+			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/git/trees', @createCommit, 'post', tree: tree)
 			return
 
 		createCommit: (tree)=>
@@ -659,7 +668,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		updateHead: (commit)=>
 			commit = @checkError(commit)
 			if not commit then return
-			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/git/refs/master/HEAD', @checkCommit, 'patch', sha: commit.sha)
+			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/git/refs/heads/master', @checkCommit, 'patch', sha: commit.sha)
 			return
 
 		checkCommit: (commit)=>

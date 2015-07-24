@@ -48,6 +48,9 @@
       R.fontManager = new FontManager();
       R.view.initializePosition();
       R.sidebar.initialize();
+      $('body').css({
+        background: 'yellow'
+      });
       if (typeof window.setPageFullyLoaded === "function") {
         window.setPageFullyLoaded(true);
       }

@@ -234,8 +234,8 @@
         return coffeePath.replace(/^coffee/, 'js').replace(/coffee$/, 'js');
       };
 
-      FileManager.prototype.getJsFile = function(node) {
-        return this.getFileFromPath(this.coffeeToJsPath(node.file.path));
+      FileManager.prototype.getJsFile = function(file) {
+        return this.getFileFromPath(this.coffeeToJsPath(file.path));
       };
 
       FileManager.prototype.getFileFromPath = function(path) {
@@ -316,7 +316,7 @@
       };
 
       FileManager.prototype.loadFile = function(path, callback) {
-        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/coffee/' + path, callback);
+        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/' + path, callback);
       };
 
       FileManager.prototype.openFile = function(file) {
@@ -325,7 +325,7 @@
         if (!file) {
           return;
         }
-        node = this.getNodeFromPath(file.file.path);
+        node = this.getNodeFromPath(file.path);
         node.source = atob(file.content);
         R.showCodeEditor(node);
       };
@@ -399,7 +399,7 @@
         var child, jsFile, newPath, _i, _len, _ref;
         newPath = parent.file.path + '/' + node.name;
         if (node.file.type === 'blob') {
-          jsFile = this.getJsFile(node);
+          jsFile = this.getJsFile(node.file);
           jsFile.path = this.coffeeToJsPath(newPath);
         }
         node.file.path = newPath;
@@ -475,14 +475,15 @@
       FileManager.prototype.updateFile = function(node, source, compiledSource) {
         var jsFile;
         node.source = source;
-        node.file.content = btoa(source);
-        jsFile = this.getJsFile(node);
+        node.file.content = source;
+        jsFile = this.getJsFile(node.file);
         if (compiledSource != null) {
-          jsFile.content = btoa(compiledSource);
+          jsFile.content = compiledSource;
           delete jsFile.sha;
-          delete jsFile.coffee;
+          delete jsFile.size;
+          delete node.file.compile;
         } else {
-          jsFile.coffee = node;
+          node.file.compile = true;
         }
         delete node.file.sha;
         $(node.element).addClass('modified');
@@ -500,7 +501,7 @@
         }
         Utils.Array.remove(this.gitTree.tree, node.file);
         if (node.file.type === 'blob') {
-          jsFile = this.getJsFile(node);
+          jsFile = this.getJsFile(node.file);
           Utils.Array.remove(this.gitTree.tree, jsFile);
         }
         this.fileBrowserJ.tree('removeNode', node);
@@ -742,29 +743,38 @@
       /* Commit changes */
 
       FileManager.prototype.compileCoffee = function() {
-        var file, js, _i, _len, _ref;
+        var file, js, jsFile, node, _i, _len, _ref;
         _ref = this.gitTree.tree;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
-          if (file.coffee != null) {
-            js = R.editor.compile(file.coffee.source);
+          if (file.compile) {
+            jsFile = this.getJsFile(file);
+            node = this.getNodeFromPath(file.path);
+            js = R.codeEditor.compile(node.source);
             if (js == null) {
-              return;
+              return false;
             }
-            file.content = btoa(js);
-            delete file.sha;
+            jsFile.content = js;
+            delete jsFile.sha;
+            delete jsFile.size;
+            delete file.compile;
           }
         }
+        return true;
       };
 
       FileManager.prototype.filterTree = function() {
-        var file, tree, _i, _len, _ref;
+        var f, file, tree, _i, _len, _ref;
         tree = [];
         _ref = this.gitTree.tree;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
           if (file.type !== 'tree') {
-            tree.push(file);
+            f = Utils.clone(file);
+            delete f.size;
+            delete f.url;
+            delete f.name;
+            tree.push(f);
           }
         }
         return tree;
@@ -773,9 +783,13 @@
       FileManager.prototype.commitChanges = function(data) {
         var tree;
         this.commit.message = data.commitMessage;
-        this.compileCoffee();
+        if (!this.compileCoffee()) {
+          return;
+        }
         tree = this.filterTree();
-        this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/git/trees', this.createCommit, 'post', tree);
+        this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/git/trees', this.createCommit, 'post', {
+          tree: tree
+        });
       };
 
       FileManager.prototype.createCommit = function(tree) {
@@ -797,8 +811,8 @@
         if (!commit) {
           return;
         }
-        this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/git/refs/master/HEAD', this.checkCommit, 'patch', {
-          sha: commit.sha
+        this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/git/refs/heads/master', this.checkCommit, 'patch', {
+          sha: commit.sha, force: true
         });
       };
 

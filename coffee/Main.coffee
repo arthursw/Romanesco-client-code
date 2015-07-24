@@ -277,6 +277,8 @@ define [
 		R.view.initializePosition()
 		R.sidebar.initialize()
 
+		$('body').css(background:'yellow')
+
 		window.setPageFullyLoaded?(true)
 
 		# init()
