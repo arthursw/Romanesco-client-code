@@ -168,19 +168,12 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 					return file
 			return
 
-		getNodes: (tree=@tree, nodes=[])->
-			for node in tree.children
-				nodes.push(node)
-				@getNodes(node, nodes)
-			return nodes
-
 		getNodeFromPath: (path)->
 			dirs = path.split('/')
 			dirs.shift() 			# remove 'coffee' since tree is based from coffee
 			node = @tree
 			for dirName, i in dirs
 				node = node.leaves[dirName]
-				if not node? then return null
 			return node
 
 		getParentNode: (file, node)->
@@ -205,7 +198,6 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				node.label = name
 				node.id = i
 				node.file = file
-				if file.content? then node.source = file.content 	#  set node.source when loading changes
 				parentNode.children.push(node)
 
 			tree.id = i
@@ -547,8 +539,6 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			deleteButtonJ.attr('data-path', node.file.path)
 			deleteButtonJ.click(@onDeleteFile)
 			liJ.find('.jqtree-element').append(deleteButtonJ)
-			if node.source?
-				$(node.element).addClass('modified')
 			return
 
 		onNodeClicked: (event)=>
@@ -585,7 +575,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		checkIfTreeExists: (content)=>
 			content = @checkError(content)
 			if not content then return
-			savedGitTree = Utils.LocalStorage.get('files:' + @owner)
+			savedGitTree = Utils.LocalStorage.get('files' + @owner)
 			if savedGitTree?
 				if savedGitTree.sha != content.sha
 					modal = new Modal(title: 'Load uncommitted changes', submit: @readTree, data: savedGitTree)
@@ -639,7 +629,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				if file.compile
 					jsFile = @getJsFile(file)
 					node = @getNodeFromPath(file.path)
-					js = R.codeEditor.compile(node.file.content)
+					js = R.codeEditor.compile(node.source)
 					if not js? then return false
 					jsFile.content = js
 					delete jsFile.sha
@@ -684,12 +674,9 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		checkCommit: (response)=>
 			response = @checkError(response)
 			if not response then return
-			@commit.lastCommitSha = response.object.sha
+			@commit.lastCommitSha = commit.object.sha
 			R.alertManager.alert('Successfully committed!', 'success')
 			Utils.LocalStorage.set('files:' + @owner, null)
-			for node in @getNodes()
-				if node.source?
-					$(node.element).removeClass('modified')
 			return
 
 		# loadFiles: (content)=>
