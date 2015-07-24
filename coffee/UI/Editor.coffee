@@ -316,7 +316,7 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 			f.apply(window, args)
 			return
 
-		runFile: ()=>
+		runFile: ()->
 			if not require?.s?.contexts?._?.defined?
 				R.alertManager.alert 'requirejs not loaded?'
 				return

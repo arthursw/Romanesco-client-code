@@ -257,23 +257,6 @@
         }
       };
 
-      FileManager.prototype.getNodes = function(tree, nodes) {
-        var node, _i, _len, _ref;
-        if (tree == null) {
-          tree = this.tree;
-        }
-        if (nodes == null) {
-          nodes = [];
-        }
-        _ref = tree.children;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          node = _ref[_i];
-          nodes.push(node);
-          this.getNodes(node, nodes);
-        }
-        return nodes;
-      };
-
       FileManager.prototype.getNodeFromPath = function(path) {
         var dirName, dirs, i, node, _i, _len;
         dirs = path.split('/');
@@ -282,9 +265,6 @@
         for (i = _i = 0, _len = dirs.length; _i < _len; i = ++_i) {
           dirName = dirs[i];
           node = node.leaves[dirName];
-          if (node == null) {
-            return null;
-          }
         }
         return node;
       };
@@ -326,9 +306,6 @@
           node.label = name;
           node.id = i;
           node.file = file;
-          if (file.content != null) {
-            node.source = file.content;
-          }
           parentNode.children.push(node);
         }
         tree.id = i;
@@ -852,7 +829,7 @@
         if (!content) {
           return;
         }
-        savedGitTree = Utils.LocalStorage.get('files:' + this.owner);
+        savedGitTree = Utils.LocalStorage.get('files' + this.owner);
         if (savedGitTree != null) {
           if (savedGitTree.sha !== content.sha) {
             modal = new Modal({
@@ -915,7 +892,7 @@
           if (file.compile) {
             jsFile = this.getJsFile(file);
             node = this.getNodeFromPath(file.path);
-            js = R.codeEditor.compile(node.file.content);
+            js = R.codeEditor.compile(node.source);
             if (js == null) {
               return false;
             }
@@ -982,21 +959,13 @@
       };
 
       FileManager.prototype.checkCommit = function(response) {
-        var node, _i, _len, _ref;
         response = this.checkError(response);
         if (!response) {
           return;
         }
-        this.commit.lastCommitSha = response.object.sha;
+        this.commit.lastCommitSha = commit.object.sha;
         R.alertManager.alert('Successfully committed!', 'success');
         Utils.LocalStorage.set('files:' + this.owner, null);
-        _ref = this.getNodes();
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          node = _ref[_i];
-          if (node.source != null) {
-            $(node.element).removeClass('modified');
-          }
-        }
       };
 
       FileManager.prototype.createButton = function(content) {

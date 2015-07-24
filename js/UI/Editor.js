@@ -16,7 +16,6 @@
         this.aceDiffLoaded = __bind(this.aceDiffLoaded, this);
         this.save = __bind(this.save, this);
         this.onChange = __bind(this.onChange, this);
-        this.runFile = __bind(this.runFile, this);
         this.onLoadLinkedFile = __bind(this.onLoadLinkedFile, this);
         this.readLinkedFile = __bind(this.readLinkedFile, this);
         this.close = __bind(this.close, this);
