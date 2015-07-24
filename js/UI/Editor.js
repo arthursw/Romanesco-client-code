@@ -6,6 +6,14 @@
     var CodeEditor, Console;
     CodeEditor = (function() {
       function CodeEditor() {
+        this.finishDifferenceValidationAndCreatePullRequest = __bind(this.finishDifferenceValidationAndCreatePullRequest, this);
+        this.finishDifferenceValidationAndCommit = __bind(this.finishDifferenceValidationAndCommit, this);
+        this.changeDifference = __bind(this.changeDifference, this);
+        this.onDifferenceChange = __bind(this.onDifferenceChange, this);
+        this.onCopyFile = __bind(this.onCopyFile, this);
+        this.onNextDifference = __bind(this.onNextDifference, this);
+        this.onPreviousDifference = __bind(this.onPreviousDifference, this);
+        this.aceDiffLoaded = __bind(this.aceDiffLoaded, this);
         this.save = __bind(this.save, this);
         this.onChange = __bind(this.onChange, this);
         this.runFile = __bind(this.runFile, this);
@@ -21,6 +29,7 @@
         this.previousCommand = __bind(this.previousCommand, this);
         this.executeCommand = __bind(this.executeCommand, this);
         var closeBtnJ, handleJ, runBtnJ;
+        this.mode = 'code';
         this.editorJ = $("#codeEditor");
         this.editorJ.bind("transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd", this.resize);
         if (R.sidebar.sidebarJ.hasClass("r-hidden")) {
@@ -36,7 +45,12 @@
         closeBtnJ = this.editorJ.find("button.close-editor");
         closeBtnJ.click(this.close);
         this.codeJ = this.editorJ.find(".code");
+        this.diffJ = this.editorJ.find(".acediff");
+        this.codeJ.show();
+        this.diffJ.hide();
         this.footerJ = this.editorJ.find(".footer");
+        this.diffFooterJ = this.footerJ.find('.diff');
+        this.diffFooterJ.hide();
         runBtnJ = this.editorJ.find("button.submit.run");
         runBtnJ.click(this.runFile);
         this.console = new Console(this);
@@ -255,9 +269,23 @@
 
       /* set, compile and run scripts */
 
-      CodeEditor.prototype.setFile = function(fileNode) {
-        this.fileNode = fileNode;
-        this.setSource(this.fileNode.source);
+      CodeEditor.prototype.clearFile = function(closeEditor) {
+        if (closeEditor == null) {
+          closeEditor = true;
+        }
+        this.setFile(null);
+        if (closeEditor) {
+          this.close();
+        }
+      };
+
+      CodeEditor.prototype.setFile = function(node) {
+        if (this.mode === 'code') {
+          this.node = node;
+          this.setSource((node != null ? node.source : void 0) || '');
+        } else if (this.mode === 'difference') {
+          this.setDifferenceFromNode(node);
+        }
       };
 
       CodeEditor.prototype.setSource = function(source) {
@@ -327,8 +355,8 @@
         if (!js) {
           return;
         }
-        if (this.fileNode != null) {
-          R.fileManager.updateFile(this.fileNode, code, js);
+        if (this.mode === 'code' && (this.node != null)) {
+          R.fileManager.updateFile(this.node, code, js);
         }
         requirejsDefine = window.define;
         modules = require.s.contexts._.defined;
@@ -344,9 +372,149 @@
       };
 
       CodeEditor.prototype.save = function() {
-        if (this.fileNode != null) {
-          R.fileManager.updateFile(this.fileNode, this.editor.getValue());
+        if (this.node != null) {
+          R.fileManager.updateFile(this.node, this.editor.getValue());
         }
+      };
+
+      CodeEditor.prototype.initializeDifferenceValidation = function(differences) {
+        this.differences = differences;
+        require(['aceDiff'], this.aceDiffLoaded);
+      };
+
+      CodeEditor.prototype.aceDiffLoaded = function(AceDiff) {
+        this.codeJ.hide();
+        this.diffJ.show();
+        this.diffFooterJ.show();
+        this.setFullSize();
+        this.mode = 'difference';
+        this.previousBtnJ = this.diffFooterJ.find('button.previous');
+        this.nextBtnJ = this.diffFooterJ.find('button.next');
+        this.copyMainBtnJ = this.diffFooterJ.find('button.copy-main');
+        this.commitBtnJ = this.diffFooterJ.find('button.commit');
+        this.pullRequestBtnJ = this.diffFooterJ.find('button.pull-request');
+        this.previousBtnJ.click(this.onPreviousDifference);
+        this.nextBtnJ.click(this.onNextDifference);
+        this.commitBtnJ.click(this.finishDifferenceValidationAndCommit);
+        this.commitBtnJ.hide();
+        this.pullRequestBtnJ.click(this.finishDifferenceValidationAndCreatePullRequest);
+        this.pullRequestBtnJ.show();
+        this.aceDiff = new AceDiff({
+          mode: "ace/mode/coffee",
+          theme: "ace/theme/monokai",
+          right: {
+            copyLinkEnabled: false
+          },
+          left: {
+            editable: false
+          }
+        });
+        this.currentDifference = 0;
+        if (this.differences.length > 0) {
+          this.updateCurrentDifference();
+        }
+      };
+
+      CodeEditor.prototype.setCurrentDifference = function(i) {
+        this.currentDifference = Utils.clamp(0, i, this.differences.length - 1);
+        this.updateCurrentDifference();
+      };
+
+      CodeEditor.prototype.updateCurrentDifference = function() {
+        var difference;
+        difference = this.differences[this.currentDifference];
+        difference.checked = true;
+        if (difference.main == null) {
+          this.copyMainBtnJ.text("Delete file on fork");
+        } else if (difference.fork == null) {
+          this.copyMainBtnJ.text("Create file on fork");
+        } else {
+          this.copyMainBtnJ.text("Replace file on fork");
+        }
+        this.aceDiff.setOptions({
+          right: {
+            content: difference.main
+          },
+          left: {
+            content: difference.fork
+          }
+        });
+      };
+
+      CodeEditor.prototype.setDifferenceFromNode = function(node) {
+        var difference, i, _i, _len, _ref;
+        _ref = this.differences;
+        for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+          difference = _ref[i];
+          if (difference.fork === node.file) {
+            this.setCurrentDifference(i);
+            return;
+          }
+        }
+        R.alertManager.alert('This file does not differ.', 'warning');
+      };
+
+      CodeEditor.prototype.onPreviousDifference = function() {
+        this.setCurrentDifference(this.currentDifference--);
+        if (this.currentDifference <= 0) {
+          this.previousBtnJ.addClass("disabled");
+        } else {
+          this.previousBtnJ.removeClass("disabled");
+        }
+      };
+
+      CodeEditor.prototype.onNextDifference = function() {
+        this.setCurrentDifference(this.currentDifference++);
+        if (this.currentDifference >= this.differences.length - 1) {
+          this.nextBtnJ.addClass("disabled");
+        } else {
+          this.nextBtnJ.removeClass("disabled");
+        }
+      };
+
+      CodeEditor.prototype.onCopyFile = function() {
+        var _ref;
+        this.changeDifference(this.differences[this.currentDifference], (_ref = difference.main) != null ? _ref.content : void 0);
+      };
+
+      CodeEditor.prototype.onDifferenceChange = function() {
+        Utils.deferredExecution(this.changeDifference, 'changeDifference');
+      };
+
+      CodeEditor.prototype.changeDifference = function() {
+        R.fileManager.changeDifference(this.differences[this.currentDifference], this.editor.getValue());
+        this.commitBtnJ.show();
+        this.pullRequestBtnJ.hide();
+      };
+
+      CodeEditor.prototype.finishDifferenceValidation = function() {
+        var difference, i, _i, _len, _ref;
+        _ref = this.differences;
+        for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+          difference = _ref[i];
+          if (!difference.checked) {
+            R.alertManager.alert('You have not validate a difference', 'warning');
+            this.setCurrentDifference(i);
+            return;
+          } else {
+            $(difference.fork.element).removeClass('difference');
+          }
+        }
+        this.mode = 'code';
+        this.codeJ.show();
+        this.diffJ.hide();
+        this.diffFooterJ.hide();
+        this.setHalfSize();
+      };
+
+      CodeEditor.prototype.finishDifferenceValidationAndCommit = function() {
+        this.finishDifferenceValidation();
+        R.fileManager.commitChanges();
+      };
+
+      CodeEditor.prototype.finishDifferenceValidationAndCreatePullRequest = function() {
+        this.finishDifferenceValidation();
+        R.fileManager.pullRequestModal();
       };
 
       return CodeEditor;

@@ -27,6 +27,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			runBtnJ = @codeJ.find('button.run')
 			undoChangesBtnJ = @codeJ.find('button.undo-changes')
 			commitBtnJ = @codeJ.find('button.commit')
+			mergeMainRepositoryBtnJ = @codeJ.find('button.merge')
 			createPullRequestBtnJ = @codeJ.find('button.pull-request')
 
 			createFileBtnJ.click @onCreateFile
@@ -34,6 +35,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			runBtnJ.click @runFork
 			undoChangesBtnJ.click @onUndoChanges
 			commitBtnJ.click @onCommitClicked
+			mergeMainRepositoryBtnJ.click @mergeMainRepository
 			createPullRequestBtnJ.click @createPullRequest
 
 			@fileBrowserJ = @codeJ.find('.files')
@@ -162,8 +164,8 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		getJsFile: (file)->
 			return @getFileFromPath(@coffeeToJsPath(file.path))
 
-		getFileFromPath: (path)->
-			for file in @gitTree.tree
+		getFileFromPath: (path, tree=@gitTree)->
+			for file in tree.tree
 				if file.path == path
 					return file
 			return
@@ -221,7 +223,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		# Open file
 
 		loadFile: (path, callback)->
-			@request('https://api.github.com/repos/arthursw/romanesco-client-code/contents/'+path, callback)
+			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/contents/'+path, callback)
 			return
 
 		openFile: (file)=>
@@ -253,10 +255,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				@gitTree.tree.push(jsFile)
 			return file
 
-		onCreate: (type='blob')->
-			parentNode = @fileBrowserJ.tree('getSelectedNode')
-			if not parentNode then parentNode = @fileBrowserJ.tree('getTree')
-			if parentNode.file.type != 'tree' then parentNode = parentNode.parent
+		createFile: (parentNode, type)->
 			defaultName = if type == 'blob' then 'NewScript.coffee' else 'NewDirectory'
 			name = @createName(defaultName, parentNode)
 			newNode =
@@ -267,8 +266,15 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				file: @createGitFile(parentNode.file.path + '/' + name, type)
 				id: @tree.id++
 			newNode = @fileBrowserJ.tree('appendNode', newNode, parentNode)
-			@fileBrowserJ.tree('selectNode', newNode)
 			parentNode.leaves[newNode.name] = newNode
+			return newNode
+
+		onCreate: (type='blob')->
+			parentNode = @fileBrowserJ.tree('getSelectedNode')
+			if not parentNode then parentNode = @fileBrowserJ.tree('getTree')
+			if parentNode.file.type != 'tree' then parentNode = parentNode.parent
+			newNode = @createFile(parentNode, type)
+			@fileBrowserJ.tree('selectNode', newNode)
 			@onNodeDoubleClicked(node: newNode)
 			R.showCodeEditor(newNode)
 			return
@@ -277,7 +283,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			@onCreate('blob')
 			return
 
-		onCreateDirec: ()=>
+		onCreateDirectory: ()=>
 			@onCreate('tree')
 			return
 
@@ -297,9 +303,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		moveFile: (node, previousParent, target, position)->
 			parent = if position == 'inside' then target else target.parent
 			parent.leaves[node.name] = node
-			parent.children.push(node)
 			delete previousParent.leaves[node.name]
-			Utils.Array.remove(previousParent.children, node)
 			@updatePath(node, parent)
 			return
 
@@ -373,14 +377,17 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 		# Delete file
 
-		deleteFile: (node)->
+		deleteFile: (node, closeEditor=true)->
 			if node.file.type == 'tree'
-				for child in node.children
-					@deleteFile(child)
+				while node.children.length>0
+					@deleteFile(node.children[0])
 			Utils.Array.remove(@gitTree.tree, node.file)
 			if node.file.type == 'blob'
 				jsFile = @getJsFile(node.file)
 				Utils.Array.remove(@gitTree.tree, jsFile)
+			delete node.parent.leaves[node.name]
+			if node == R.codeEditor.fileNode
+				R.codeEditor.clearFile(closeEditor)
 			@fileBrowserJ.tree('removeNode', node)
 			return
 
@@ -501,6 +508,69 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		# 	return
 
 		createPullRequest: ()=>
+			modal = Modal.createModal( title: 'Create pull request', submit: @getMasterBranchForDifferenceValidation )
+			modal.addText('To make sure that you publish only what you want, you will validate the changes you made. \nThis can be especially usefull in case your fork is not up-to-date with the main repository.')
+			modal.show()
+			return
+
+		getMasterBranchForDifferenceValidation: ()->
+			@getMasterBranch(true, @getTreeAndInitializeDifference)
+			return
+
+		getTreeAndInitializeDifference: ()=>
+			@getTree(master, @initializeDifferenceValidation)
+			return
+
+		initializeDifferenceValidation: (content)->
+			content = @checkError(content)
+			if not content then return
+			differences = []
+			for file in content.tree
+				if file.type == 'blob' and file.path.indexOf('coffee') == 0
+					forkFile = @getFileFromPath(file.path)
+					if not forkFile?
+						differences.push(main: file, fork: null)
+						continue
+					if not forkFile.sha? or forkFile.sha != file.sha
+						differences.push(main: file, fork: forkFile)
+			for node in @getNodes()
+				if node.type == 'blob' and not @getFileFromPath(node.file.path, content.tree)
+					differences.push(main: null, fork: node.file)
+			for difference in differences
+				$(difference.fork?.file.element).addClass('difference')
+			if differences.length > 0
+				R.codeEditor.initializeDifferenceValidation(differences)
+			else
+				R.alertManager.alert('Warning: there was no changes detected between the main repository and the fork!', 'warning')
+				@pullRequestModal()
+			return
+
+		getOrCreateParentNode: (mainFile)->
+			dirs = mainFile.path.split('/')
+			dirs.pop() 				# remove the file name since we will create it
+			dirs.shift() 			# remove 'coffee' since tree is based from coffee
+			node = @tree
+			for dirName, i in dirs
+				previousNode = node
+				node = node.leaves[dirName]
+				if not node?
+					node = @createFile(previousNode, 'tree')
+			return node
+
+		changeDifference: (difference, newContent)->
+			if not difference.fork? 		# create file on fork from main file
+				parentNode = @getOrCreateParentNode(difference.main)
+				node = @createFile(parentNode, type)
+				@updateFile(node, newContent)
+			else if not newContent?  		# delete file on fork
+				node = @getNodeFromPath(difference.fork.path)
+				@deleteFile(node, false)
+			else
+				node = @getNodeFromPath(difference.fork.path)
+				@updateFile(node, newContent)
+			return
+
+		pullRequestModal: ()=>
 			modal = Modal.createModal( title: 'Create pull request', submit: @createPullRequestSubmit )
 			modal.addTextInput(name: 'title', placeholder: 'Amazing new feature', label: 'Title of the pull request', required: true)
 			modal.addTextInput(name: 'branch', placeholder: 'master', label: 'Branch', required: true, submitShortcut: true)
@@ -547,8 +617,10 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			deleteButtonJ.attr('data-path', node.file.path)
 			deleteButtonJ.click(@onDeleteFile)
 			liJ.find('.jqtree-element').append(deleteButtonJ)
+			if node.file.type == 'tree' and node.children.length==0
+				liJ.addClass('jqtree-folder jqtree-closed')
 			if node.source?
-				$(node.element).addClass('modified')
+				liJ.addClass('modified')
 			return
 
 		onNodeClicked: (event)=>
@@ -566,18 +638,27 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 		### Load files ###
 
-		getMasterBranch: ()->
-			@commit = {}
-			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/branches/master', @getTree)
+		getMasterBranch: (masterRepository=false, callback=@getTreeAndSetCommit)->
+			if masterRepository
+				owner = 'arthursw'
+			else
+				@commit = {}
+				owner = @owner
+			@request('https://api.github.com/repos/' + owner + '/romanesco-client-code/branches/master', callback)
 			return
 
-		getTree: (master)=>
+		getTree: (master, callback)=>
 			master = @checkError(master)
 			if not master then return
 			if not master.commit?.commit?.tree?.url? then return R.alertManager.alert('Error reading master branch.', 'error')
+			@request(master.commit.commit.tree.url + '?recursive=1', callback)
+			return master
+
+		getTreeAndSetCommit: (master)=>
+			master = @getTree(master, @checkIfTreeExists)
+			if not master then return
 			@runForkBtnJ.text(if @owner != 'arthursw' then @owner else 'Main repository')
 			@commit.lastCommitSha = master.commit.sha
-			@request(master.commit.commit.tree.url + '?recursive=1', @checkIfTreeExists)
 			return
 
 		# Create jqTree
@@ -606,7 +687,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 			treeExists = @tree?
 
-			tree = @buildTree(content.tree)
+			tree = @buildTree(@gitTree.tree)
 
 			if treeExists
 				@fileBrowserJ.tree('loadData', tree.leaves.coffee.children)
@@ -628,7 +709,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				name: 'coffee'
 				path: 'coffee'
 				type: 'tree'
-			@tree.id = content.tree.length
+			@tree.id = @gitTree.tree.length
 			@updateLeaves(@tree)
 			return
 

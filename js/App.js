@@ -80,6 +80,7 @@
       'pinit': ['//assets.pinterest.com/js/pinit', libs + 'pinit'],
       'table': ['//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.8.1/bootstrap-table.min', libs + 'table/bootstrap-table.min'],
       'zeroClipboard': ['//cdnjs.cloudflare.com/ajax/libs/zeroclipboard/2.2.0/ZeroClipboard.min', libs + 'ZeroClipboard.min'],
+      'aceDiff': libs + 'ace-diff.min',
       'colorpickersliders': libs + 'bootstrap-colorpickersliders/bootstrap.colorpickersliders.nocielch',
       'requestAnimationFrame': libs + 'RequestAnimationFrame',
       'coffee': libs + 'coffee-script',
@@ -99,6 +100,7 @@
       'typeahead': ['jquery'],
       'js-cookie': ['jquery'],
       'jqtree': ['jquery'],
+      'aceDiff': ['jquery', 'ace'],
       'colorpickersliders': {
         deps: ['jquery', 'tinycolor']
       },

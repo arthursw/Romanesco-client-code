@@ -96,7 +96,7 @@ requirejs.config
 		#
 		# 'zeroClipboard': [libs + 'ZeroClipboard.min']
 
-
+		'aceDiff': libs + 'ace-diff.min'
 		'colorpickersliders': libs + 'bootstrap-colorpickersliders/bootstrap.colorpickersliders.nocielch'
 		'requestAnimationFrame': libs + 'RequestAnimationFrame'
 		'coffee': libs + 'coffee-script'
@@ -116,6 +116,7 @@ requirejs.config
 		'typeahead': ['jquery']
 		'js-cookie': ['jquery']
 		'jqtree': ['jquery']
+		'aceDiff': ['jquery', 'ace']
 		# 'modal': ['bootstrap', 'modalManager']
 		'colorpickersliders':
 			deps: ['jquery', 'tinycolor']
