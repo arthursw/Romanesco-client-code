@@ -16,7 +16,7 @@ define [
 	'Tools/ToolManager'
 ], (Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager) ->
 
-	console.log 'hi'
+	console.log 'hi world!'
 	# R.rasterizerMode = window.rasterizerMode
 
 	# if R.rasterizerMode
