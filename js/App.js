@@ -54,6 +54,7 @@
       owner: parameters['repository-owner'],
       commit: parameters['repository-commit']
     };
+    libs = location.origin + '/static/libs/';
   } else {
     baseUrl = '../static/romanesco-client-code/js';
   }
@@ -110,6 +111,6 @@
     }
   });
 
-  requirejs(['main']);
+  requirejs(['Main']);
 
 }).call(this);

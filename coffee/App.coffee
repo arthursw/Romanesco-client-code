@@ -33,6 +33,7 @@ if parameters['repository-owner']? and parameters['repository-commit']?
 	prefix = if parameters['repository-use-cdn']? then '//cdn.' else '//'
 	baseUrl = prefix + 'rawgit.com/' + parameters['repository-owner'] + '/romanesco-client-code/' + parameters['repository-commit'] + '/js'
 	window.R.repository = owner: parameters['repository-owner'], commit: parameters['repository-commit']
+	libs = location.origin + '/static/libs/'
 else
 	baseUrl = '../static/romanesco-client-code/js'
 
@@ -125,4 +126,4 @@ requirejs.config
 			exports: '$'
 
 # Load the main app module to start the app
-requirejs [ 'main' ]
+requirejs [ 'Main' ]

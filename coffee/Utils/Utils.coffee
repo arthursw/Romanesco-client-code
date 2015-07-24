@@ -106,7 +106,11 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 	Utils.random = (min, max)->
 		return min + Math.random()*(max-min)
 
+	Utils.clone = (object)->
+		return $.extend({}, object)
+
 	Utils.Array = {}
+
 	# removes *itemToRemove* from array
 	# problem with array.splice(array.indexOf(item),1) :
 	# removes the last element if item is not in array

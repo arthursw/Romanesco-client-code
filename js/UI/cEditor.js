@@ -19,25 +19,25 @@
         this.nextCommand = __bind(this.nextCommand, this);
         this.previousCommand = __bind(this.previousCommand, this);
         this.executeCommand = __bind(this.executeCommand, this);
+        var closeBtnJ, handleJ, runBtnJ;
         this.editorJ = $("#codeEditor");
         this.editorJ.bind("transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd", this.resize);
         if (R.sidebar.sidebarJ.hasClass("r-hidden")) {
           this.editorJ.addClass("r-hidden");
         }
-        this.handleJ = this.editorJ.find(".editor-handle");
-        this.handleJ.mousedown(this.onHandleDown);
-        this.handleJ.find('.handle-left').click(this.setHalfSize);
-        this.handleJ.find('.handle-right').click(this.setFullSize);
+        handleJ = this.editorJ.find(".editor-handle");
+        handleJ.mousedown(this.onHandleDown);
+        handleJ.find('.handle-left').click(this.setHalfSize);
+        handleJ.find('.handle-right').click(this.setFullSize);
         this.fileNameJ = this.editorJ.find(".header .fileName input");
         this.linkFileInputJ = this.editorJ.find("input.link-file");
         this.linkFileInputJ.change(this.linkFile);
-        this.closeBtnJ = this.editorJ.find("button.close-editor");
-        this.closeBtnJ.click(this.close);
+        closeBtnJ = this.editorJ.find("button.close-editor");
+        closeBtnJ.click(this.close);
         this.codeJ = this.editorJ.find(".code");
         this.footerJ = this.editorJ.find(".footer");
-        this.pushRequestBtnJ = this.editorJ.find("button.request");
-        this.runBtnJ = this.editorJ.find("button.submit.run");
-        this.runBtnJ.click(this.runScript);
+        runBtnJ = this.editorJ.find("button.submit.run");
+        runBtnJ.click(this.runFile);
         this.console = new Console(this);
         this.initializeEditor();
         return;
@@ -64,7 +64,7 @@
             mac: 'Command-Shift-Enter',
             sender: 'editor|cli'
           },
-          exec: this.runScript
+          exec: this.runFile
         });
         this.editor.commands.addCommand({
           name: 'execute-command',
@@ -113,7 +113,7 @@
           return;
         }
         this.addCommand(command);
-        this.runScript();
+        this.runFile();
         this.editor.setValue('');
       };
 
@@ -315,16 +315,24 @@
         f.apply(window, args);
       };
 
-      CodeEditor.prototype.runFile = function(code) {
-        var define, modules, requirejsDefine, _ref, _ref1, _ref2;
-        requirejsDefine = window.define;
+      CodeEditor.prototype.runFile = function() {
+        var code, js, modules, requirejsDefine, _ref, _ref1, _ref2;
         if ((typeof require !== "undefined" && require !== null ? (_ref = require.s) != null ? (_ref1 = _ref.contexts) != null ? (_ref2 = _ref1._) != null ? _ref2.defined : void 0 : void 0 : void 0 : void 0) == null) {
           R.alertManager.alert('requirejs not loaded?');
           return;
         }
+        code = this.editor.getValue();
+        js = this.compile(code);
+        if (!js) {
+          return;
+        }
+        if (this.fileNode != null) {
+          R.fileManager.updateFile(this.fileNode, code, js);
+        }
+        requirejsDefine = window.define;
         modules = require.s.contexts._.defined;
-        define = this.define;
-        this.run(code);
+        window.define = this.define;
+        this.run(js);
         window.define = requirejsDefine;
       };
 
@@ -336,7 +344,7 @@
 
       CodeEditor.prototype.save = function() {
         if (this.fileNode != null) {
-          R.fileManager.saveFile(this.fileNode, this.editor.getValue());
+          R.fileManager.updateFile(this.fileNode, this.editor.getValue());
         }
       };
 
@@ -345,16 +353,17 @@
     })();
     Console = (function() {
       function Console(codeEditor) {
+        var consoleHandleJ;
         this.codeEditor = codeEditor;
         this.onMouseUp = __bind(this.onMouseUp, this);
         this.onConsoleHandleDown = __bind(this.onConsoleHandleDown, this);
         this.toggle = __bind(this.toggle, this);
         this.consoleJ = this.codeEditor.editorJ.find(".console");
         this.consoleContentJ = this.consoleJ.find(".content");
-        this.consoleHandleJ = this.codeEditor.editorJ.find(".console-handle");
-        this.consoleToggleBtnJ = this.consoleHandleJ.find(".close");
+        consoleHandleJ = this.codeEditor.editorJ.find(".console-handle");
+        this.consoleToggleBtnJ = consoleHandleJ.find(".close");
         this.consoleToggleBtnJ.click(this.toggle);
-        this.consoleHandleJ.mousedown(this.onConsoleHandleDown);
+        consoleHandleJ.mousedown(this.onConsoleHandleDown);
         this.height = 200;
         return;
       }

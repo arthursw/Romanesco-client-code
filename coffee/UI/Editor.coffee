@@ -12,26 +12,26 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 				@editorJ.addClass("r-hidden")
 
 			# handle
-			@handleJ = @editorJ.find(".editor-handle")
-			@handleJ.mousedown @onHandleDown
-			@handleJ.find('.handle-left').click(@setHalfSize)
-			@handleJ.find('.handle-right').click(@setFullSize)
+			handleJ = @editorJ.find(".editor-handle")
+			handleJ.mousedown @onHandleDown
+			handleJ.find('.handle-left').click(@setHalfSize)
+			handleJ.find('.handle-right').click(@setFullSize)
 
 			# header
 			@fileNameJ = @editorJ.find(".header .fileName input")
 			@linkFileInputJ = @editorJ.find("input.link-file")
 			@linkFileInputJ.change(@linkFile)
-			@closeBtnJ = @editorJ.find("button.close-editor")
-			@closeBtnJ.click @close
+			closeBtnJ = @editorJ.find("button.close-editor")
+			closeBtnJ.click @close
 
 			# body
 			@codeJ = @editorJ.find(".code")
 
 			# footer
 			@footerJ = @editorJ.find(".footer")
-			@pushRequestBtnJ = @editorJ.find("button.request")
-			@runBtnJ = @editorJ.find("button.submit.run")
-			@runBtnJ.click @runScript
+			# @pushRequestBtnJ = @editorJ.find("button.request")
+			runBtnJ = @editorJ.find("button.submit.run")
+			runBtnJ.click @runFile
 
 			@console = new Console(@)
 			@initializeEditor()
@@ -90,7 +90,7 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 					win: 'Ctrl-Shift-Enter'
 					mac: 'Command-Shift-Enter'
 					sender: 'editor|cli'
-				exec: @runScript
+				exec: @runFile
 			)
 
 			@editor.commands.addCommand(
@@ -134,7 +134,7 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 			command = @editor.getValue()
 			if command.length == 0 then return
 			@addCommand(command)
-			@runScript()
+			@runFile()
 			@editor.setValue('')
 			return
 
@@ -299,17 +299,19 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 			f.apply(window, args)
 			return
 
-		runFile: (code)->
-			requirejsDefine = window.define
-
+		runFile: ()->
 			if not require?.s?.contexts?._?.defined?
 				R.alertManager.alert 'requirejs not loaded?'
 				return
+			code = @editor.getValue()
+			js = @compile(code)
+			if not js then return
+			if @fileNode? then R.fileManager.updateFile(@fileNode, code, js)
+			# replace the requirejs 'define' function by a custom define function to execute the code
+			requirejsDefine = window.define
 			modules = require.s.contexts._.defined
-
-			define = @define
-
-			@run(code)
+			window.define = @define
+			@run(js)
 			window.define = requirejsDefine
 			return
 
@@ -320,7 +322,7 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 			return
 
 		save: ()=>
-			if @fileNode? then R.fileManager.saveFile(@fileNode, @editor.getValue())
+			if @fileNode? then R.fileManager.updateFile(@fileNode, @editor.getValue())
 			return
 
 	class Console
@@ -328,11 +330,11 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 		constructor: (@codeEditor)->
 			@consoleJ = @codeEditor.editorJ.find(".console")
 			@consoleContentJ = @consoleJ.find(".content")
-			@consoleHandleJ = @codeEditor.editorJ.find(".console-handle")
-			@consoleToggleBtnJ = @consoleHandleJ.find(".close")
+			consoleHandleJ = @codeEditor.editorJ.find(".console-handle")
+			@consoleToggleBtnJ = consoleHandleJ.find(".close")
 
 			@consoleToggleBtnJ.click @toggle
-			@consoleHandleJ.mousedown @onConsoleHandleDown
+			consoleHandleJ.mousedown @onConsoleHandleDown
 
 			@height = 200
 

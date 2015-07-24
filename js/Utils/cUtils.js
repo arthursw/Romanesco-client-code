@@ -105,6 +105,9 @@
     Utils.random = function(min, max) {
       return min + Math.random() * (max - min);
     };
+    Utils.clone = function(object) {
+      return $.extend({}, object);
+    };
     Utils.Array = {};
     Utils.Array.remove = function(array, itemToRemove) {
       var i;
