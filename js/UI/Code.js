@@ -812,7 +812,7 @@
           return;
         }
         this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/git/refs/heads/master', this.checkCommit, 'patch', {
-          sha: commit.sha, force: true
+          sha: commit.sha
         });
       };
 
