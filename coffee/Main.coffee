@@ -8,15 +8,16 @@ define [
 	'Rasterizers/RasterizerManager'
 	'UI/Sidebar'
 	'UI/Code'
+	'UI/Editor'
 	'UI/Modal'
 	'UI/AlertManager'
 	'UI/Controllers/ControllerManager'
 	'Commands/CommandManager'
 	'View/View'
 	'Tools/ToolManager'
-], (Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager) ->
+], (Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, CodeEditor, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager) ->
 
-	console.log 'Arthur-test FORK!'
+	console.log 'FORK from arthur-test-account!'
 	# R.rasterizerMode = window.rasterizerMode
 
 	# if R.rasterizerMode
@@ -273,6 +274,7 @@ define [
 		R.commandManager = new CommandManager()
 		R.toolManager = new ToolManager()
 		R.fileManager = new FileManager()
+		R.codeEditor = new CodeEditor()
 		R.fontManager = new FontManager()
 		R.view.initializePosition()
 		R.sidebar.initialize()
@@ -285,16 +287,16 @@ define [
 
 		return
 
-	R.showCodeEditor = (fileNode)->
-		if not R.codeEditor?
-			require ['UI/Editor'], (CodeEditor)->
-				R.codeEditor = new CodeEditor()
-				if fileNode then R.codeEditor.setFile(fileNode)
-				R.codeEditor.open()
-				return
-		else
-			if fileNode then R.codeEditor.setFile(fileNode)
-			R.codeEditor.open()
-		return
+	# R.showCodeEditor = (fileNode)->
+	# 	if not R.codeEditor?
+	# 		require ['UI/Editor'], (CodeEditor)->
+	# 			R.codeEditor = new CodeEditor()
+	# 			if fileNode then R.codeEditor.setFile(fileNode)
+	# 			R.codeEditor.open()
+	# 			return
+	# 	else
+	# 		if fileNode then R.codeEditor.setFile(fileNode)
+	# 		R.codeEditor.open()
+	# 	return
 
 	return

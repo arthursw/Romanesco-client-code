@@ -580,5 +580,9 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 		console.log a
 		return
 
+	Utils.defineRequireJsModule = (moduleName, resultName)->
+		require [moduleName], (result)->
+			window[resultName] = result
+		return
 	# window.Utils = Utils
 	return Utils

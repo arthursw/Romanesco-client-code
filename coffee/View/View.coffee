@@ -242,7 +242,7 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 		initializePosition: ()->
 			if R.rasterizerMode then return
 
-			R.githubLogin = R.canvasJ.attr("data-github-login")
+			# R.githubLogin = R.canvasJ.attr("data-github-login")
 
 			R.city =
 				owner: if R.canvasJ.attr("data-owner") != '' then R.canvasJ.attr("data-owner") else undefined

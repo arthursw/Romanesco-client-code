@@ -1,5 +1,5 @@
-define(['Utils/Utils', 'Utils/Global', 'Utils/FontManager', 'Loader', 'Socket', 'City', 'Rasterizers/RasterizerManager', 'UI/Sidebar', 'UI/Code', 'UI/Modal', 'UI/AlertManager', 'UI/Controllers/ControllerManager', 'Commands/CommandManager', 'View/View', 'Tools/ToolManager'], function(Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager) {
-  console.log('Arthur-test FORK!');
+define(['Utils/Utils', 'Utils/Global', 'Utils/FontManager', 'Loader', 'Socket', 'City', 'Rasterizers/RasterizerManager', 'UI/Sidebar', 'UI/Code', 'UI/Editor', 'UI/Modal', 'UI/AlertManager', 'UI/Controllers/ControllerManager', 'Commands/CommandManager', 'View/View', 'Tools/ToolManager'], function(Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, CodeEditor, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager) {
+  console.log('FORK from arthur-test-account!');
 
   /*
   	 * Romanesco documentation #
@@ -44,6 +44,7 @@ define(['Utils/Utils', 'Utils/Global', 'Utils/FontManager', 'Loader', 'Socket', 
     R.commandManager = new CommandManager();
     R.toolManager = new ToolManager();
     R.fileManager = new FileManager();
+    R.codeEditor = new CodeEditor();
     R.fontManager = new FontManager();
     R.view.initializePosition();
     R.sidebar.initialize();
@@ -51,20 +52,4 @@ define(['Utils/Utils', 'Utils/Global', 'Utils/FontManager', 'Loader', 'Socket', 
       window.setPageFullyLoaded(true);
     }
   });
-  R.showCodeEditor = function(fileNode) {
-    if (R.codeEditor == null) {
-      require(['UI/Editor'], function(CodeEditor) {
-        R.codeEditor = new CodeEditor();
-        if (fileNode) {
-          R.codeEditor.setFile(fileNode);
-        }
-        R.codeEditor.open();
-      });
-    } else {
-      if (fileNode) {
-        R.codeEditor.setFile(fileNode);
-      }
-      R.codeEditor.open();
-    }
-  };
 });

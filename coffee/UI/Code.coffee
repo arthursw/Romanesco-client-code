@@ -1,51 +1,60 @@
-define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
+define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner) ->
 
 	class FileManager
 
 		constructor: ()->
+			R.githubLogin = R.canvasJ.attr("data-github-login")
+
 			@codeJ = $('#Code')
 
 			@runForkBtnJ = @codeJ.find('button.run-fork')
 			@loadOwnForkBtnJ = @codeJ.find('li.user-fork')
 			listForksBtnJ = @codeJ.find('li.list-forks')
+			@loadMainRepositoryBtnJ = @codeJ.find('li.main-repository')
 			loadCustomForkBtnJ = @codeJ.find('li.custom-fork')
 			@createForkBtnJ = @codeJ.find('li.create-fork')
+			diffingBtnJ = @codeJ.find('.diffing')
 
 			@loadOwnForkBtnJ.hide()
 			@createForkBtnJ.hide()
-
-			@getForks(@getUserFork)
+			@initializeLoader()
 
 			@runForkBtnJ.click @runFork
 			@loadOwnForkBtnJ.click @loadOwnFork
 			loadCustomForkBtnJ.click @loadCustomFork
 			listForksBtnJ.click @listForks
+			@loadMainRepositoryBtnJ.click @loadMainRepository
+			diffingBtnJ.click @diffing
 			@createForkBtnJ.click @createFork
 
 			createFileBtnJ = @codeJ.find('li.create-file')
 			createDirectoryBtnJ = @codeJ.find('li.create-directory')
 			runBtnJ = @codeJ.find('button.run')
-			undoChangesBtnJ = @codeJ.find('button.undo-changes')
-			commitBtnJ = @codeJ.find('button.commit')
-			mergeMainRepositoryBtnJ = @codeJ.find('button.merge')
-			createPullRequestBtnJ = @codeJ.find('button.pull-request')
+			@undoChangesBtnJ = @codeJ.find('button.undo-changes')
+			@commitBtnJ = @codeJ.find('button.commit')
+			@createPullRequestBtnJ = @codeJ.find('button.pull-request')
+
+			@hideCommitButtons()
+			@createPullRequestBtnJ.hide()
 
 			createFileBtnJ.click @onCreateFile
 			createDirectoryBtnJ.click @onCreateDirectory
 			runBtnJ.click @runFork
-			undoChangesBtnJ.click @onUndoChanges
-			commitBtnJ.click @onCommitClicked
-			mergeMainRepositoryBtnJ.click @mergeMainRepository
-			createPullRequestBtnJ.click @createPullRequest
+			@undoChangesBtnJ.click @onUndoChanges
+			@commitBtnJ.click @onCommitClicked
+			@createPullRequestBtnJ.click @createPullRequest
 
 			@fileBrowserJ = @codeJ.find('.files')
 			@files = []
 			@nDirsToLoad = 1
 
-			if R.repositoryOwner?
-				@loadFork(owner: R.repositoryOwner)
+			if R.repository?.owner?
+				@loadFork(owner: R.repository.owner)
 			else
-				@loadMainRepo()
+				@loadMainRepository()
+
+			@checkHasFork()
+
 			# $.get('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', @loadFiles)
 			# @state = '' + Math.random()
 			# parameters =
@@ -56,26 +65,73 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			# $.get( { url: 'https://github.com/login/oauth/authorize', data: parameters }, (result)-> console.log result; return)
 			return
 
+		# show/hide buttons
+
+		initializeLoader: ()->
+			opts =
+				lines: 13
+				length: 5
+				width: 4
+				radius: 0
+				scale: 0.25
+				corners: 1
+				color: 'white'
+				opacity: 0.15
+				rotate: 0
+				direction: 1
+				speed: 1
+				trail: 42
+				fps: 20
+				zIndex: 2e9
+				className: 'spinner'
+				top: '50%'
+				left: 'inherit'
+				right: '15px'
+				shadow: false
+				hwaccel: false
+				position: 'absolute'
+			@spinner = new Spinner(opts).spin(@runForkBtnJ[0])
+			return
+
+		showLoader: ()->
+			@spinner.spin(@runForkBtnJ[0])
+			$(@spinner.el).css(right: '15px')
+			return
+
+		hideLoader: ()->
+			@spinner.stop()
+			return
+
+		showCommitButtons: ()->
+			@undoChangesBtnJ.show()
+			@commitBtnJ.show()
+			return
+
+		hideCommitButtons: ()->
+			@undoChangesBtnJ.hide()
+			@commitBtnJ.hide()
+			return
+
 		# General request method
 
 		request: (request, callback, method, data, params, headers)->
 			Dajaxice.draw.githubRequest(callback, {githubRequest: request, method: method, data: data, params: params, headers: headers})
 			return
+
 		# Get, list & run forks
 
-		getUserFork: (forks)=>
-			forks = @checkError(forks)
-			if not forks then return
-			hasFork = false
-			for fork in forks
-				if fork.owner.login == R.me
-					@loadOwnForkBtnJ.show()
-					@createForkBtnJ.hide()
-					hasFork = true
-					break
-			if not hasFork
-				@loadOwnForkBtnJ.hide()
-				@createForkBtnJ.show()
+		checkHasFork: ()->
+			if R.githubLogin? and R.githubLogin != ''
+				@request('https://api.github.com/repos/' + R.githubLogin + '/romanesco-client-code/', @checkHasForkCallback)
+			return
+
+		checkHasForkCallback: (fork)=>
+			if fork.status == 404
+				@loadOwnForkBtnJ.show()
+				@createForkBtnJ.hide()
+			else
+				@loadOwnForkBtnJ.show()
+				@createForkBtnJ.hide()
 			return
 
 		getForks: (callback)->
@@ -121,19 +177,19 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			@getForks(@displayForks)
 			return
 
-		loadMainRepo: (event)=>
+		loadMainRepository: (event)=>
 			event?.preventDefault()
 			@loadFork(owner: 'arthursw')
 			return
 
 		loadOwnFork: (event)=>
 			event?.preventDefault()
-			@loadFork(owner: R.githubLogin)
+			@loadFork(owner: R.githubLogin, true)
 			return
 
 		loadFork: (data)=>
 			@owner = data.owner
-			@getMasterBranch()
+			@getMasterBranch(@owner)
 			return
 
 		loadCustomFork: (event)=>
@@ -187,6 +243,12 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				node = node.leaves[dirName]
 			return node
 
+		getNodes: (tree=@tree, nodes=[])->
+			for node in tree.children
+				nodes.push(node)
+				@getNodes(node, nodes)
+			return nodes
+
 		# Create tree
 
 		buildTree: (files)->
@@ -214,16 +276,17 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 		# Open file
 
-		loadFile: (path, callback)->
-			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/contents/'+path, callback)
+		loadFile: (path, callback, owner)->
+			console.log 'load ' + path + ' of ' + owner
+			@request('https://api.github.com/repos/' + owner + '/romanesco-client-code/contents/'+path, callback)
 			return
 
 		openFile: (file)=>
 			file = @checkError(file)
 			if not file then return
 			node = @getNodeFromPath(file.path)
-			node.source = atob(file.content)
-			R.showCodeEditor(node)
+			node.file.content = atob(file.content)
+			R.codeEditor.setFile(node)
 			return
 
 		# Create file
@@ -240,6 +303,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				path: path
 				type: type
 				content: ''
+				changed: true
 			@gitTree.tree.push(file)
 			if type == 'blob'
 				jsFile = Utils.clone(file)
@@ -254,7 +318,6 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				label: name
 				children: []
 				leaves: {}
-				source: ''
 				file: @createGitFile(parentNode.file.path + '/' + name, type)
 				id: @tree.id++
 			newNode = @fileBrowserJ.tree('appendNode', newNode, parentNode)
@@ -268,7 +331,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			newNode = @createFile(parentNode, type)
 			@fileBrowserJ.tree('selectNode', newNode)
 			@onNodeDoubleClicked(node: newNode)
-			R.showCodeEditor(newNode)
+			R.codeEditor.setFile(newNode)
 			return
 
 		onCreateFile: ()=>
@@ -352,11 +415,12 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		# Update file
 
 		updateFile: (node, source, compiledSource)->
-			node.source = source
 			node.file.content = source
+			node.file.changed = true
 			jsFile = @getJsFile(node.file)
 			if compiledSource?
 				jsFile.content = compiledSource
+				jsFile.changed = true
 				delete jsFile.sha
 				delete jsFile.size
 				delete node.file.compile
@@ -400,7 +464,15 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		# Save & load
 
 		saveToLocalStorage: ()->
+			if @owner == R.githubLogin
+				@showCommitButtons()
 			Utils.LocalStorage.set('files:' + @owner, @gitTree)
+			return
+
+		loadFromLocalStorage: (tree)->
+			if @owner == R.githubLogin
+				@showCommitButtons()
+			@readTree(tree.data)
 			return
 
 		# Create, Update & Delete files
@@ -408,6 +480,8 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		checkError: (response)->
 			if response.status < 200 or response.status >= 300
 				R.alertManager.alert('Error: ' + response.content.message, 'error')
+				R.loader.hideLoadingBar()
+				@hideLoader()
 				return false
 			return response.content
 		#
@@ -473,7 +547,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 
 		undoChanges: ()=>
 			Utils.LocalStorage.set('files:' + @owner, null)
-			@getMasterBranch()
+			@getMasterBranch(@owner)
 			return
 
 		onUndoChanges: ()=>
@@ -499,23 +573,37 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		# 		R.alertManager.alert 'Nothing to commit.', 'Info'
 		# 	return
 
+		# pull request
+
 		createPullRequest: ()=>
 			modal = Modal.createModal( title: 'Create pull request', submit: @getMasterBranchForDifferenceValidation )
 			modal.addText('To make sure that you publish only what you want, you will validate the changes you made. \nThis can be especially usefull in case your fork is not up-to-date with the main repository.')
 			modal.show()
 			return
 
-		getMasterBranchForDifferenceValidation: ()->
-			@getMasterBranch(true, @getTreeAndInitializeDifference)
+		getMasterBranchForDifferenceValidation: (data)=>
+			owner = if data.owner? and data.owner != '' then data.owner else 'arthursw'
+			R.loader.showLoadingBar()
+			@getMasterBranch(owner, @getTreeAndInitializeDifference)
 			return
 
-		getTreeAndInitializeDifference: ()=>
+		getTreeAndInitializeDifference: (master)=>
 			@getTree(master, @initializeDifferenceValidation)
 			return
 
-		initializeDifferenceValidation: (content)->
+		loadFileContent: (file)->
+			@request file.url, (blob)=>
+				blob = @checkError(blob)
+				if not blob then return
+				file.content = atob(blob.content)
+				$(file).trigger('loaded')
+				return
+			return
+
+		initializeDifferenceValidation: (content)=>
 			content = @checkError(content)
 			if not content then return
+			@hideLoader()
 			differences = []
 			for file in content.tree
 				if file.type == 'blob' and file.path.indexOf('coffee') == 0
@@ -529,11 +617,16 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				if node.type == 'blob' and not @getFileFromPath(node.file.path, content.tree)
 					differences.push(main: null, fork: node.file)
 			for difference in differences
-				$(difference.fork?.file.element).addClass('difference')
+				if difference.fork?
+					$(@getNodeFromPath(difference.fork.path)?.element).addClass('difference')
+					if not difference.fork.content? then @loadFileContent(difference.fork)
+				if difference.main? then @loadFileContent(difference.main)
+
 			if differences.length > 0
 				R.codeEditor.initializeDifferenceValidation(differences)
 			else
-				R.alertManager.alert('Warning: there was no changes detected between the main repository and the fork!', 'warning')
+				R.loader.hideLoadingBar()
+				R.alertManager.alert('Warning: there was no changes detected between the chosen repository and this fork!', 'warning')
 				@pullRequestModal()
 			return
 
@@ -550,14 +643,14 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			return node
 
 		changeDifference: (difference, newContent)->
-			if not difference.fork? 		# create file on fork from main file
+			if not difference.fork? 							# create file on fork from main file
 				parentNode = @getOrCreateParentNode(difference.main)
 				node = @createFile(parentNode, type)
 				@updateFile(node, newContent)
-			else if not newContent?  		# delete file on fork
+			else if not newContent? or newContent == ''  		# delete file on fork
 				node = @getNodeFromPath(difference.fork.path)
 				@deleteFile(node, false)
-			else
+			else 												# update fork file
 				node = @getNodeFromPath(difference.fork.path)
 				@updateFile(node, newContent)
 			return
@@ -565,8 +658,8 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		pullRequestModal: ()=>
 			modal = Modal.createModal( title: 'Create pull request', submit: @createPullRequestSubmit )
 			modal.addTextInput(name: 'title', placeholder: 'Amazing new feature', label: 'Title of the pull request', required: true)
-			modal.addTextInput(name: 'branch', placeholder: 'master', label: 'Branch', required: true, submitShortcut: true)
-			modal.addTextInput(name: 'body', placeholder: 'Please pull this in!', label: 'Message', required: false)
+			# modal.addTextInput(name: 'branch', placeholder: 'master', label: 'Branch', required: true, submitShortcut: true)
+			modal.addTextInput(name: 'body', placeholder: 'Please pull this in!', label: 'Message', submitShortcut: true, required: false)
 			modal.show()
 			return
 
@@ -576,8 +669,26 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				head: @owner + ':' + data.branch
 				base: 'master'
 				body: data.body
-			@request('https://api.github.com/repos/arthursw/romanesco-client-code/pulls', @checkError, 'post', data)
+			R.loader.showLoadingBar()
+			@request('https://api.github.com/repos/arthursw/romanesco-client-code/pulls', @checkPullRequest, 'post', data)
 			return
+
+		checkPullRequest: (message)=>
+			message = @checkError(message)
+			if not message then return
+			R.loader.hideLoadingBar()
+			R.alertManager.alert('Your pull request was successfully created!', 'success')
+			@createPullRequestBtnJ.hide()
+			return
+
+		# diffing
+
+		diffing: ()=>
+			modal = new Modal(title: 'Diffing', submit: @getMasterBranchForDifferenceValidation)
+			modal.addTextInput(name: 'owner', placeholder: 'The owner of the repository that you want to compare. (let blank for main repository)', label: 'Owner', submitShortcut: true)
+			modal.show()
+			return
+
 
 		# Low level git operation
 
@@ -611,7 +722,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			liJ.find('.jqtree-element').append(deleteButtonJ)
 			if node.file.type == 'tree' and node.children.length==0
 				liJ.addClass('jqtree-folder jqtree-closed')
-			if node.source?
+			if node.file.changed?
 				liJ.addClass('modified')
 			return
 
@@ -622,20 +733,16 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				if elementIsToggler or elementIsTitle
 					@fileBrowserJ.tree('toggle', event.node)
 				return
-			if event.node.source?
-				R.showCodeEditor(event.node)
+			if event.node.file.content?
+				R.codeEditor.setFile(event.node)
 			else
 				@loadFile(event.node.file.path, @openFile)
 			return
 
 		### Load files ###
 
-		getMasterBranch: (masterRepository=false, callback=@getTreeAndSetCommit)->
-			if masterRepository
-				owner = 'arthursw'
-			else
-				@commit = {}
-				owner = @owner
+		getMasterBranch: (owner='arthursw', callback=@getTreeAndSetCommit)->
+			@showLoader()
 			@request('https://api.github.com/repos/' + owner + '/romanesco-client-code/branches/master', callback)
 			return
 
@@ -649,8 +756,15 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		getTreeAndSetCommit: (master)=>
 			master = @getTree(master, @checkIfTreeExists)
 			if not master then return
+			if @owner == 'arthursw'
+				@loadOwnForkBtnJ.show()
+				@loadMainRepositoryBtnJ.hide()
+			else
+				@loadOwnForkBtnJ.hide()
+				@loadMainRepositoryBtnJ.show()
+			@hideLoader()
 			@runForkBtnJ.text(if @owner != 'arthursw' then @owner else 'Main repository')
-			@commit.lastCommitSha = master.commit.sha
+			@commit = lastCommitSha: master.commit.sha
 			return
 
 		# Create jqTree
@@ -661,7 +775,7 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			savedGitTree = Utils.LocalStorage.get('files' + @owner)
 			if savedGitTree?
 				if savedGitTree.sha != content.sha
-					modal = new Modal(title: 'Load uncommitted changes', submit: @readTree, data: savedGitTree)
+					modal = new Modal(title: 'Load uncommitted changes', submit: @loadFromLocalStorage, data: savedGitTree)
 					message = 'Do you want to load the changes which have not been committed yet (stored on your computer)?\n'
 					message += '<strong>Warning: the repository has changed since you made the changes!</strong>\n'
 					message += 'Consider checking the new version of the repository before committing your changes.'
@@ -669,13 +783,13 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 					modal.show()
 					@readTree(content)
 				else
-					@readTree(savedGitTree)
+					@loadFromLocalStorage(data: savedGitTree)
 			else
 				@readTree(content)
 			return
 
 		readTree: (content)=>
-			@gitTree = content.data or content
+			@gitTree = content
 
 			treeExists = @tree?
 
@@ -703,6 +817,8 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				type: 'tree'
 			@tree.id = @gitTree.tree.length
 			@updateLeaves(@tree)
+
+			@hideLoader()
 			return
 
 		### Commit changes ###
@@ -712,9 +828,10 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 				if file.compile
 					jsFile = @getJsFile(file)
 					node = @getNodeFromPath(file.path)
-					js = R.codeEditor.compile(node.source)
+					js = R.codeEditor.compile(node.file.content)
 					if not js? then return false
 					jsFile.content = js
+					jsFile.changed = true
 					delete jsFile.sha
 					delete jsFile.size
 					delete file.compile
@@ -725,15 +842,18 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 			for file in @gitTree.tree
 				if file.type != 'tree'
 					f = Utils.clone(file)
+					if not file.changed then delete f.content
 					delete f.size
 					delete f.url
 					delete f.name
+					delete f.changed
 					tree.push(f)
 			return tree
 
 		commitChanges: (data)=>
 			@commit.message = data.commitMessage
 			if not @compileCoffee() then return
+			R.loader.showLoadingBar()
 			tree = @filterTree()
 			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/git/trees', @createCommit, 'post', tree: tree)
 			return
@@ -751,15 +871,22 @@ define [ 'UI/Modal', 'coffee', 'jqtree' ], (Modal, CoffeeScript) ->
 		updateHead: (commit)=>
 			commit = @checkError(commit)
 			if not commit then return
+			@commit.lastCommitSha = commit.sha
 			@request('https://api.github.com/repos/' + @owner + '/romanesco-client-code/git/refs/heads/master', @checkCommit, 'patch', sha: commit.sha)
 			return
 
 		checkCommit: (response)=>
 			response = @checkError(response)
 			if not response then return
-			@commit.lastCommitSha = commit.object.sha
-			R.alertManager.alert('Successfully committed!', 'success')
 			Utils.LocalStorage.set('files:' + @owner, null)
+			for node in @getNodes()
+				if node.file.changed
+					$(node.element).removeClass('modified')
+					delete node.file.changed
+			@hideCommitButtons()
+			@createPullRequestBtnJ.show()
+			R.loader.hideLoadingBar()
+			R.alertManager.alert('Successfully committed!', 'success')
 			return
 
 		# loadFiles: (content)=>

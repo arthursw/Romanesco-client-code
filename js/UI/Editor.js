@@ -1,6 +1,6 @@
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
+define(['coffee', 'typeahead'], function(CoffeeScript) {
   var CodeEditor, Console;
   CodeEditor = (function() {
     function CodeEditor() {
@@ -11,9 +11,11 @@ define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
       this.onCopyFile = __bind(this.onCopyFile, this);
       this.onNextDifference = __bind(this.onNextDifference, this);
       this.onPreviousDifference = __bind(this.onPreviousDifference, this);
+      this.updateCurrentDifference = __bind(this.updateCurrentDifference, this);
       this.aceDiffLoaded = __bind(this.aceDiffLoaded, this);
       this.save = __bind(this.save, this);
       this.onChange = __bind(this.onChange, this);
+      this.runFile = __bind(this.runFile, this);
       this.onLoadLinkedFile = __bind(this.onLoadLinkedFile, this);
       this.readLinkedFile = __bind(this.readLinkedFile, this);
       this.close = __bind(this.close, this);
@@ -51,11 +53,20 @@ define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
       runBtnJ = this.editorJ.find("button.submit.run");
       runBtnJ.click(this.runFile);
       this.console = new Console(this);
-      this.initializeEditor();
       return;
     }
 
-    CodeEditor.prototype.initializeEditor = function() {
+    CodeEditor.prototype.initializeEditor = function(callback, args) {
+      this.initialized = false;
+      require(['ace/ace'], (function(_this) {
+        return function(ace) {
+          _this.aceLoaded(ace);
+          callback.apply(_this, args);
+        };
+      })(this));
+    };
+
+    CodeEditor.prototype.aceLoaded = function(ace) {
       this.editor = ace.edit(this.codeJ[0]);
       this.editor.$blockScrolling = Infinity;
       this.editor.setOptions({
@@ -105,6 +116,7 @@ define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
         },
         exec: this.nextCommand
       });
+      this.initialized = true;
     };
 
 
@@ -277,15 +289,19 @@ define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
     };
 
     CodeEditor.prototype.setFile = function(node) {
+      var _ref;
       if (this.mode === 'code') {
         this.node = node;
-        this.setSource((node != null ? node.source : void 0) || '');
+        this.setSource((node != null ? (_ref = node.file) != null ? _ref.content : void 0 : void 0) || '');
       } else if (this.mode === 'difference') {
         this.setDifferenceFromNode(node);
       }
     };
 
     CodeEditor.prototype.setSource = function(source) {
+      if (!this.initialized) {
+        return this.initializeEditor(this.setSource, [source]);
+      }
       this.editor.getSession().off('change', this.onChange);
       this.editor.getSession().setValue(source);
       this.editor.getSession().on('change', this.onChange);
@@ -363,8 +379,8 @@ define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
     };
 
     CodeEditor.prototype.onChange = function() {
-      if (R.codeEditor.fileNode != null) {
-        Utils.deferredExecution(R.codeEditor.save, 'save:' + R.codeEditor.fileNode.path);
+      if (this.node != null) {
+        Utils.deferredExecution(R.codeEditor.save, 'save:' + this.node.path);
       }
     };
 
@@ -374,42 +390,54 @@ define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
       }
     };
 
+    CodeEditor.messages = {
+      fileDoesNotExist: {
+        onMainRepository: '# The file does not exist on the main repository',
+        onFork: '# The file does not exist on the fork'
+      }
+    };
+
     CodeEditor.prototype.initializeDifferenceValidation = function(differences) {
       this.differences = differences;
+      if (!this.initialized) {
+        return this.initializeEditor(this.initializeDifferenceValidation, [this.differences]);
+      }
       require(['aceDiff'], this.aceDiffLoaded);
     };
 
     CodeEditor.prototype.aceDiffLoaded = function(AceDiff) {
+      this.open();
       this.codeJ.hide();
       this.diffJ.show();
       this.diffFooterJ.show();
       this.setFullSize();
       this.mode = 'difference';
-      this.previousBtnJ = this.diffFooterJ.find('button.previous');
-      this.nextBtnJ = this.diffFooterJ.find('button.next');
-      this.copyMainBtnJ = this.diffFooterJ.find('button.copy-main');
-      this.commitBtnJ = this.diffFooterJ.find('button.commit');
-      this.pullRequestBtnJ = this.diffFooterJ.find('button.pull-request');
-      this.previousBtnJ.click(this.onPreviousDifference);
-      this.nextBtnJ.click(this.onNextDifference);
-      this.commitBtnJ.click(this.finishDifferenceValidationAndCommit);
-      this.commitBtnJ.hide();
-      this.pullRequestBtnJ.click(this.finishDifferenceValidationAndCreatePullRequest);
-      this.pullRequestBtnJ.show();
-      this.aceDiff = new AceDiff({
-        mode: "ace/mode/coffee",
-        theme: "ace/theme/monokai",
-        right: {
-          copyLinkEnabled: false
-        },
-        left: {
-          editable: false
-        }
-      });
-      this.currentDifference = 0;
-      if (this.differences.length > 0) {
-        this.updateCurrentDifference();
+      if (!this.differenceInitialized) {
+        this.previousBtnJ = this.diffFooterJ.find('button.previous');
+        this.nextBtnJ = this.diffFooterJ.find('button.next');
+        this.copyMainBtnJ = this.diffFooterJ.find('button.copy-main');
+        this.commitBtnJ = this.diffFooterJ.find('button.commit');
+        this.pullRequestBtnJ = this.diffFooterJ.find('button.pull-request');
+        this.previousBtnJ.click(this.onPreviousDifference);
+        this.nextBtnJ.click(this.onNextDifference);
+        this.copyMainBtnJ.click(this.onCopyFile);
+        this.commitBtnJ.click(this.finishDifferenceValidationAndCommit);
+        this.commitBtnJ.hide();
+        this.pullRequestBtnJ.click(this.finishDifferenceValidationAndCreatePullRequest);
+        this.pullRequestBtnJ.show();
+        this.aceDiff = new AceDiff({
+          mode: "ace/mode/coffee",
+          theme: "ace/theme/monokai",
+          right: {
+            copyLinkEnabled: false
+          },
+          left: {
+            editable: false
+          }
+        });
+        this.differenceInitialized = true;
       }
+      this.setCurrentDifference(0);
     };
 
     CodeEditor.prototype.setCurrentDifference = function(i) {
@@ -418,8 +446,25 @@ define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
     };
 
     CodeEditor.prototype.updateCurrentDifference = function() {
-      var difference;
+      var difference, leftEditor, rightEditor, _ref, _ref1;
       difference = this.differences[this.currentDifference];
+      if ((difference.main != null) && (difference.main.content == null)) {
+        R.loader.showLoadingBar();
+        R.waitingMainFile = difference.main;
+        console.log('waiting for ' + difference.main.path + ' of main repo ' + difference.main.url);
+        $(difference.main).on('loaded', this.updateCurrentDifference);
+        return;
+      }
+      if ((difference.fork != null) && (difference.fork.content == null)) {
+        R.loader.showLoadingBar();
+        R.waitingForkFile = difference.fork;
+        console.log('waiting for ' + difference.fork.path + ' of fork ' + difference.fork.url);
+        $(difference.fork).on('loaded', this.updateCurrentDifference);
+        return;
+      }
+      R.loader.hideLoadingBar();
+      $(difference.main).off('loaded', this.updateCurrentDifference);
+      $(difference.fork).off('loaded', this.updateCurrentDifference);
       difference.checked = true;
       if (difference.main == null) {
         this.copyMainBtnJ.text("Delete file on fork");
@@ -428,14 +473,22 @@ define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
       } else {
         this.copyMainBtnJ.text("Replace file on fork");
       }
-      this.aceDiff.setOptions({
-        right: {
-          content: difference.main
-        },
-        left: {
-          content: difference.fork
-        }
-      });
+      if (this.currentDifference <= 0) {
+        this.previousBtnJ.addClass("disabled");
+      } else {
+        this.previousBtnJ.removeClass("disabled");
+      }
+      if (this.currentDifference >= this.differences.length - 1) {
+        this.nextBtnJ.addClass("disabled");
+      } else {
+        this.nextBtnJ.removeClass("disabled");
+      }
+      rightEditor = this.aceDiff.getEditors().right.getSession();
+      leftEditor = this.aceDiff.getEditors().left.getSession();
+      rightEditor.off('change', this.onDifferenceChange);
+      leftEditor.setValue(((_ref = difference.main) != null ? _ref.content : void 0) || this.constructor.messages.fileDoesNotExist.onMainRepository);
+      rightEditor.setValue(((_ref1 = difference.fork) != null ? _ref1.content : void 0) || this.constructor.messages.fileDoesNotExist.onFork);
+      rightEditor.on('change', this.onDifferenceChange);
     };
 
     CodeEditor.prototype.setDifferenceFromNode = function(node) {
@@ -452,26 +505,16 @@ define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
     };
 
     CodeEditor.prototype.onPreviousDifference = function() {
-      this.setCurrentDifference(this.currentDifference--);
-      if (this.currentDifference <= 0) {
-        this.previousBtnJ.addClass("disabled");
-      } else {
-        this.previousBtnJ.removeClass("disabled");
-      }
+      this.setCurrentDifference(--this.currentDifference);
     };
 
     CodeEditor.prototype.onNextDifference = function() {
-      this.setCurrentDifference(this.currentDifference++);
-      if (this.currentDifference >= this.differences.length - 1) {
-        this.nextBtnJ.addClass("disabled");
-      } else {
-        this.nextBtnJ.removeClass("disabled");
-      }
+      this.setCurrentDifference(++this.currentDifference);
     };
 
     CodeEditor.prototype.onCopyFile = function() {
       var _ref;
-      this.changeDifference(this.differences[this.currentDifference], (_ref = difference.main) != null ? _ref.content : void 0);
+      this.aceDiff.getEditors().right.setValue((_ref = this.differences[this.currentDifference].main) != null ? _ref.content : void 0);
     };
 
     CodeEditor.prototype.onDifferenceChange = function() {
@@ -479,7 +522,12 @@ define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
     };
 
     CodeEditor.prototype.changeDifference = function() {
-      R.fileManager.changeDifference(this.differences[this.currentDifference], this.editor.getValue());
+      var content;
+      content = this.aceDiff.getEditors().right.getValue();
+      if (content === this.constructor.messages.fileDoesNotExist.onFork) {
+        content = null;
+      }
+      R.fileManager.changeDifference(this.differences[this.currentDifference], content);
       this.commitBtnJ.show();
       this.pullRequestBtnJ.hide();
     };
@@ -506,7 +554,7 @@ define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
 
     CodeEditor.prototype.finishDifferenceValidationAndCommit = function() {
       this.finishDifferenceValidation();
-      R.fileManager.commitChanges();
+      R.fileManager.onCommitClicked();
     };
 
     CodeEditor.prototype.finishDifferenceValidationAndCreatePullRequest = function() {
@@ -602,7 +650,7 @@ define(['coffee', 'ace/ace', 'typeahead'], function(CoffeeScript, ace) {
 
     Console.prototype.onMouseUp = function(event) {
       if (this.draggingConsole) {
-        this.coeEditor.editor.resize();
+        this.codeEditor.editor.resize();
       }
       this.draggingConsole = false;
     };
