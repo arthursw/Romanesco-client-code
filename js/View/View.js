@@ -214,7 +214,6 @@
         if (R.rasterizerMode) {
           return;
         }
-        R.githubLogin = R.canvasJ.attr("data-github-login");
         R.city = {
           owner: R.canvasJ.attr("data-owner") !== '' ? R.canvasJ.attr("data-owner") : void 0,
           city: R.canvasJ.attr("data-city") !== '' ? R.canvasJ.attr("data-city") : void 0,

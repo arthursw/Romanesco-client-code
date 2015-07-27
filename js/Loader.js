@@ -56,7 +56,7 @@
 
       Loader.prototype.showLoadingBar = function() {
         $("#loadingBar").show();
-        this.spinner.spin();
+        this.spinner.spin(document.getElementById('loadingBar'));
       };
 
       Loader.prototype.hideLoadingBar = function() {

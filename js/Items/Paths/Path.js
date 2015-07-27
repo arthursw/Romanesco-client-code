@@ -36,7 +36,7 @@
               label: 'Edit tool',
               "default": (function(_this) {
                 return function() {
-                  return R.showCodeEditor(_this.source);
+                  return R.codeEditor.setSource(_this.source);
                 };
               })(this)
             }

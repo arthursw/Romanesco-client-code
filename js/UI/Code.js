@@ -2,7 +2,7 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  define(['UI/Modal', 'coffee', 'jqtree'], function(Modal, CoffeeScript) {
+  define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, Spinner) {
     var FileManager;
     FileManager = (function() {
       function FileManager() {
@@ -17,9 +17,13 @@
         this.getTree = __bind(this.getTree, this);
         this.onNodeClicked = __bind(this.onNodeClicked, this);
         this.onCreateLi = __bind(this.onCreateLi, this);
+        this.diffing = __bind(this.diffing, this);
+        this.checkPullRequest = __bind(this.checkPullRequest, this);
         this.createPullRequestSubmit = __bind(this.createPullRequestSubmit, this);
         this.pullRequestModal = __bind(this.pullRequestModal, this);
+        this.initializeDifferenceValidation = __bind(this.initializeDifferenceValidation, this);
         this.getTreeAndInitializeDifference = __bind(this.getTreeAndInitializeDifference, this);
+        this.getMasterBranchForDifferenceValidation = __bind(this.getMasterBranchForDifferenceValidation, this);
         this.createPullRequest = __bind(this.createPullRequest, this);
         this.onUndoChanges = __bind(this.onUndoChanges, this);
         this.undoChanges = __bind(this.undoChanges, this);
@@ -39,52 +43,107 @@
         this.loadCustomFork = __bind(this.loadCustomFork, this);
         this.loadFork = __bind(this.loadFork, this);
         this.loadOwnFork = __bind(this.loadOwnFork, this);
-        this.loadMainRepo = __bind(this.loadMainRepo, this);
+        this.loadMainRepository = __bind(this.loadMainRepository, this);
         this.listForks = __bind(this.listForks, this);
         this.displayForks = __bind(this.displayForks, this);
         this.forkRowClicked = __bind(this.forkRowClicked, this);
-        this.getUserFork = __bind(this.getUserFork, this);
-        var commitBtnJ, createDirectoryBtnJ, createFileBtnJ, createPullRequestBtnJ, listForksBtnJ, loadCustomForkBtnJ, mergeMainRepositoryBtnJ, runBtnJ, undoChangesBtnJ;
+        this.checkHasForkCallback = __bind(this.checkHasForkCallback, this);
+        var createDirectoryBtnJ, createFileBtnJ, diffingBtnJ, listForksBtnJ, loadCustomForkBtnJ, runBtnJ, _ref;
+        R.githubLogin = R.canvasJ.attr("data-github-login");
         this.codeJ = $('#Code');
         this.runForkBtnJ = this.codeJ.find('button.run-fork');
         this.loadOwnForkBtnJ = this.codeJ.find('li.user-fork');
         listForksBtnJ = this.codeJ.find('li.list-forks');
+        this.loadMainRepositoryBtnJ = this.codeJ.find('li.main-repository');
         loadCustomForkBtnJ = this.codeJ.find('li.custom-fork');
         this.createForkBtnJ = this.codeJ.find('li.create-fork');
+        diffingBtnJ = this.codeJ.find('.diffing');
         this.loadOwnForkBtnJ.hide();
         this.createForkBtnJ.hide();
-        this.getForks(this.getUserFork);
+        this.initializeLoader();
         this.runForkBtnJ.click(this.runFork);
         this.loadOwnForkBtnJ.click(this.loadOwnFork);
         loadCustomForkBtnJ.click(this.loadCustomFork);
         listForksBtnJ.click(this.listForks);
+        this.loadMainRepositoryBtnJ.click(this.loadMainRepository);
+        diffingBtnJ.click(this.diffing);
         this.createForkBtnJ.click(this.createFork);
         createFileBtnJ = this.codeJ.find('li.create-file');
         createDirectoryBtnJ = this.codeJ.find('li.create-directory');
         runBtnJ = this.codeJ.find('button.run');
-        undoChangesBtnJ = this.codeJ.find('button.undo-changes');
-        commitBtnJ = this.codeJ.find('button.commit');
-        mergeMainRepositoryBtnJ = this.codeJ.find('button.merge');
-        createPullRequestBtnJ = this.codeJ.find('button.pull-request');
+        this.undoChangesBtnJ = this.codeJ.find('button.undo-changes');
+        this.commitBtnJ = this.codeJ.find('button.commit');
+        this.createPullRequestBtnJ = this.codeJ.find('button.pull-request');
+        this.hideCommitButtons();
+        this.createPullRequestBtnJ.hide();
         createFileBtnJ.click(this.onCreateFile);
         createDirectoryBtnJ.click(this.onCreateDirectory);
         runBtnJ.click(this.runFork);
-        undoChangesBtnJ.click(this.onUndoChanges);
-        commitBtnJ.click(this.onCommitClicked);
-        mergeMainRepositoryBtnJ.click(this.mergeMainRepository);
-        createPullRequestBtnJ.click(this.createPullRequest);
+        this.undoChangesBtnJ.click(this.onUndoChanges);
+        this.commitBtnJ.click(this.onCommitClicked);
+        this.createPullRequestBtnJ.click(this.createPullRequest);
         this.fileBrowserJ = this.codeJ.find('.files');
         this.files = [];
         this.nDirsToLoad = 1;
-        if (R.repositoryOwner != null) {
+        if (((_ref = R.repository) != null ? _ref.owner : void 0) != null) {
           this.loadFork({
-            owner: R.repositoryOwner
+            owner: R.repository.owner
           });
         } else {
-          this.loadMainRepo();
+          this.loadMainRepository();
         }
+        this.checkHasFork();
         return;
       }
+
+      FileManager.prototype.initializeLoader = function() {
+        var opts;
+        opts = {
+          lines: 13,
+          length: 5,
+          width: 4,
+          radius: 0,
+          scale: 0.25,
+          corners: 1,
+          color: 'white',
+          opacity: 0.15,
+          rotate: 0,
+          direction: 1,
+          speed: 1,
+          trail: 42,
+          fps: 20,
+          zIndex: 2e9,
+          className: 'spinner',
+          top: '50%',
+          left: 'inherit',
+          right: '15px',
+          shadow: false,
+          hwaccel: false,
+          position: 'absolute'
+        };
+        this.spinner = new Spinner(opts).spin(this.runForkBtnJ[0]);
+      };
+
+      FileManager.prototype.showLoader = function() {
+        this.spinner.spin(this.runForkBtnJ[0]);
+        $(this.spinner.el).css({
+          right: '15px'
+        });
+      };
+
+      FileManager.prototype.hideLoader = function() {
+        this.spinner.stop();
+      };
+
+      FileManager.prototype.showCommitButtons = function() {
+        this.undoChangesBtnJ.show();
+        this.commitBtnJ.show();
+      };
+
+      FileManager.prototype.hideCommitButtons = function() {
+        this.undoChangesBtnJ.hide();
+        this.commitBtnJ.hide();
+      };
 
       FileManager.prototype.request = function(request, callback, method, data, params, headers) {
         Dajaxice.draw.githubRequest(callback, {
@@ -96,25 +155,19 @@
         });
       };
 
-      FileManager.prototype.getUserFork = function(forks) {
-        var fork, hasFork, _i, _len;
-        forks = this.checkError(forks);
-        if (!forks) {
-          return;
+      FileManager.prototype.checkHasFork = function() {
+        if ((R.githubLogin != null) && R.githubLogin !== '') {
+          this.request('https://api.github.com/repos/' + R.githubLogin + '/romanesco-client-code/', this.checkHasForkCallback);
         }
-        hasFork = false;
-        for (_i = 0, _len = forks.length; _i < _len; _i++) {
-          fork = forks[_i];
-          if (fork.owner.login === R.me) {
-            this.loadOwnForkBtnJ.show();
-            this.createForkBtnJ.hide();
-            hasFork = true;
-            break;
-          }
-        }
-        if (!hasFork) {
-          this.loadOwnForkBtnJ.hide();
-          this.createForkBtnJ.show();
+      };
+
+      FileManager.prototype.checkHasForkCallback = function(fork) {
+        if (fork.status === 404) {
+          this.loadOwnForkBtnJ.show();
+          this.createForkBtnJ.hide();
+        } else {
+          this.loadOwnForkBtnJ.show();
+          this.createForkBtnJ.hide();
         }
       };
 
@@ -176,7 +229,7 @@
         this.getForks(this.displayForks);
       };
 
-      FileManager.prototype.loadMainRepo = function(event) {
+      FileManager.prototype.loadMainRepository = function(event) {
         if (event != null) {
           event.preventDefault();
         }
@@ -191,12 +244,12 @@
         }
         this.loadFork({
           owner: R.githubLogin
-        });
+        }, true);
       };
 
       FileManager.prototype.loadFork = function(data) {
         this.owner = data.owner;
-        this.getMasterBranch();
+        this.getMasterBranch(this.owner);
       };
 
       FileManager.prototype.loadCustomFork = function(event) {
@@ -286,6 +339,23 @@
         return node;
       };
 
+      FileManager.prototype.getNodes = function(tree, nodes) {
+        var node, _i, _len, _ref;
+        if (tree == null) {
+          tree = this.tree;
+        }
+        if (nodes == null) {
+          nodes = [];
+        }
+        _ref = tree.children;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          node = _ref[_i];
+          nodes.push(node);
+          this.getNodes(node, nodes);
+        }
+        return nodes;
+      };
+
       FileManager.prototype.buildTree = function(files) {
         var file, i, name, node, parentNode, tree, _base, _i, _len;
         tree = {
@@ -323,8 +393,9 @@
         }
       };
 
-      FileManager.prototype.loadFile = function(path, callback) {
-        this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/contents/' + path, callback);
+      FileManager.prototype.loadFile = function(path, callback, owner) {
+        console.log('load ' + path + ' of ' + owner);
+        this.request('https://api.github.com/repos/' + owner + '/romanesco-client-code/contents/' + path, callback);
       };
 
       FileManager.prototype.openFile = function(file) {
@@ -334,8 +405,8 @@
           return;
         }
         node = this.getNodeFromPath(file.path);
-        node.source = atob(file.content);
-        R.showCodeEditor(node);
+        node.file.content = atob(file.content);
+        R.codeEditor.setFile(node);
       };
 
       FileManager.prototype.createName = function(name, parentNode) {
@@ -353,7 +424,8 @@
           mode: type === 'blob' ? '100644' : '040000',
           path: path,
           type: type,
-          content: ''
+          content: '',
+          changed: true
         };
         this.gitTree.tree.push(file);
         if (type === 'blob') {
@@ -372,7 +444,6 @@
           label: name,
           children: [],
           leaves: {},
-          source: '',
           file: this.createGitFile(parentNode.file.path + '/' + name, type),
           id: this.tree.id++
         };
@@ -398,7 +469,7 @@
         this.onNodeDoubleClicked({
           node: newNode
         });
-        R.showCodeEditor(newNode);
+        R.codeEditor.setFile(newNode);
       };
 
       FileManager.prototype.onCreateFile = function() {
@@ -486,11 +557,12 @@
 
       FileManager.prototype.updateFile = function(node, source, compiledSource) {
         var jsFile;
-        node.source = source;
         node.file.content = source;
+        node.file.changed = true;
         jsFile = this.getJsFile(node.file);
         if (compiledSource != null) {
           jsFile.content = compiledSource;
+          jsFile.changed = true;
           delete jsFile.sha;
           delete jsFile.size;
           delete node.file.compile;
@@ -546,12 +618,24 @@
       };
 
       FileManager.prototype.saveToLocalStorage = function() {
+        if (this.owner === R.githubLogin) {
+          this.showCommitButtons();
+        }
         Utils.LocalStorage.set('files:' + this.owner, this.gitTree);
+      };
+
+      FileManager.prototype.loadFromLocalStorage = function(tree) {
+        if (this.owner === R.githubLogin) {
+          this.showCommitButtons();
+        }
+        this.readTree(tree.data);
       };
 
       FileManager.prototype.checkError = function(response) {
         if (response.status < 200 || response.status >= 300) {
           R.alertManager.alert('Error: ' + response.content.message, 'error');
+          R.loader.hideLoadingBar();
+          this.hideLoader();
           return false;
         }
         return response.content;
@@ -593,7 +677,7 @@
 
       FileManager.prototype.undoChanges = function() {
         Utils.LocalStorage.set('files:' + this.owner, null);
-        this.getMasterBranch();
+        this.getMasterBranch(this.owner);
       };
 
       FileManager.prototype.onUndoChanges = function() {
@@ -616,12 +700,28 @@
         modal.show();
       };
 
-      FileManager.prototype.getMasterBranchForDifferenceValidation = function() {
-        this.getMasterBranch(true, this.getTreeAndInitializeDifference);
+      FileManager.prototype.getMasterBranchForDifferenceValidation = function(data) {
+        var owner;
+        owner = (data.owner != null) && data.owner !== '' ? data.owner : 'arthursw';
+        R.loader.showLoadingBar();
+        this.getMasterBranch(owner, this.getTreeAndInitializeDifference);
       };
 
-      FileManager.prototype.getTreeAndInitializeDifference = function() {
+      FileManager.prototype.getTreeAndInitializeDifference = function(master) {
         this.getTree(master, this.initializeDifferenceValidation);
+      };
+
+      FileManager.prototype.loadFileContent = function(file) {
+        this.request(file.url, (function(_this) {
+          return function(blob) {
+            blob = _this.checkError(blob);
+            if (!blob) {
+              return;
+            }
+            file.content = atob(blob.content);
+            $(file).trigger('loaded');
+          };
+        })(this));
       };
 
       FileManager.prototype.initializeDifferenceValidation = function(content) {
@@ -630,6 +730,7 @@
         if (!content) {
           return;
         }
+        this.hideLoader();
         differences = [];
         _ref = content.tree;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -663,12 +764,21 @@
         }
         for (_k = 0, _len2 = differences.length; _k < _len2; _k++) {
           difference = differences[_k];
-          $((_ref2 = difference.fork) != null ? _ref2.file.element : void 0).addClass('difference');
+          if (difference.fork != null) {
+            $((_ref2 = this.getNodeFromPath(difference.fork.path)) != null ? _ref2.element : void 0).addClass('difference');
+            if (difference.fork.content == null) {
+              this.loadFileContent(difference.fork);
+            }
+          }
+          if (difference.main != null) {
+            this.loadFileContent(difference.main);
+          }
         }
         if (differences.length > 0) {
           R.codeEditor.initializeDifferenceValidation(differences);
         } else {
-          R.alertManager.alert('Warning: there was no changes detected between the main repository and the fork!', 'warning');
+          R.loader.hideLoadingBar();
+          R.alertManager.alert('Warning: there was no changes detected between the chosen repository and this fork!', 'warning');
           this.pullRequestModal();
         }
       };
@@ -696,7 +806,7 @@
           parentNode = this.getOrCreateParentNode(difference.main);
           node = this.createFile(parentNode, type);
           this.updateFile(node, newContent);
-        } else if (newContent == null) {
+        } else if ((newContent == null) || newContent === '') {
           node = this.getNodeFromPath(difference.fork.path);
           this.deleteFile(node, false);
         } else {
@@ -718,16 +828,10 @@
           required: true
         });
         modal.addTextInput({
-          name: 'branch',
-          placeholder: 'master',
-          label: 'Branch',
-          required: true,
-          submitShortcut: true
-        });
-        modal.addTextInput({
           name: 'body',
           placeholder: 'Please pull this in!',
           label: 'Message',
+          submitShortcut: true,
           required: false
         });
         modal.show();
@@ -740,7 +844,33 @@
           base: 'master',
           body: data.body
         };
-        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/pulls', this.checkError, 'post', data);
+        R.loader.showLoadingBar();
+        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/pulls', this.checkPullRequest, 'post', data);
+      };
+
+      FileManager.prototype.checkPullRequest = function(message) {
+        message = this.checkError(message);
+        if (!message) {
+          return;
+        }
+        R.loader.hideLoadingBar();
+        R.alertManager.alert('Your pull request was successfully created!', 'success');
+        this.createPullRequestBtnJ.hide();
+      };
+
+      FileManager.prototype.diffing = function() {
+        var modal;
+        modal = new Modal({
+          title: 'Diffing',
+          submit: this.getMasterBranchForDifferenceValidation
+        });
+        modal.addTextInput({
+          name: 'owner',
+          placeholder: 'The owner of the repository that you want to compare. (let blank for main repository)',
+          label: 'Owner',
+          submitShortcut: true
+        });
+        modal.show();
       };
 
       FileManager.prototype.onCanMoveTo = function(moved_node, target_node, position) {
@@ -759,7 +889,7 @@
         if (node.file.type === 'tree' && node.children.length === 0) {
           liJ.addClass('jqtree-folder jqtree-closed');
         }
-        if (node.source != null) {
+        if (node.file.changed != null) {
           liJ.addClass('modified');
         }
       };
@@ -774,8 +904,8 @@
           }
           return;
         }
-        if (event.node.source != null) {
-          R.showCodeEditor(event.node);
+        if (event.node.file.content != null) {
+          R.codeEditor.setFile(event.node);
         } else {
           this.loadFile(event.node.file.path, this.openFile);
         }
@@ -784,20 +914,14 @@
 
       /* Load files */
 
-      FileManager.prototype.getMasterBranch = function(masterRepository, callback) {
-        var owner;
-        if (masterRepository == null) {
-          masterRepository = false;
+      FileManager.prototype.getMasterBranch = function(owner, callback) {
+        if (owner == null) {
+          owner = 'arthursw';
         }
         if (callback == null) {
           callback = this.getTreeAndSetCommit;
         }
-        if (masterRepository) {
-          owner = 'arthursw';
-        } else {
-          this.commit = {};
-          owner = this.owner;
-        }
+        this.showLoader();
         this.request('https://api.github.com/repos/' + owner + '/romanesco-client-code/branches/master', callback);
       };
 
@@ -819,8 +943,18 @@
         if (!master) {
           return;
         }
+        if (this.owner === 'arthursw') {
+          this.loadOwnForkBtnJ.show();
+          this.loadMainRepositoryBtnJ.hide();
+        } else {
+          this.loadOwnForkBtnJ.hide();
+          this.loadMainRepositoryBtnJ.show();
+        }
+        this.hideLoader();
         this.runForkBtnJ.text(this.owner !== 'arthursw' ? this.owner : 'Main repository');
-        this.commit.lastCommitSha = master.commit.sha;
+        this.commit = {
+          lastCommitSha: master.commit.sha
+        };
       };
 
       FileManager.prototype.checkIfTreeExists = function(content) {
@@ -834,7 +968,7 @@
           if (savedGitTree.sha !== content.sha) {
             modal = new Modal({
               title: 'Load uncommitted changes',
-              submit: this.readTree,
+              submit: this.loadFromLocalStorage,
               data: savedGitTree
             });
             message = 'Do you want to load the changes which have not been committed yet (stored on your computer)?\n';
@@ -844,7 +978,9 @@
             modal.show();
             this.readTree(content);
           } else {
-            this.readTree(savedGitTree);
+            this.loadFromLocalStorage({
+              data: savedGitTree
+            });
           }
         } else {
           this.readTree(content);
@@ -853,7 +989,7 @@
 
       FileManager.prototype.readTree = function(content) {
         var tree, treeExists;
-        this.gitTree = content.data || content;
+        this.gitTree = content;
         treeExists = this.tree != null;
         tree = this.buildTree(this.gitTree.tree);
         if (treeExists) {
@@ -879,6 +1015,7 @@
         };
         this.tree.id = this.gitTree.tree.length;
         this.updateLeaves(this.tree);
+        this.hideLoader();
       };
 
 
@@ -892,11 +1029,12 @@
           if (file.compile) {
             jsFile = this.getJsFile(file);
             node = this.getNodeFromPath(file.path);
-            js = R.codeEditor.compile(node.source);
+            js = R.codeEditor.compile(node.file.content);
             if (js == null) {
               return false;
             }
             jsFile.content = js;
+            jsFile.changed = true;
             delete jsFile.sha;
             delete jsFile.size;
             delete file.compile;
@@ -913,9 +1051,13 @@
           file = _ref[_i];
           if (file.type !== 'tree') {
             f = Utils.clone(file);
+            if (!file.changed) {
+              delete f.content;
+            }
             delete f.size;
             delete f.url;
             delete f.name;
+            delete f.changed;
             tree.push(f);
           }
         }
@@ -928,6 +1070,7 @@
         if (!this.compileCoffee()) {
           return;
         }
+        R.loader.showLoadingBar();
         tree = this.filterTree();
         this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/git/trees', this.createCommit, 'post', {
           tree: tree
@@ -953,19 +1096,31 @@
         if (!commit) {
           return;
         }
+        this.commit.lastCommitSha = commit.sha;
         this.request('https://api.github.com/repos/' + this.owner + '/romanesco-client-code/git/refs/heads/master', this.checkCommit, 'patch', {
           sha: commit.sha
         });
       };
 
       FileManager.prototype.checkCommit = function(response) {
+        var node, _i, _len, _ref;
         response = this.checkError(response);
         if (!response) {
           return;
         }
-        this.commit.lastCommitSha = commit.object.sha;
-        R.alertManager.alert('Successfully committed!', 'success');
         Utils.LocalStorage.set('files:' + this.owner, null);
+        _ref = this.getNodes();
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          node = _ref[_i];
+          if (node.file.changed) {
+            $(node.element).removeClass('modified');
+            delete node.file.changed;
+          }
+        }
+        this.hideCommitButtons();
+        this.createPullRequestBtnJ.show();
+        R.loader.hideLoadingBar();
+        R.alertManager.alert('Successfully committed!', 'success');
       };
 
       FileManager.prototype.createButton = function(content) {

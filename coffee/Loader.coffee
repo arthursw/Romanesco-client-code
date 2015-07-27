@@ -48,7 +48,7 @@ define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Loc
 
 		showLoadingBar: ()=>
 			$("#loadingBar").show()
-			@spinner.spin()
+			@spinner.spin(document.getElementById('loadingBar'))
 			return
 
 		hideLoadingBar: ()=>

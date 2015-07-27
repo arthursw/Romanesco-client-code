@@ -524,6 +524,11 @@
     Utils.defaultCallback = function(a) {
       console.log(a);
     };
+    Utils.defineRequireJsModule = function(moduleName, resultName) {
+      require([moduleName], function(result) {
+        return window[resultName] = result;
+      });
+    };
     return Utils;
   });
 

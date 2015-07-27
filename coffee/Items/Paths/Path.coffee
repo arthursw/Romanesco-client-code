@@ -67,7 +67,7 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 					editTool:
 						type: 'button'
 						label: 'Edit tool'
-						default: ()=> R.showCodeEditor(@source)
+						default: ()=> R.codeEditor.setSource(@source)
 				'Style':
 					strokeWidth: $.extend(true, {}, R.parameters.strokeWidth)
 					strokeColor: $.extend(true, {}, R.parameters.strokeColor)

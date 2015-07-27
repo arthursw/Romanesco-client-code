@@ -48,6 +48,7 @@ requirejs.config
 	paths:
 		'domReady': ['//cdnjs.cloudflare.com/ajax/libs/require-domReady/2.0.1/domReady.min', libs + 'domReady']
 		'ace': ['//cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/', libs + 'ace/src-min-noconflict/']
+		# 'ace': [libs + 'ace/src-min-noconflict/']
 		'underscore': ['//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min', libs + 'underscore-min']
 		'jquery': ['//code.jquery.com/jquery-2.1.3.min', 'libs/jquery-2.1.3.min']
 		'jqueryUi': ['//code.jquery.com/ui/1.11.4/jquery-ui.min', libs + 'jquery-ui.min']
@@ -96,7 +97,8 @@ requirejs.config
 		#
 		# 'zeroClipboard': [libs + 'ZeroClipboard.min']
 
-		'aceDiff': libs + 'ace-diff.min'
+		'diffMatch': libs + 'AceDiff/diff_match_patch'
+		'aceDiff': libs + 'AceDiff/ace-diff'
 		'colorpickersliders': libs + 'bootstrap-colorpickersliders/bootstrap.colorpickersliders.nocielch'
 		'requestAnimationFrame': libs + 'RequestAnimationFrame'
 		'coffee': libs + 'coffee-script'
@@ -116,7 +118,7 @@ requirejs.config
 		'typeahead': ['jquery']
 		'js-cookie': ['jquery']
 		'jqtree': ['jquery']
-		'aceDiff': ['jquery', 'ace']
+		'aceDiff': ['jquery', 'diffMatch', 'ace/ace']
 		# 'modal': ['bootstrap', 'modalManager']
 		'colorpickersliders':
 			deps: ['jquery', 'tinycolor']
