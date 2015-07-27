@@ -3,6 +3,7 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 	class CodeEditor
 
 		constructor: ()->
+			@mode = 'code'
 
 			# editor
 			@editorJ = $("#codeEditor")
@@ -26,9 +27,15 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 
 			# body
 			@codeJ = @editorJ.find(".code")
+			@diffJ = @editorJ.find(".acediff")
+			@codeJ.show()
+			@diffJ.hide()
 
 			# footer
 			@footerJ = @editorJ.find(".footer")
+			@diffFooterJ = @footerJ.find('.diff')
+			@diffFooterJ.hide()
+
 			# @pushRequestBtnJ = @editorJ.find("button.request")
 			runBtnJ = @editorJ.find("button.submit.run")
 			runBtnJ.click @runFile
@@ -255,8 +262,18 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 
 		### set, compile and run scripts ###
 
-		setFile: (@fileNode)->
-			@setSource(@fileNode.source)
+		clearFile: (closeEditor=true)->
+			@setFile(null)
+			if closeEditor
+				@close()
+			return
+
+		setFile: (node)->
+			if @mode == 'code'
+				@node = node
+				@setSource(node?.source or '')
+			else if @mode == 'difference'
+				@setDifferenceFromNode(node)
 			return
 
 		setSource: (source)->
@@ -306,7 +323,7 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 			code = @editor.getValue()
 			js = @compile(code)
 			if not js then return
-			if @fileNode? then R.fileManager.updateFile(@fileNode, code, js)
+			if @mode == 'code' and @node? then R.fileManager.updateFile(@node, code, js)
 			# replace the requirejs 'define' function by a custom define function to execute the code
 			requirejsDefine = window.define
 			modules = require.s.contexts._.defined
@@ -322,7 +339,126 @@ define [ 'coffee', 'ace/ace', 'typeahead' ], (CoffeeScript, ace) -> 			# 'ace/ex
 			return
 
 		save: ()=>
-			if @fileNode? then R.fileManager.updateFile(@fileNode, @editor.getValue())
+			if @node? then R.fileManager.updateFile(@node, @editor.getValue())
+			return
+
+		# Diffing
+
+		initializeDifferenceValidation: (@differences)->
+			require ['aceDiff'], @aceDiffLoaded
+			return
+
+		aceDiffLoaded: (AceDiff)=>
+			# initialize html
+			@codeJ.hide()
+			@diffJ.show()
+			@diffFooterJ.show()
+			@setFullSize()
+			@mode = 'difference'
+
+			@previousBtnJ = @diffFooterJ.find('button.previous')
+			@nextBtnJ = @diffFooterJ.find('button.next')
+			@copyMainBtnJ = @diffFooterJ.find('button.copy-main')
+			@commitBtnJ = @diffFooterJ.find('button.commit')
+			@pullRequestBtnJ = @diffFooterJ.find('button.pull-request')
+
+			@previousBtnJ.click @onPreviousDifference
+			@nextBtnJ.click @onNextDifference
+			@commitBtnJ.click @finishDifferenceValidationAndCommit
+			@commitBtnJ.hide()
+			@pullRequestBtnJ.click @finishDifferenceValidationAndCreatePullRequest
+			@pullRequestBtnJ.show()
+
+			@aceDiff = new AceDiff(
+				mode: "ace/mode/coffee"
+				theme: "ace/theme/monokai"
+				right:
+					copyLinkEnabled: false
+				left:
+					editable: false
+			)
+			@currentDifference = 0
+			if @differences.length > 0 then @updateCurrentDifference()
+			return
+
+		setCurrentDifference: (i)->
+			@currentDifference = Utils.clamp(0, i, @differences.length-1)
+			@updateCurrentDifference()
+			return
+
+		updateCurrentDifference: ()->
+			difference = @differences[@currentDifference]
+			difference.checked = true
+
+			if not difference.main?
+				@copyMainBtnJ.text("Delete file on fork")
+			else if not difference.fork?
+				@copyMainBtnJ.text("Create file on fork")
+			else
+				@copyMainBtnJ.text("Replace file on fork")
+
+			@aceDiff.setOptions
+				right:
+					content: difference.main
+				left:
+					content: difference.fork
+			return
+
+		setDifferenceFromNode: (node)->
+			for difference, i in @differences
+				if difference.fork == node.file
+					@setCurrentDifference(i)
+					return
+			R.alertManager.alert('This file does not differ.', 'warning')
+			return
+
+		onPreviousDifference: ()=>
+			@setCurrentDifference(@currentDifference--)
+			if @currentDifference <= 0 then @previousBtnJ.addClass("disabled") else @previousBtnJ.removeClass("disabled")
+			return
+
+		onNextDifference: ()=>
+			@setCurrentDifference(@currentDifference++)
+			if @currentDifference >= @differences.length-1 then @nextBtnJ.addClass("disabled") else @nextBtnJ.removeClass("disabled")
+			return
+
+		onCopyFile: ()=>
+			@changeDifference(@differences[@currentDifference], difference.main?.content)
+			return
+
+		onDifferenceChange: ()=>
+			Utils.deferredExecution(@changeDifference, 'changeDifference')
+			return
+
+		changeDifference: ()=>
+			R.fileManager.changeDifference(@differences[@currentDifference], @editor.getValue())
+			@commitBtnJ.show()
+			@pullRequestBtnJ.hide()
+			return
+
+		finishDifferenceValidation: ()->
+			for difference, i in @differences
+				if not difference.checked
+					R.alertManager.alert('You have not validate a difference', 'warning')
+					@setCurrentDifference(i)
+					return
+				else
+					$(difference.fork.element).removeClass('difference')
+			@mode = 'code'
+			@codeJ.show()
+			@diffJ.hide()
+			@diffFooterJ.hide()
+			@setHalfSize()
+			return
+
+		finishDifferenceValidationAndCommit: ()=>
+			@finishDifferenceValidation()
+			R.fileManager.commitChanges()
+			return
+
+		finishDifferenceValidationAndCreatePullRequest: ()=>
+			@finishDifferenceValidation()
+			R.fileManager.pullRequestModal()
 			return
 
 	class Console
