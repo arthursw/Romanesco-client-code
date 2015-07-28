@@ -17,7 +17,7 @@ define [
 	'Tools/ToolManager'
 ], (Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, CodeEditor, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager) ->
 
-	console.log 'FORK from arthur-test-account!'
+	console.log 'FORK from arthur-test-account :-)'
 	# R.rasterizerMode = window.rasterizerMode
 
 	# if R.rasterizerMode
