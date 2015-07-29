@@ -423,7 +423,7 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 			return
 
 		allDifferencesValidated: ()->
-			if not @differences? then true
+			if not @differences? then return true
 			for difference in @differences
 				if not difference.checked
 					return false
@@ -614,8 +614,8 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 			return
 
 		resetNativeLogs: ()->
-			console.log = @nativeLog
-			console.error = @nativeError
+			if @nativeLog? then console.log = @nativeLog
+			if @nativeError? then console.error = @nativeError
 			return
 
 	return CodeEditor
