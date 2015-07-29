@@ -781,7 +781,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			if not P.Segment.prototype.isPrototypeOf(segment) then segment = @controlPath.segments[segment]
 			@selectedSegment = if segment.next? then segment.next else segment.previous
 			if @selectedSegment? then @highlightSelectedPoint()
-			location = { index: segment.location.index - 1, point: segment.location.point }
+			location = { index: segment.location.index - 1, point: segment.location.pointÂ }
 			segment.remove()
 			if @controlPath.segments.length <= 1
 				@deleteCommand()

@@ -680,7 +680,7 @@
         }
         location = {
           index: segment.location.index - 1,
-          point: segment.location.point 
+          point: segment.location.pointÂ 
         };
         segment.remove();
         if (this.controlPath.segments.length <= 1) {
