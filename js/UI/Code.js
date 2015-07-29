@@ -1043,6 +1043,8 @@
         if (!master) {
           return;
         }
+        R.codeEditor.close();
+        R.codeEditor.setMode('coding');
         if (this.owner === 'arthursw') {
           this.loadOwnForkBtnJ.show();
           this.loadMainRepositoryBtnJ.hide();

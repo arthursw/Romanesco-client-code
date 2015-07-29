@@ -838,6 +838,8 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 		getTreeAndSetCommit: (master)=>
 			master = @getTree(master, @checkIfTreeExists)
 			if not master then return
+			R.codeEditor.close()
+			R.codeEditor.setMode('coding')
 			if @owner == 'arthursw'
 				@loadOwnForkBtnJ.show()
 				@loadMainRepositoryBtnJ.hide()
