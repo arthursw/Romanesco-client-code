@@ -342,6 +342,12 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead'], function(Modal, Co
       this.request('https://api.github.com/repos/' + R.githubLogin + '/romanesco-client-code/forks', this.forkCreationResponse, 'post');
     };
 
+    FileManager.prototype.getFileName = function(file) {
+      var dirs;
+      dirs = file.path.split('/');
+      return dirs[dirs.length - 1];
+    };
+
     FileManager.prototype.coffeeToJsPath = function(coffeePath) {
       return coffeePath.replace(/^coffee/, 'js').replace(/coffee$/, 'js');
     };
@@ -1035,6 +1041,8 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead'], function(Modal, Co
       if (!master) {
         return;
       }
+      R.codeEditor.close();
+      R.codeEditor.setMode('coding');
       if (this.owner === 'arthursw') {
         this.loadOwnForkBtnJ.show();
         this.loadMainRepositoryBtnJ.hide();

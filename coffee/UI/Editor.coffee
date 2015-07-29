@@ -226,7 +226,7 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 
 		onMouseUp: (event)=>
 			if @draggingEditor
-				@editor.resize()
+				@editor?.resize()
 			@draggingEditor = false
 			@console.onMouseUp(event)
 			$("body").css('user-select': 'text')
@@ -295,7 +295,7 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 
 		setFile: (node)->
 			R.codeEditor.open()
-			@fileNameJ.text(node.name)
+			@fileNameJ.val(node.name)
 			if @mode == 'coding'
 				@node = node
 				@setSource(node?.file?.content or '')
@@ -413,6 +413,7 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 				)
 				@differenceInitialized = true
 
+			@allDifferencesValidatedMessageDisplayed = false
 			@setCurrentDifference(0)
 			return
 
@@ -463,7 +464,10 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 
 			rightEditor.on('change', @onDifferenceChange)
 
-			if @allDifferencesValidated()
+			@fileNameJ.val(R.fileManager.getFileName(difference.fork or difference.main))
+
+			if @allDifferencesValidated() and not @allDifferencesValidatedMessageDisplayed
+				@allDifferencesValidatedMessageDisplayed = true
 				R.alertManager.alert 'You can now create your pull request.', 'success'
 			return
 

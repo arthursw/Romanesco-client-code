@@ -140,6 +140,7 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 				return
 			@fileBrowserJ.find('li').hide()
 			@typeaheadFileEngine.get(query, @displayDesiredFile)
+
 			return
 
 		displayDesiredFile: (suggestions)=>
@@ -262,6 +263,10 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 			return
 
 		# Navigate in files
+
+		getFileName: (file)->
+			dirs = file.path.split('/')
+			return dirs[dirs.length-1]
 
 		coffeeToJsPath: (coffeePath)->
 			return coffeePath.replace(/^coffee/, 'js').replace(/coffee$/, 'js')
@@ -833,6 +838,8 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 		getTreeAndSetCommit: (master)=>
 			master = @getTree(master, @checkIfTreeExists)
 			if not master then return
+			R.codeEditor.close()
+			R.codeEditor.setMode('coding')
 			if @owner == 'arthursw'
 				@loadOwnForkBtnJ.show()
 				@loadMainRepositoryBtnJ.hide()
