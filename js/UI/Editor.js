@@ -475,7 +475,7 @@
       CodeEditor.prototype.allDifferencesValidated = function() {
         var difference, _i, _len, _ref;
         if (this.differences == null) {
-          true;
+          return true;
         }
         _ref = this.differences;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -720,8 +720,12 @@
       };
 
       Console.prototype.resetNativeLogs = function() {
-        console.log = this.nativeLog;
-        console.error = this.nativeError;
+        if (this.nativeLog != null) {
+          console.log = this.nativeLog;
+        }
+        if (this.nativeError != null) {
+          console.error = this.nativeError;
+        }
       };
 
       return Console;
