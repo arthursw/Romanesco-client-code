@@ -25,14 +25,14 @@
       }
 
       AlertManager.prototype.showAlert = function(index) {
-        var alertJ, prevType;
+        var alertJ, previousType, _ref;
         if (this.alerts.length <= 0 || index < 0 || index >= this.alerts.length) {
           return;
         }
-        prevType = this.alerts[this.currentAlert].type;
+        previousType = (_ref = this.alerts[this.currentAlert]) != null ? _ref.type : void 0;
         this.currentAlert = index;
         alertJ = this.alertsContainer.find(".alert");
-        alertJ.removeClass(prevType).addClass(this.alerts[this.currentAlert].type).text(this.alerts[this.currentAlert].message);
+        alertJ.removeClass(previousType).addClass(this.alerts[this.currentAlert].type).text(this.alerts[this.currentAlert].message);
         this.alertsContainer.find(".alert-number").text(this.currentAlert + 1);
       };
 
@@ -52,7 +52,6 @@
         type = " alert-" + type;
         alertJ = this.alertsContainer.find(".alert");
         this.alertsContainer.removeClass("r-hidden");
-        this.currentAlert = this.alerts.length;
         this.alerts.push({
           type: type,
           message: message

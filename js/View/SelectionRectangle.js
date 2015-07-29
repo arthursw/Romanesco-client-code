@@ -187,9 +187,13 @@
         if (hitResult == null) {
           return false;
         }
+        this.beginAction(hitResult);
+        return true;
+      };
+
+      SelectionRectangle.prototype.beginAction = function(hitResult) {
         this.setTransformState(hitResult);
         R.commandManager.beginAction(new Command[this.transformState.command](R.selectedItems), event);
-        return true;
       };
 
       SelectionRectangle.prototype.update = function() {
@@ -280,7 +284,7 @@
         if (Utils.Snap.getSnap() <= 1) {
           this.translate(event.delta);
         } else {
-          if (this.transfromState.corner != null) {
+          if (this.transformState.corner != null) {
             this.snapEdgePosition(event);
           } else {
             this.snapPosition(event);

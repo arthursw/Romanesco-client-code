@@ -32,6 +32,7 @@
       SelectTool.hitOptions = {
         stroke: true,
         fill: true,
+        handles: true,
         selected: true
       };
 
@@ -74,6 +75,7 @@
             this.selectionRectangle = SelectionRectangle.create();
           }
           this.selectionRectangle.update();
+          $(this).trigger('selectionRectangleUpdated');
         } else {
           if ((_ref = this.selectionRectangle) != null) {
             _ref.remove();

@@ -81,10 +81,14 @@ define [], ()->
 			if P.view.bounds.width > window.innerWidth or P.view.bounds.height > window.innerHeight
 				halfSize = new P.Point(window.innerWidth*0.5, window.innerHeight*0.5)
 				bounds = new P.Rectangle(P.view.center.subtract(halfSize), P.view.center.add(halfSize))
-				boundsCompoundPath = new P.CompoundPath( children: [ new P.Path.Rectangle(P.view.bounds), new P.Path.Rectangle(bounds) ] )
-				boundsCompoundPath.strokeScaling = false
-				boundsCompoundPath.fillColor = 'rgba(0,0,0,0.1)'
-				@grid.addChild(boundsCompoundPath)
+				path = new P.Path.Rectangle(bounds)
+				path.strokeColor = 'rgba(0, 0, 0, 0.1)'
+				path.strokeWidth = 0.1
+				path.dashArray = [10, 4]
+				# boundsCompoundPath = new P.CompoundPath( children: [ new P.Path.Rectangle(P.view.bounds), new P.Path.Rectangle(bounds) ] )
+				# boundsCompoundPath.strokeScaling = false
+				# boundsCompoundPath.fillColor = 'rgba(0,0,0,0.1)'
+				@grid.addChild(path)
 
 			if not R.displayGrid
 				return
