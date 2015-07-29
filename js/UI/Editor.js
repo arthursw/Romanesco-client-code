@@ -4,8 +4,6 @@ define(['coffee', 'typeahead'], function(CoffeeScript) {
   var CodeEditor, Console;
   CodeEditor = (function() {
     function CodeEditor() {
-      this.finishDifferenceValidationAndCreatePullRequest = __bind(this.finishDifferenceValidationAndCreatePullRequest, this);
-      this.finishDifferenceValidationAndCommit = __bind(this.finishDifferenceValidationAndCommit, this);
       this.changeDifference = __bind(this.changeDifference, this);
       this.onDifferenceChange = __bind(this.onDifferenceChange, this);
       this.onCopyFile = __bind(this.onCopyFile, this);
@@ -28,7 +26,7 @@ define(['coffee', 'typeahead'], function(CoffeeScript) {
       this.previousCommand = __bind(this.previousCommand, this);
       this.executeCommand = __bind(this.executeCommand, this);
       var closeBtnJ, handleJ, runBtnJ;
-      this.mode = 'code';
+      this.mode = 'coding';
       this.editorJ = $("#codeEditor");
       this.editorJ.bind("transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd", this.resize);
       if (R.sidebar.sidebarJ.hasClass("r-hidden")) {
@@ -120,6 +118,28 @@ define(['coffee', 'typeahead'], function(CoffeeScript) {
     };
 
 
+    /* set mode (coding or diffing) */
+
+    CodeEditor.prototype.setMode = function(mode) {
+      this.mode = mode;
+      switch (this.mode) {
+        case 'diffing':
+          this.codeJ.hide();
+          this.diffJ.show();
+          this.diffFooterJ.show();
+          this.console.hide();
+          this.setFullSize();
+          break;
+        case 'coding':
+          this.codeJ.show();
+          this.diffJ.hide();
+          this.diffFooterJ.hide();
+          this.console.show();
+          R.fileManager.closeDiffing(this.allDifferencesValidated());
+      }
+    };
+
+
     /* commande manager in console mode */
 
     CodeEditor.prototype.addCommand = function(command) {
@@ -207,7 +227,7 @@ define(['coffee', 'typeahead'], function(CoffeeScript) {
     CodeEditor.prototype.onMouseMove = function(event) {
       if (this.draggingEditor) {
         this.editorJ.css({
-          right: window.innerWidth - event.pageX
+          right: Math.max(0, window.innerWidth - event.pageX)
         });
       }
       this.console.onMouseMove(event);
@@ -290,10 +310,12 @@ define(['coffee', 'typeahead'], function(CoffeeScript) {
 
     CodeEditor.prototype.setFile = function(node) {
       var _ref;
-      if (this.mode === 'code') {
+      R.codeEditor.open();
+      this.fileNameJ.text(node.name);
+      if (this.mode === 'coding') {
         this.node = node;
         this.setSource((node != null ? (_ref = node.file) != null ? _ref.content : void 0 : void 0) || '');
-      } else if (this.mode === 'difference') {
+      } else if (this.mode === 'diffing') {
         this.setDifferenceFromNode(node);
       }
     };
@@ -368,7 +390,7 @@ define(['coffee', 'typeahead'], function(CoffeeScript) {
       if (!js) {
         return;
       }
-      if (this.mode === 'code' && (this.node != null)) {
+      if (this.mode === 'coding' && (this.node != null)) {
         R.fileManager.updateFile(this.node, code, js);
       }
       requirejsDefine = window.define;
@@ -406,25 +428,24 @@ define(['coffee', 'typeahead'], function(CoffeeScript) {
     };
 
     CodeEditor.prototype.aceDiffLoaded = function(AceDiff) {
+      var closeDiffingBtnJ;
+      this.diffJ.find('.left-repository-name').text(R.fileManager.differenceOwner === 'arthursw' ? 'Main repository' : R.fileManager.differenceOwner);
+      this.diffJ.find('.right-repository-name').text(R.fileManager.owner === 'arthursw' ? 'Main repository' : R.fileManager.owner);
       this.open();
-      this.codeJ.hide();
-      this.diffJ.show();
-      this.diffFooterJ.show();
-      this.setFullSize();
-      this.mode = 'difference';
+      this.setMode('diffing');
       if (!this.differenceInitialized) {
+        closeDiffingBtnJ = this.diffJ.find('button.close-diffing');
+        closeDiffingBtnJ.click((function(_this) {
+          return function() {
+            return _this.setMode('coding');
+          };
+        })(this));
         this.previousBtnJ = this.diffFooterJ.find('button.previous');
         this.nextBtnJ = this.diffFooterJ.find('button.next');
         this.copyMainBtnJ = this.diffFooterJ.find('button.copy-main');
-        this.commitBtnJ = this.diffFooterJ.find('button.commit');
-        this.pullRequestBtnJ = this.diffFooterJ.find('button.pull-request');
         this.previousBtnJ.click(this.onPreviousDifference);
         this.nextBtnJ.click(this.onNextDifference);
         this.copyMainBtnJ.click(this.onCopyFile);
-        this.commitBtnJ.click(this.finishDifferenceValidationAndCommit);
-        this.commitBtnJ.hide();
-        this.pullRequestBtnJ.click(this.finishDifferenceValidationAndCreatePullRequest);
-        this.pullRequestBtnJ.show();
         this.aceDiff = new AceDiff({
           mode: "ace/mode/coffee",
           theme: "ace/theme/monokai",
@@ -445,33 +466,42 @@ define(['coffee', 'typeahead'], function(CoffeeScript) {
       this.updateCurrentDifference();
     };
 
+    CodeEditor.prototype.allDifferencesValidated = function() {
+      var difference, _i, _len, _ref;
+      if (this.differences == null) {
+        true;
+      }
+      _ref = this.differences;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        difference = _ref[_i];
+        if (!difference.checked) {
+          return false;
+        }
+      }
+      return true;
+    };
+
     CodeEditor.prototype.updateCurrentDifference = function() {
       var difference, leftEditor, rightEditor, _ref, _ref1;
       difference = this.differences[this.currentDifference];
       if ((difference.main != null) && (difference.main.content == null)) {
         R.loader.showLoadingBar();
-        R.waitingMainFile = difference.main;
-        console.log('waiting for ' + difference.main.path + ' of main repo ' + difference.main.url);
-        $(difference.main).on('loaded', this.updateCurrentDifference);
+        $(difference.main).one('loaded', this.updateCurrentDifference);
         return;
       }
       if ((difference.fork != null) && (difference.fork.content == null)) {
         R.loader.showLoadingBar();
-        R.waitingForkFile = difference.fork;
-        console.log('waiting for ' + difference.fork.path + ' of fork ' + difference.fork.url);
-        $(difference.fork).on('loaded', this.updateCurrentDifference);
+        $(difference.fork).one('loaded', this.updateCurrentDifference);
         return;
       }
       R.loader.hideLoadingBar();
-      $(difference.main).off('loaded', this.updateCurrentDifference);
-      $(difference.fork).off('loaded', this.updateCurrentDifference);
       difference.checked = true;
       if (difference.main == null) {
-        this.copyMainBtnJ.text("Delete file on fork");
+        this.copyMainBtnJ.find('.text').text("Delete file on fork");
       } else if (difference.fork == null) {
-        this.copyMainBtnJ.text("Create file on fork");
+        this.copyMainBtnJ.find('.text').text("Create file on fork");
       } else {
-        this.copyMainBtnJ.text("Replace file on fork");
+        this.copyMainBtnJ.find('.text').text("Replace file on this fork");
       }
       if (this.currentDifference <= 0) {
         this.previousBtnJ.addClass("disabled");
@@ -489,6 +519,9 @@ define(['coffee', 'typeahead'], function(CoffeeScript) {
       leftEditor.setValue(((_ref = difference.main) != null ? _ref.content : void 0) || this.constructor.messages.fileDoesNotExist.onMainRepository);
       rightEditor.setValue(((_ref1 = difference.fork) != null ? _ref1.content : void 0) || this.constructor.messages.fileDoesNotExist.onFork);
       rightEditor.on('change', this.onDifferenceChange);
+      if (this.allDifferencesValidated()) {
+        R.alertManager.alert('You can now create your pull request.', 'success');
+      }
     };
 
     CodeEditor.prototype.setDifferenceFromNode = function(node) {
@@ -528,8 +561,6 @@ define(['coffee', 'typeahead'], function(CoffeeScript) {
         content = null;
       }
       R.fileManager.changeDifference(this.differences[this.currentDifference], content);
-      this.commitBtnJ.show();
-      this.pullRequestBtnJ.hide();
     };
 
     CodeEditor.prototype.finishDifferenceValidation = function() {
@@ -538,28 +569,15 @@ define(['coffee', 'typeahead'], function(CoffeeScript) {
       for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
         difference = _ref[i];
         if (!difference.checked) {
-          R.alertManager.alert('You have not validate a difference', 'warning');
+          R.alertManager.alert('You have not validated a difference.', 'warning');
           this.setCurrentDifference(i);
-          return;
+          return false;
         } else {
           $(difference.fork.element).removeClass('difference');
         }
       }
-      this.mode = 'code';
-      this.codeJ.show();
-      this.diffJ.hide();
-      this.diffFooterJ.hide();
-      this.setHalfSize();
-    };
-
-    CodeEditor.prototype.finishDifferenceValidationAndCommit = function() {
-      this.finishDifferenceValidation();
-      R.fileManager.onCommitClicked();
-    };
-
-    CodeEditor.prototype.finishDifferenceValidationAndCreatePullRequest = function() {
-      this.finishDifferenceValidation();
-      R.fileManager.pullRequestModal();
+      this.setMode('coding');
+      return true;
     };
 
     return CodeEditor;
@@ -581,6 +599,14 @@ define(['coffee', 'typeahead'], function(CoffeeScript) {
       this.height = 200;
       return;
     }
+
+    Console.prototype.show = function() {
+      this.consoleJ.show();
+    };
+
+    Console.prototype.hide = function() {
+      this.consoleJ.hide();
+    };
 
     Console.prototype.close = function(height) {
       if (height == null) {

@@ -224,6 +224,18 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 			@speedGroup?.selected = false
 			return
 
+		hitTest: (event)->
+			wasSelected = @selected
+			hitResult = super(event)
+			if not hitResult? then return
+			if hitResult.type == 'stroke' or not wasSelected
+				hitResult.type = 'stroke'
+				if R.tools.select.selectionRectangle?
+					R.tools.select.selectionRectangle.beginAction(hitResult)
+				else
+					$(R.tools.select).one 'selectionRectangleUpdated', ()-> return R.tools.select.selectionRectangle.beginAction(hitResult)
+			return hitResult
+
 		# select the RPath: (only if it has a control path but no selection rectangle i.e. already selected)
 		# - create or update the selection rectangle,
 		# - create or update the global selection group (i.e. add this RPath to the grouop)

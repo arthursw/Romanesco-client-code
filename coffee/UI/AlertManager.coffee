@@ -14,10 +14,10 @@ define [ ], () ->
 		showAlert: (index)->
 			if @alerts.length<=0 || index<0 || index>=@alerts.length then return  	# check that index is valid
 
-			prevType = @alerts[@currentAlert].type
+			previousType = @alerts[@currentAlert]?.type
 			@currentAlert = index
 			alertJ = @alertsContainer.find(".alert")
-			alertJ.removeClass(prevType).addClass(@alerts[@currentAlert].type).text(@alerts[@currentAlert].message)
+			alertJ.removeClass(previousType).addClass(@alerts[@currentAlert].type).text(@alerts[@currentAlert].message)
 
 			@alertsContainer.find(".alert-number").text(@currentAlert+1)
 			return
@@ -36,7 +36,6 @@ define [ ], () ->
 			@alertsContainer.removeClass("r-hidden")
 
 			# append alert to alert array
-			@currentAlert = @alerts.length
 			@alerts.push( { type: type, message: message } )
 
 			if @alerts.length>0 then @alertsContainer.addClass("activated") 		# activate alert box (required for the first time)

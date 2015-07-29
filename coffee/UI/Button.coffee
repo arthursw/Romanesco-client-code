@@ -104,7 +104,9 @@ define [ 'Tools/Tool' ], (Tool) ->
 			return
 
 		toggleCategory: (event)->
-			$(this).parent().toggleClass('closed')
+			categoryJ = $(this).parent()
+			categoryJ.toggleClass('closed')
+			categoryJ.children('.folder').children().show()
 			return
 
 		fileLoaded: ()=>

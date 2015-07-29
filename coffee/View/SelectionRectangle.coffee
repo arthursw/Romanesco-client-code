@@ -140,9 +140,13 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 		hitTest: (event)->
 			hitResult = @path.hitTest(event.point, @constructor.hitOptions)
 			if not hitResult? then return false
+			@beginAction(hitResult)
+			return true
+
+		beginAction: (hitResult)->
 			@setTransformState(hitResult)
 			R.commandManager.beginAction(new Command[@transformState.command](R.selectedItems), event)
-			return true
+			return
 
 		update: ()->
 			@items = R.selectedItems
@@ -215,7 +219,7 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 			if Utils.Snap.getSnap() <= 1
 				@translate(event.delta)
 			else
-				if @transfromState.corner? 		# if snap and dragging an edge: snap the edge position
+				if @transformState.corner? 		# if snap and dragging an edge: snap the edge position
 					@snapEdgePosition(event)
 				else 							# if snap and dragging anything else: snap the new position
 					@snapPosition(event)

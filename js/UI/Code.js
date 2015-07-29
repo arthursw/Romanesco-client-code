@@ -1,6 +1,6 @@
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, Spinner) {
+define(['UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead'], function(Modal, CoffeeScript, Spinner) {
   var FileManager;
   FileManager = (function() {
     function FileManager() {
@@ -18,7 +18,6 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, S
       this.diffing = __bind(this.diffing, this);
       this.checkPullRequest = __bind(this.checkPullRequest, this);
       this.createPullRequestSubmit = __bind(this.createPullRequestSubmit, this);
-      this.pullRequestModal = __bind(this.pullRequestModal, this);
       this.initializeDifferenceValidation = __bind(this.initializeDifferenceValidation, this);
       this.getTreeAndInitializeDifference = __bind(this.getTreeAndInitializeDifference, this);
       this.getMasterBranchForDifferenceValidation = __bind(this.getMasterBranchForDifferenceValidation, this);
@@ -46,9 +45,12 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, S
       this.displayForks = __bind(this.displayForks, this);
       this.forkRowClicked = __bind(this.forkRowClicked, this);
       this.checkHasForkCallback = __bind(this.checkHasForkCallback, this);
+      this.displayDesiredFile = __bind(this.displayDesiredFile, this);
+      this.queryDesiredFile = __bind(this.queryDesiredFile, this);
       var createDirectoryBtnJ, createFileBtnJ, diffingBtnJ, listForksBtnJ, loadCustomForkBtnJ, runBtnJ, _ref;
       R.githubLogin = R.canvasJ.attr("data-github-login");
       this.codeJ = $('#Code');
+      this.scrollbarJ = this.codeJ.find('.mCustomScrollbar');
       this.runForkBtnJ = this.codeJ.find('button.run-fork');
       this.loadOwnForkBtnJ = this.codeJ.find('li.user-fork');
       listForksBtnJ = this.codeJ.find('li.list-forks');
@@ -136,6 +138,60 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, S
     FileManager.prototype.showCommitButtons = function() {
       this.undoChangesBtnJ.show();
       this.commitBtnJ.show();
+      this.createPullRequestBtnJ.hide();
+    };
+
+    FileManager.prototype.initializeFileTypeahead = function() {
+      var node, values, _i, _len, _ref;
+      values = [];
+      _ref = this.getNodes();
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        node = _ref[_i];
+        values.push({
+          value: node.name,
+          path: node.file.path
+        });
+      }
+      if (this.typeaheadFileEngine == null) {
+        this.typeaheadFileEngine = new Bloodhound({
+          name: 'Files',
+          local: values,
+          datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+          queryTokenizer: Bloodhound.tokenizers.whitespace
+        });
+        this.typeaheadFileEngine.initialize();
+        this.fileSearchInputJ = this.codeJ.find('input.search-file');
+        this.fileSearchInputJ.keyup(this.queryDesiredFile);
+      } else {
+        this.typeaheadFileEngine.clear();
+        this.typeaheadFileEngine.add(values);
+      }
+    };
+
+    FileManager.prototype.queryDesiredFile = function(event) {
+      var query;
+      query = this.fileSearchInputJ.val();
+      if (query === "") {
+        this.fileBrowserJ.find('li').show();
+        return;
+      }
+      this.fileBrowserJ.find('li').hide();
+      this.typeaheadFileEngine.get(query, this.displayDesiredFile);
+    };
+
+    FileManager.prototype.displayDesiredFile = function(suggestions) {
+      var elementJ, matches, node, suggestion, _i, _j, _len, _len1;
+      matches = [];
+      for (_i = 0, _len = suggestions.length; _i < _len; _i++) {
+        suggestion = suggestions[_i];
+        node = this.getNodeFromPath(suggestion.path);
+        matches.push($(node.element));
+      }
+      for (_j = 0, _len1 = matches.length; _j < _len1; _j++) {
+        elementJ = matches[_j];
+        elementJ.parentsUntil(this.fileBrowserJ).show();
+        elementJ.show();
+      }
     };
 
     FileManager.prototype.hideCommitButtons = function() {
@@ -392,6 +448,9 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, S
     };
 
     FileManager.prototype.loadFile = function(path, callback, owner) {
+      if (owner == null) {
+        owner = this.owner;
+      }
       console.log('load ' + path + ' of ' + owner);
       this.request('https://api.github.com/repos/' + owner + '/romanesco-client-code/contents/' + path, callback);
     };
@@ -689,19 +748,36 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, S
     };
 
     FileManager.prototype.createPullRequest = function() {
-      var modal;
-      modal = Modal.createModal({
-        title: 'Create pull request',
-        submit: this.getMasterBranchForDifferenceValidation
-      });
-      modal.addText('To make sure that you publish only what you want, you will validate the changes you made. \nThis can be especially usefull in case your fork is not up-to-date with the main repository.');
-      modal.show();
+      var message, modal;
+      if (!this.checkingPullRequest) {
+        modal = Modal.createModal({
+          title: 'Create pull request',
+          submit: this.getMasterBranchForDifferenceValidation
+        });
+        message = 'To make sure that you publish only what you want, you will validate the changes you made.\n ';
+        message += 'This can be especially usefull in case your fork is not up-to-date with the main repository.\n ';
+        message += 'Please check each file, and click "Create pull request" again once you are done.\n ';
+        modal.addText(message);
+        modal.show();
+        this.createPullRequestBtnJ.find('.text').text('Create pull request');
+        this.checkingPullRequest = true;
+      } else {
+        if (R.codeEditor.finishDifferenceValidation()) {
+          this.checkingPullRequest = false;
+          this.pullRequestModal();
+        }
+      }
     };
 
     FileManager.prototype.getMasterBranchForDifferenceValidation = function(data) {
       var owner;
       owner = (data.owner != null) && data.owner !== '' ? data.owner : 'arthursw';
+      if (owner === this.owner) {
+        R.alertManager.alert('The current repository is the same as the one you selected. Please choose a different repository to compare.', 'warning');
+        return;
+      }
       R.loader.showLoadingBar();
+      this.differenceOwner = owner;
       this.getMasterBranch(owner, this.getTreeAndInitializeDifference);
     };
 
@@ -838,7 +914,7 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, S
     FileManager.prototype.createPullRequestSubmit = function(data) {
       data = {
         title: data.title,
-        head: this.owner + ':' + data.branch,
+        head: this.owner + ':' + (data.branch || 'master'),
         base: 'master',
         body: data.body
       };
@@ -847,13 +923,18 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, S
     };
 
     FileManager.prototype.checkPullRequest = function(message) {
-      message = this.checkError(message);
-      if (!message) {
+      var result, _ref, _ref1;
+      result = this.checkError(message);
+      if (((_ref = message.content.errors) != null ? (_ref1 = _ref[0]) != null ? _ref1.message : void 0 : void 0) != null) {
+        R.alertManager.alert(message.content.errors[0].message, 'error');
+      }
+      if (!result) {
         return;
       }
       R.loader.hideLoadingBar();
       R.alertManager.alert('Your pull request was successfully created!', 'success');
       this.createPullRequestBtnJ.hide();
+      this.createPullRequestBtnJ.find('.text').text('Validate to create pull request');
     };
 
     FileManager.prototype.diffing = function() {
@@ -869,6 +950,13 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, S
         submitShortcut: true
       });
       modal.show();
+    };
+
+    FileManager.prototype.closeDiffing = function(allDifferencesValidated) {
+      if (!allDifferencesValidated && this.checkingPullRequest) {
+        this.createPullRequestBtnJ.hide();
+        this.checkingPullRequest = false;
+      }
     };
 
     FileManager.prototype.onCanMoveTo = function(moved_node, target_node, position) {
@@ -908,6 +996,12 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, S
         this.loadFile(event.node.file.path, this.openFile);
       }
     };
+
+    FileManager.prototype.onNodeOpened = function(event) {
+      $(event.node.element).children('ul').children('li').show();
+    };
+
+    FileManager.prototype.onNodeClosed = function(event) {};
 
 
     /* Load files */
@@ -1003,6 +1097,8 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, S
         this.fileBrowserJ.bind('tree.click', this.onNodeClicked);
         this.fileBrowserJ.bind('tree.dblclick', this.onNodeDoubleClicked);
         this.fileBrowserJ.bind('tree.move', this.onFileMove);
+        this.fileBrowserJ.bind('tree.open', this.onNodeOpened);
+        this.fileBrowserJ.bind('tree.close', this.onNodeClosed);
       }
       this.tree = this.fileBrowserJ.tree('getTree');
       this.tree.name = 'coffee';
@@ -1013,6 +1109,7 @@ define(['UI/Modal', 'coffee', 'spin', 'jqtree'], function(Modal, CoffeeScript, S
       };
       this.tree.id = this.gitTree.tree.length;
       this.updateLeaves(this.tree);
+      this.initializeFileTypeahead();
       this.hideLoader();
     };
 

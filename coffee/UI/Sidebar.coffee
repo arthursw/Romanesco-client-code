@@ -111,7 +111,7 @@ define [ 'Items/Item', 'UI/ModuleLoader', 'jqueryUi', 'scrollbar', 'typeahead' ]
 			return
 
 		initializeTypeahead: ()->
-			toolValues = @allToolsJ.children().map(()->return value: this.getAttribute('data-name')).get()
+			toolValues = @allToolsJ.find('.tool-btn,.category').map(()->return value: this.getAttribute('data-name')).get()
 			@typeaheadModuleEngine = new Bloodhound({
 				name: 'Tools',
 				local: toolValues,
@@ -127,15 +127,19 @@ define [ 'Items/Item', 'UI/ModuleLoader', 'jqueryUi', 'scrollbar', 'typeahead' ]
 		queryDesiredTool: (event)=>
 			query = @searchToolInputJ.val()
 			if query == ""
-				@allToolsJ.children().show()
+				@allToolsJ.find('.tool-btn').show()
+				@allToolsJ.find('.category').removeClass('closed').show()
 				return
-			@allToolsJ.children().hide()
+			@allToolsJ.find('.tool-btn').hide()
+			@allToolsJ.find('.category').addClass('closed').hide()
 			@typeaheadModuleEngine.get(query, @displayDesiredTool)
 			return
 
 		displayDesiredTool: (suggestions)=>
 			for suggestion in suggestions
-				@allToolsJ.children("[data-name='" + suggestion.value + "']").show()
+				matchJ = @allToolsJ.find("[data-name='" + suggestion.value + "']")
+				matchJ.show()
+				matchJ.parentsUntil(@allToolsJ).removeClass('closed').show()
 			return
 
 	# R.createToolButton = (name, iconURL, favorite, category=null, parentJ)->

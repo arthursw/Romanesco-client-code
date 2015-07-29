@@ -1,4 +1,4 @@
-define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner) ->
+define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeScript, Spinner) ->
 
 	class FileManager
 
@@ -6,6 +6,7 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner
 			R.githubLogin = R.canvasJ.attr("data-github-login")
 
 			@codeJ = $('#Code')
+			@scrollbarJ = @codeJ.find('.mCustomScrollbar')
 
 			@runForkBtnJ = @codeJ.find('button.run-fork')
 			@loadOwnForkBtnJ = @codeJ.find('li.user-fork')
@@ -29,6 +30,7 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner
 
 			createFileBtnJ = @codeJ.find('li.create-file')
 			createDirectoryBtnJ = @codeJ.find('li.create-directory')
+
 			runBtnJ = @codeJ.find('button.run')
 			@undoChangesBtnJ = @codeJ.find('button.undo-changes')
 			@commitBtnJ = @codeJ.find('button.commit')
@@ -105,7 +107,54 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner
 		showCommitButtons: ()->
 			@undoChangesBtnJ.show()
 			@commitBtnJ.show()
+			@createPullRequestBtnJ.hide()
 			return
+
+		# Find file input typeahead
+
+		initializeFileTypeahead: ()->
+			values = []
+			for node in @getNodes()
+				values.push(value: node.name, path: node.file.path)
+
+			if not @typeaheadFileEngine?
+				@typeaheadFileEngine = new Bloodhound({
+					name: 'Files',
+					local: values,
+					datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+					queryTokenizer: Bloodhound.tokenizers.whitespace
+				})
+				@typeaheadFileEngine.initialize()
+				@fileSearchInputJ = @codeJ.find('input.search-file')
+				@fileSearchInputJ.keyup @queryDesiredFile
+			else
+				@typeaheadFileEngine.clear()
+				@typeaheadFileEngine.add(values)
+
+			return
+
+		queryDesiredFile: (event)=>
+			query = @fileSearchInputJ.val()
+			if query == ""
+				@fileBrowserJ.find('li').show()
+				return
+			@fileBrowserJ.find('li').hide()
+			@typeaheadFileEngine.get(query, @displayDesiredFile)
+			return
+
+		displayDesiredFile: (suggestions)=>
+			matches = []
+			# gather matches
+			for suggestion in suggestions
+				node = @getNodeFromPath(suggestion.path)
+				matches.push($(node.element))
+			# show all matches and their parent nodes
+			for elementJ in matches
+				elementJ.parentsUntil(@fileBrowserJ).show()
+				elementJ.show()
+			return
+
+		# UI
 
 		hideCommitButtons: ()->
 			@undoChangesBtnJ.hide()
@@ -276,7 +325,7 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner
 
 		# Open file
 
-		loadFile: (path, callback, owner)->
+		loadFile: (path, callback, owner=@owner)->
 			console.log 'load ' + path + ' of ' + owner
 			@request('https://api.github.com/repos/' + owner + '/romanesco-client-code/contents/'+path, callback)
 			return
@@ -576,14 +625,28 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner
 		# pull request
 
 		createPullRequest: ()=>
-			modal = Modal.createModal( title: 'Create pull request', submit: @getMasterBranchForDifferenceValidation )
-			modal.addText('To make sure that you publish only what you want, you will validate the changes you made. \nThis can be especially usefull in case your fork is not up-to-date with the main repository.')
-			modal.show()
+			if not @checkingPullRequest
+				modal = Modal.createModal( title: 'Create pull request', submit: @getMasterBranchForDifferenceValidation )
+				message = 'To make sure that you publish only what you want, you will validate the changes you made.\n '
+				message += 'This can be especially usefull in case your fork is not up-to-date with the main repository.\n '
+				message += 'Please check each file, and click "Create pull request" again once you are done.\n '
+				modal.addText(message)
+				modal.show()
+				@createPullRequestBtnJ.find('.text').text('Create pull request')
+				@checkingPullRequest = true
+			else
+				if R.codeEditor.finishDifferenceValidation()
+					@checkingPullRequest = false
+					@pullRequestModal()
 			return
 
 		getMasterBranchForDifferenceValidation: (data)=>
 			owner = if data.owner? and data.owner != '' then data.owner else 'arthursw'
+			if owner == @owner
+				R.alertManager.alert('The current repository is the same as the one you selected. Please choose a different repository to compare.', 'warning')
+				return
 			R.loader.showLoadingBar()
+			@differenceOwner = owner
 			@getMasterBranch(owner, @getTreeAndInitializeDifference)
 			return
 
@@ -655,7 +718,7 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner
 				@updateFile(node, newContent)
 			return
 
-		pullRequestModal: ()=>
+		pullRequestModal: ()->
 			modal = Modal.createModal( title: 'Create pull request', submit: @createPullRequestSubmit )
 			modal.addTextInput(name: 'title', placeholder: 'Amazing new feature', label: 'Title of the pull request', required: true)
 			# modal.addTextInput(name: 'branch', placeholder: 'master', label: 'Branch', required: true, submitShortcut: true)
@@ -666,7 +729,7 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner
 		createPullRequestSubmit: (data)=>
 			data =
 				title: data.title
-				head: @owner + ':' + data.branch
+				head: @owner + ':' + (data.branch or 'master')
 				base: 'master'
 				body: data.body
 			R.loader.showLoadingBar()
@@ -674,11 +737,13 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner
 			return
 
 		checkPullRequest: (message)=>
-			message = @checkError(message)
-			if not message then return
+			result = @checkError(message)
+			if message.content.errors?[0]?.message? then R.alertManager.alert message.content.errors[0].message, 'error'
+			if not result then return
 			R.loader.hideLoadingBar()
 			R.alertManager.alert('Your pull request was successfully created!', 'success')
 			@createPullRequestBtnJ.hide()
+			@createPullRequestBtnJ.find('.text').text('Validate to create pull request')
 			return
 
 		# diffing
@@ -689,6 +754,11 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner
 			modal.show()
 			return
 
+		closeDiffing: (allDifferencesValidated)->
+			if not allDifferencesValidated and @checkingPullRequest
+				@createPullRequestBtnJ.hide()
+				@checkingPullRequest = false
+			return
 
 		# Low level git operation
 
@@ -737,6 +807,13 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner
 				R.codeEditor.setFile(event.node)
 			else
 				@loadFile(event.node.file.path, @openFile)
+			return
+
+		onNodeOpened: (event)->
+			$(event.node.element).children('ul').children('li').show()
+			return
+
+		onNodeClosed: (event)->
 			return
 
 		### Load files ###
@@ -808,6 +885,8 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner
 				@fileBrowserJ.bind('tree.click', @onNodeClicked)
 				@fileBrowserJ.bind('tree.dblclick', @onNodeDoubleClicked)
 				@fileBrowserJ.bind('tree.move', @onFileMove)
+				@fileBrowserJ.bind('tree.open', @onNodeOpened)
+				@fileBrowserJ.bind('tree.close', @onNodeClosed)
 
 			@tree = @fileBrowserJ.tree('getTree')
 			@tree.name = 'coffee'
@@ -818,6 +897,7 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree' ], (Modal, CoffeeScript, Spinner
 			@tree.id = @gitTree.tree.length
 			@updateLeaves(@tree)
 
+			@initializeFileTypeahead()
 			@hideLoader()
 			return
 
