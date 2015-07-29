@@ -236,8 +236,11 @@
       };
 
       CodeEditor.prototype.onMouseUp = function(event) {
+        var _ref;
         if (this.draggingEditor) {
-          this.editor.resize();
+          if ((_ref = this.editor) != null) {
+            _ref.resize();
+          }
         }
         this.draggingEditor = false;
         this.console.onMouseUp(event);
@@ -313,7 +316,7 @@
       CodeEditor.prototype.setFile = function(node) {
         var _ref;
         R.codeEditor.open();
-        this.fileNameJ.text(node.name);
+        this.fileNameJ.val(node.name);
         if (this.mode === 'coding') {
           this.node = node;
           this.setSource((node != null ? (_ref = node.file) != null ? _ref.content : void 0 : void 0) || '');
@@ -460,6 +463,7 @@
           });
           this.differenceInitialized = true;
         }
+        this.allDifferencesValidatedMessageDisplayed = false;
         this.setCurrentDifference(0);
       };
 
@@ -521,7 +525,9 @@
         leftEditor.setValue(((_ref = difference.main) != null ? _ref.content : void 0) || this.constructor.messages.fileDoesNotExist.onMainRepository);
         rightEditor.setValue(((_ref1 = difference.fork) != null ? _ref1.content : void 0) || this.constructor.messages.fileDoesNotExist.onFork);
         rightEditor.on('change', this.onDifferenceChange);
-        if (this.allDifferencesValidated()) {
+        this.fileNameJ.val(R.fileManager.getFileName(difference.fork || difference.main));
+        if (this.allDifferencesValidated() && !this.allDifferencesValidatedMessageDisplayed) {
+          this.allDifferencesValidatedMessageDisplayed = true;
           R.alertManager.alert('You can now create your pull request.', 'success');
         }
       };

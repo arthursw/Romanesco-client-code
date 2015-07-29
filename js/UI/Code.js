@@ -344,6 +344,12 @@
         this.request('https://api.github.com/repos/' + R.githubLogin + '/romanesco-client-code/forks', this.forkCreationResponse, 'post');
       };
 
+      FileManager.prototype.getFileName = function(file) {
+        var dirs;
+        dirs = file.path.split('/');
+        return dirs[dirs.length - 1];
+      };
+
       FileManager.prototype.coffeeToJsPath = function(coffeePath) {
         return coffeePath.replace(/^coffee/, 'js').replace(/coffee$/, 'js');
       };

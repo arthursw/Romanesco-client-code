@@ -263,6 +263,10 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 
 		# Navigate in files
 
+		getFileName: (file)->
+			dirs = file.path.split('/')
+			return dirs[dirs.length-1]
+
 		coffeeToJsPath: (coffeePath)->
 			return coffeePath.replace(/^coffee/, 'js').replace(/coffee$/, 'js')
 
