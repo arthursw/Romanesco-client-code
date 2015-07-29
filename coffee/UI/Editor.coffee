@@ -3,7 +3,7 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 	class CodeEditor
 
 		constructor: ()->
-			@mode = 'code'
+			@mode = 'coding'
 
 			# editor
 			@editorJ = $("#codeEditor")
@@ -135,6 +135,24 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 			@initialized = true
 			return
 
+		### set mode (coding or diffing) ###
+
+		setMode: (@mode)->
+			switch @mode
+				when 'diffing'
+					@codeJ.hide()
+					@diffJ.show()
+					@diffFooterJ.show()
+					@console.hide()
+					@setFullSize()
+				when 'coding'
+					@codeJ.show()
+					@diffJ.hide()
+					@diffFooterJ.hide()
+					@console.show()
+					R.fileManager.closeDiffing(@allDifferencesValidated())
+			return
+
 		### commande manager in console mode ###
 
 		addCommand: (command)->
@@ -202,7 +220,7 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 
 		onMouseMove: (event)->
 			if @draggingEditor
-				@editorJ.css( right: window.innerWidth-event.pageX)
+				@editorJ.css( right: Math.max(0, window.innerWidth-event.pageX))
 			@console.onMouseMove(event)
 			return
 
@@ -276,10 +294,12 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 			return
 
 		setFile: (node)->
-			if @mode == 'code'
+			R.codeEditor.open()
+			@fileNameJ.text(node.name)
+			if @mode == 'coding'
 				@node = node
 				@setSource(node?.file?.content or '')
-			else if @mode == 'difference'
+			else if @mode == 'diffing'
 				@setDifferenceFromNode(node)
 			return
 
@@ -331,7 +351,7 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 			code = @editor.getValue()
 			js = @compile(code)
 			if not js then return
-			if @mode == 'code' and @node? then R.fileManager.updateFile(@node, code, js)
+			if @mode == 'coding' and @node? then R.fileManager.updateFile(@node, code, js)
 			# replace the requirejs 'define' function by a custom define function to execute the code
 			requirejsDefine = window.define
 			modules = require.s.contexts._.defined
@@ -364,28 +384,24 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 
 		aceDiffLoaded: (AceDiff)=>
 			# initialize html
+			@diffJ.find('.left-repository-name').text(if R.fileManager.differenceOwner == 'arthursw' then 'Main repository' else R.fileManager.differenceOwner)
+			@diffJ.find('.right-repository-name').text(if R.fileManager.owner == 'arthursw' then 'Main repository' else R.fileManager.owner)
+
 			@open()
-			@codeJ.hide()
-			@diffJ.show()
-			@diffFooterJ.show()
-			@setFullSize()
-			@mode = 'difference'
-			
+			@setMode('diffing')
+
 			if not @differenceInitialized
+
+				closeDiffingBtnJ = @diffJ.find('button.close-diffing')
+				closeDiffingBtnJ.click ()=> return @setMode('coding')
 
 				@previousBtnJ = @diffFooterJ.find('button.previous')
 				@nextBtnJ = @diffFooterJ.find('button.next')
 				@copyMainBtnJ = @diffFooterJ.find('button.copy-main')
-				@commitBtnJ = @diffFooterJ.find('button.commit')
-				@pullRequestBtnJ = @diffFooterJ.find('button.pull-request')
 
 				@previousBtnJ.click @onPreviousDifference
 				@nextBtnJ.click @onNextDifference
 				@copyMainBtnJ.click @onCopyFile
-				@commitBtnJ.click @finishDifferenceValidationAndCommit
-				@commitBtnJ.hide()
-				@pullRequestBtnJ.click @finishDifferenceValidationAndCreatePullRequest
-				@pullRequestBtnJ.show()
 
 				@aceDiff = new AceDiff(
 					mode: "ace/mode/coffee"
@@ -405,34 +421,35 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 			@updateCurrentDifference()
 			return
 
+		allDifferencesValidated: ()->
+			if not @differences? then true
+			for difference in @differences
+				if not difference.checked
+					return false
+			return true
+
 		updateCurrentDifference: ()=>
 			difference = @differences[@currentDifference]
 
 			if difference.main? and not difference.main.content?
 				R.loader.showLoadingBar()
-				R.waitingMainFile = difference.main
-				console.log 'waiting for ' + difference.main.path + ' of main repo ' +  difference.main.url
-				$(difference.main).on('loaded', @updateCurrentDifference)
+				$(difference.main).one('loaded', @updateCurrentDifference)
 				return
 			if difference.fork? and not difference.fork.content?
 				R.loader.showLoadingBar()
-				R.waitingForkFile = difference.fork
-				console.log 'waiting for ' + difference.fork.path + ' of fork ' +  difference.fork.url
-				$(difference.fork).on('loaded', @updateCurrentDifference)
+				$(difference.fork).one('loaded', @updateCurrentDifference)
 				return
 
 			R.loader.hideLoadingBar()
-			$(difference.main).off('loaded', @updateCurrentDifference)
-			$(difference.fork).off('loaded', @updateCurrentDifference)
 
 			difference.checked = true
 
 			if not difference.main?
-				@copyMainBtnJ.text("Delete file on fork")
+				@copyMainBtnJ.find('.text').text("Delete file on fork")
 			else if not difference.fork?
-				@copyMainBtnJ.text("Create file on fork")
+				@copyMainBtnJ.find('.text').text("Create file on fork")
 			else
-				@copyMainBtnJ.text("Replace file on fork")
+				@copyMainBtnJ.find('.text').text("Replace file on this fork")
 
 			if @currentDifference <= 0 then @previousBtnJ.addClass("disabled") else @previousBtnJ.removeClass("disabled")
 			if @currentDifference >= @differences.length-1 then @nextBtnJ.addClass("disabled") else @nextBtnJ.removeClass("disabled")
@@ -445,6 +462,9 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 			rightEditor.setValue(difference.fork?.content or @constructor.messages.fileDoesNotExist.onFork)
 
 			rightEditor.on('change', @onDifferenceChange)
+
+			if @allDifferencesValidated()
+				R.alertManager.alert 'You can now create your pull request.', 'success'
 			return
 
 		setDifferenceFromNode: (node)->
@@ -475,34 +495,19 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 			content = @aceDiff.getEditors().right.getValue()
 			if content == @constructor.messages.fileDoesNotExist.onFork then content = null
 			R.fileManager.changeDifference(@differences[@currentDifference], content)
-			@commitBtnJ.show()
-			@pullRequestBtnJ.hide()
 			return
 
 		finishDifferenceValidation: ()->
 			for difference, i in @differences
 				if not difference.checked
-					R.alertManager.alert('You have not validate a difference', 'warning')
+					R.alertManager.alert('You have not validated a difference.', 'warning')
 					@setCurrentDifference(i)
-					return
+					return false
 				else
 					$(difference.fork.element).removeClass('difference')
-			@mode = 'code'
-			@codeJ.show()
-			@diffJ.hide()
-			@diffFooterJ.hide()
-			@setHalfSize()
-			return
 
-		finishDifferenceValidationAndCommit: ()=>
-			@finishDifferenceValidation()
-			R.fileManager.onCommitClicked()
-			return
-
-		finishDifferenceValidationAndCreatePullRequest: ()=>
-			@finishDifferenceValidation()
-			R.fileManager.pullRequestModal()
-			return
+			@setMode('coding')
+			return true
 
 	class Console
 
@@ -517,6 +522,14 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 
 			@height = 200
 
+			return
+
+		show: ()->
+			@consoleJ.show()
+			return
+
+		hide: ()->
+			@consoleJ.hide()
 			return
 
 		close: (height=null)->

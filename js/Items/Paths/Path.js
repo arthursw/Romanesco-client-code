@@ -205,6 +205,26 @@
         }
       };
 
+      Path.prototype.hitTest = function(event) {
+        var hitResult, wasSelected;
+        wasSelected = this.selected;
+        hitResult = Path.__super__.hitTest.call(this, event);
+        if (hitResult == null) {
+          return;
+        }
+        if (hitResult.type === 'stroke' || !wasSelected) {
+          hitResult.type = 'stroke';
+          if (R.tools.select.selectionRectangle != null) {
+            R.tools.select.selectionRectangle.beginAction(hitResult);
+          } else {
+            $(R.tools.select).one('selectionRectangleUpdated', function() {
+              return R.tools.select.selectionRectangle.beginAction(hitResult);
+            });
+          }
+        }
+        return hitResult;
+      };
+
       Path.prototype.select = function() {
         if (!Path.__super__.select.call(this) || (this.controlPath == null)) {
           return false;

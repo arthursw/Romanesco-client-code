@@ -98,7 +98,10 @@
       };
 
       Button.prototype.toggleCategory = function(event) {
-        $(this).parent().toggleClass('closed');
+        var categoryJ;
+        categoryJ = $(this).parent();
+        categoryJ.toggleClass('closed');
+        categoryJ.children('.folder').children().show();
       };
 
       Button.prototype.fileLoaded = function() {

@@ -186,10 +186,11 @@
       };
 
       PrecisePath.prototype.hitTest = function(event) {
-        var hitResult, modifyPoint, specialKey;
+        var hitResult, modifyPoint, specialKey, wasSelected;
         this.deselectPoint();
+        wasSelected = this.selected;
         hitResult = PrecisePath.__super__.hitTest.call(this, event);
-        if (hitResult == null) {
+        if (!wasSelected || (hitResult == null)) {
           return;
         }
         specialKey = R.specialKey(event);

@@ -178,9 +178,10 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 		hitTest: (event)->
 			@deselectPoint()
 
+			wasSelected = @selected
 			hitResult = super(event)
-			if not hitResult? then return
-			
+			if not wasSelected or not hitResult? then return
+
 			specialKey = R.specialKey(event)
 			@selectedSegment = hitResult.segment
 

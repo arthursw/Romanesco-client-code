@@ -19,6 +19,7 @@ define [ 'Tools/Tool', 'Items/Lock', 'Commands/Command', 'View/SelectionRectangl
 		@hitOptions =
 			stroke: true
 			fill: true
+			handles: true
 			selected: true
 
 		constructor: () ->
@@ -48,6 +49,7 @@ define [ 'Tools/Tool', 'Items/Lock', 'Commands/Command', 'View/SelectionRectangl
 			if R.selectedItems.length > 0
 				@selectionRectangle ?= SelectionRectangle.create()
 				@selectionRectangle.update()
+				$(@).trigger('selectionRectangleUpdated')
 			else
 				@selectionRectangle?.remove()
 				@selectionRectangle = null

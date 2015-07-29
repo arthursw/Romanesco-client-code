@@ -140,7 +140,7 @@
 
       Sidebar.prototype.initializeTypeahead = function() {
         var toolValues;
-        toolValues = this.allToolsJ.children().map(function() {
+        toolValues = this.allToolsJ.find('.tool-btn,.category').map(function() {
           return {
             value: this.getAttribute('data-name')
           };
@@ -160,18 +160,22 @@
         var query;
         query = this.searchToolInputJ.val();
         if (query === "") {
-          this.allToolsJ.children().show();
+          this.allToolsJ.find('.tool-btn').show();
+          this.allToolsJ.find('.category').removeClass('closed').show();
           return;
         }
-        this.allToolsJ.children().hide();
+        this.allToolsJ.find('.tool-btn').hide();
+        this.allToolsJ.find('.category').addClass('closed').hide();
         this.typeaheadModuleEngine.get(query, this.displayDesiredTool);
       };
 
       Sidebar.prototype.displayDesiredTool = function(suggestions) {
-        var suggestion, _i, _len;
+        var matchJ, suggestion, _i, _len;
         for (_i = 0, _len = suggestions.length; _i < _len; _i++) {
           suggestion = suggestions[_i];
-          this.allToolsJ.children("[data-name='" + suggestion.value + "']").show();
+          matchJ = this.allToolsJ.find("[data-name='" + suggestion.value + "']");
+          matchJ.show();
+          matchJ.parentsUntil(this.allToolsJ).removeClass('closed').show();
         }
       };
 
