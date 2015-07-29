@@ -295,11 +295,7 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 
 		setFile: (node)->
 			R.codeEditor.open()
-<<<<<<< HEAD
 			@fileNameJ.val(node.name)
-=======
-			@fileNameJ.text(node.name)
->>>>>>> arthur-test-account-master
 			if @mode == 'coding'
 				@node = node
 				@setSource(node?.file?.content or '')
@@ -468,14 +464,10 @@ define [ 'coffee', 'typeahead' ], (CoffeeScript) -> 			# 'ace/ext-language_tools
 
 			rightEditor.on('change', @onDifferenceChange)
 
-<<<<<<< HEAD
 			@fileNameJ.val(R.fileManager.getFileName(difference.fork or difference.main))
 
 			if @allDifferencesValidated() and not @allDifferencesValidatedMessageDisplayed
 				@allDifferencesValidatedMessageDisplayed = true
-=======
-			if @allDifferencesValidated()
->>>>>>> arthur-test-account-master
 				R.alertManager.alert 'You can now create your pull request.', 'success'
 			return
 

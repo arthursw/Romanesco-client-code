@@ -316,11 +316,7 @@
       CodeEditor.prototype.setFile = function(node) {
         var _ref;
         R.codeEditor.open();
-<<<<<<< HEAD
         this.fileNameJ.val(node.name);
-=======
-        this.fileNameJ.text(node.name);
->>>>>>> arthur-test-account-master
         if (this.mode === 'coding') {
           this.node = node;
           this.setSource((node != null ? (_ref = node.file) != null ? _ref.content : void 0 : void 0) || '');
@@ -529,13 +525,9 @@
         leftEditor.setValue(((_ref = difference.main) != null ? _ref.content : void 0) || this.constructor.messages.fileDoesNotExist.onMainRepository);
         rightEditor.setValue(((_ref1 = difference.fork) != null ? _ref1.content : void 0) || this.constructor.messages.fileDoesNotExist.onFork);
         rightEditor.on('change', this.onDifferenceChange);
-<<<<<<< HEAD
         this.fileNameJ.val(R.fileManager.getFileName(difference.fork || difference.main));
         if (this.allDifferencesValidated() && !this.allDifferencesValidatedMessageDisplayed) {
           this.allDifferencesValidatedMessageDisplayed = true;
-=======
-        if (this.allDifferencesValidated()) {
->>>>>>> arthur-test-account-master
           R.alertManager.alert('You can now create your pull request.', 'success');
         }
       };

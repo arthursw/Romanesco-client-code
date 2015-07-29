@@ -140,7 +140,7 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 				return
 			@fileBrowserJ.find('li').hide()
 			@typeaheadFileEngine.get(query, @displayDesiredFile)
-<<<<<<< HEAD
+
 			return
 
 		displayDesiredFile: (suggestions)=>
@@ -155,22 +155,6 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 				elementJ.show()
 			return
 
-=======
-			return
-
-		displayDesiredFile: (suggestions)=>
-			matches = []
-			# gather matches
-			for suggestion in suggestions
-				node = @getNodeFromPath(suggestion.path)
-				matches.push($(node.element))
-			# show all matches and their parent nodes
-			for elementJ in matches
-				elementJ.parentsUntil(@fileBrowserJ).show()
-				elementJ.show()
-			return
-
->>>>>>> arthur-test-account-master
 		# UI
 
 		hideCommitButtons: ()->
