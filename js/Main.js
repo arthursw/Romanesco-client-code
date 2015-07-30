@@ -1,5 +1,5 @@
 define(['Utils/Utils', 'Utils/Global', 'Utils/FontManager', 'Loader', 'Socket', 'City', 'Rasterizers/RasterizerManager', 'UI/Sidebar', 'UI/Code', 'UI/Editor', 'UI/Modal', 'UI/AlertManager', 'UI/Controllers/ControllerManager', 'Commands/CommandManager', 'View/View', 'Tools/ToolManager'], function(Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, CodeEditor, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager) {
-  console.log('FORK from arthur-test-account :-) :-)');
+  console.log('FORK from arthur-test-account :-)');
 
   /*
   	 * Romanesco documentation #
