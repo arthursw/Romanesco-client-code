@@ -18,7 +18,6 @@ Utils.URL.setParameters = (parameters)->
 	return hash
 
 window.Utils = Utils
-window.R = {}
 window.P = {}
 R.DajaxiceXMLHttpRequest = window.XMLHttpRequest
 window.XMLHttpRequest = window.RXMLHttpRequest

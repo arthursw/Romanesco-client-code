@@ -39,8 +39,11 @@ define [ 'Tools/Tool' ], (Tool) ->
 			@btnJ.attr("alt", name)
 
 			if iconURL? and iconURL != '' 															# set icon if url is provided
-				if iconURL.indexOf('//') < 0 and iconURL.indexOf('static/images/icons/inverted/') < 0
-					iconURL = 'static/images/icons/inverted/' + iconURL
+				iconRootURL = 'static/images/icons/inverted/'
+				if iconURL.indexOf('//') < 0 and iconURL.indexOf(iconRootURL) < 0
+					iconURL = iconRootURL + iconURL
+				if iconURL.indexOf(iconRootURL) == 0
+					iconURL = location.origin + '/' + iconURL
 				@btnJ.append('<img src="' + iconURL + '" alt="' + name + '-icon">')
 			else 																					# create icon if url is not provided
 				@btnJ.addClass("text-btn")

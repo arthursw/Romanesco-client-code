@@ -125,7 +125,7 @@ define [ 'UI/Button' ], (Button) ->
 
 		updateCursor: ()->
 			if @constructor.cursor.icon?
-				R.stageJ.css('cursor', 'url(static/images/cursors/'+@constructor.cursor.icon+'.png) '+@constructor.cursor.position.x+' '+@constructor.cursor.position.y+','+@constructor.cursor.name)
+				R.stageJ.css('cursor', 'url(' + location.origin + '/static/images/cursors/'+@constructor.cursor.icon+'.png) '+@constructor.cursor.position.x+' '+@constructor.cursor.position.y+','+@constructor.cursor.name)
 			else
 				R.stageJ.css('cursor', @constructor.cursor.name)
 			return

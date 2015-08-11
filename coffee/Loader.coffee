@@ -46,12 +46,20 @@ define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Loc
 			$("#drawingBar").hide()
 			return
 
-		showLoadingBar: ()=>
+		showLoadingBarCallback: ()=>
 			$("#loadingBar").show()
 			@spinner.spin(document.getElementById('loadingBar'))
 			return
 
+		showLoadingBar: (timeout)=>
+			if timeout? and timeout>0
+				@showLoadingBarTimeoutID = setTimeout(@showLoadingBarCallback, timeout)
+			else
+				@showLoadingBarCallback()
+			return
+
 		hideLoadingBar: ()=>
+			clearTimeout(@showLoadingBarTimeoutID)
 			$("#loadingBar").hide()
 			@spinner.stop()
 			return
@@ -79,8 +87,9 @@ define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Loc
 			@previousLoadPosition = null
 			return
 
+
 		loadRequired: ()->
-			if not R.rasterizerMode and @previousLoadPosition?
+			if @previousLoadPosition?
 				if @previousLoadPosition.position.subtract(P.view.center).length<50
 					if Math.abs(1-@previousLoadPosition.zoom/P.view.zoom)<0.2
 						return false
@@ -137,38 +146,36 @@ define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Loc
 							itemsOutsideLimit.splice(j,1)
 			return
 
+		getAreaToLoad: (areasToLoad, pos, planet, x, y, scale, qZoom)->
+			if not @areaIsLoaded(pos, planet, qZoom)
+				area = { pos: pos, planet: planet }
+
+				areasToLoad.push(area)
+
+				area.zoom = qZoom
+
+				if @debug then @createAreaDebugRectangle(x, y, scale)
+
+				@loadedAreas.push(area)
+			return
+
 		getAreasToLoad: (scale, qZoom, t, l, b, r)->
 			areasToLoad = []
 			for x in [l .. r] by scale
 				for y in [t .. b] by scale
 					planet = Utils.CS.projectToPlanet(new P.Point(x,y))
 					pos = Utils.CS.projectToPosOnPlanet(new P.Point(x,y))
-
 					# rasterizer always add all areas since it must check if it is up-to-date
 					# (items which are loaded could need to be updated)
-					if R.rasterizerMode
-
-						area = { pos: pos, planet: planet }
-
-						areasToLoad.push(area)
-
-						if @debug then @createAreaDebugRectangle(x, y, scale)
-
-						if not @areaIsLoaded(pos, planet)
-							@loadedAreas.push(area)
-					else
-						if not @areaIsLoaded(pos, planet, qZoom)
-
-							area = { pos: pos, planet: planet }
-
-							areasToLoad.push(area)
-
-							area.zoom = qZoom
-
-							if @debug then @createAreaDebugRectangle(x, y, scale)
-
-							@loadedAreas.push(area)
+					@getAreaToLoad(areasToLoad, pos, planet, x, y, scale, qZoom)
 			return areasToLoad
+
+		nothingToLoad: (areasToLoad)->
+			return areasToLoad.length<=0
+
+		requestAreas: (rectangle, areasToLoad, qZoom)->
+			Dajaxice.draw.load(@loadCallback, { rectangle: rectangle, areasToLoad: areasToLoad, qZoom: qZoom, city: R.city })
+			return
 
 		# load an area from the server
 		# the project coordinate system is divided into square cells of size *R.scale*
@@ -221,25 +228,20 @@ define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Loc
 			# add areas to load
 			areasToLoad = @getAreasToLoad(scale, qZoom, t, l, b, r)
 
-			if not R.rasterizerMode and areasToLoad.length<=0 	# return if there is nothing to load
-				return false
+			if @nothingToLoad(areasToLoad) then return false
 
 			# load areas
-			_.defer(@showLoadingBar)
+			@showDrawingBar()
+			@showLoadingBar(1000)
 
-			if not R.rasterizerMode
-				rectangle = { left: l / 1000.0, top: t / 1000.0, right: r / 1000.0, bottom: b / 1000.0 }
-				Dajaxice.draw.load(@loadCallback, { rectangle: rectangle, areasToLoad: areasToLoad, qZoom: qZoom, city: R.city })
-			else
-				itemsDates = R.createItemsDates(bounds)
-				Dajaxice.draw.loadRasterizer(@loadCallback, { areasToLoad: areasToLoad, itemsDates: itemsDates, cityPk: R.city })
-
+			rectangle = { left: l / 1000.0, top: t / 1000.0, right: r / 1000.0, bottom: b / 1000.0 }
+			@requestAreas(rectangle, areasToLoad, qZoom)
 			return true
 
 		dispatchLoadFinished: ()->
 			console.log "dispatch command executed"
 			commandEvent = document.createEvent('Event')
-			commandEvent .initEvent('command executed', true, true)
+			commandEvent.initEvent('command executed', true, true)
 			document.dispatchEvent(commandEvent)
 			return
 
@@ -257,19 +259,20 @@ define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Loc
 				R.items[pk]?.remove()
 			return
 
+		mustLoadItem: (item)->
+			return not R.items[item._id.$oid]?
+
+		unloadItem: (item)->
+			return
+
 		parseNewItems: (items)->
 			itemsToLoad = []
 
 			for i in items
 				item = JSON.parse(i)
 
-				if not R.rasterizerMode and R.items[item._id.$oid]?
-					continue
-				else if R.rasterizerMode
-					itemToReplace = R.items[item._id.$oid]
-					if itemToReplace?
-						console.log "itemToReplace: " + itemToReplace.pk
-						itemToReplace.remove() 	# if item is loaded: remove it (it must be updated)
+				if not @mustLoadItem(item) then continue
+				@unloadItem(item)
 
 				if item.rType == 'Box'
 					itemsToLoad.unshift(item)
@@ -282,6 +285,7 @@ define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Loc
 			@createPath(args)
 			delete @pathsToCreate[args.pk]
 			if Utils.isEmpty(@pathsToCreate)
+				@hideDrawingBar()
 				@hideLoadingBar()
 				R.rasterizer.checkRasterizeAreasToUpdate?(true)
 			return
@@ -377,6 +381,13 @@ define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Loc
 						continue
 			return
 
+		endLoading: ()->
+			if Utils.isEmpty(@pathsToCreate)
+				@hideLoadingBar()
+				@hideDrawingBar()
+			@dispatchLoadFinished()
+			return
+
 		# load callback: add loaded RItems
 		loadCallback: (results)=>
 			console.log "load callback"
@@ -407,28 +418,7 @@ define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Loc
 
 			Item.Div.updateZindex(R.sortedDivs)
 
-			if not R.rasterizerMode
-
-				# update areas to update (draw items which lie on those areas)
-				# for pk, rectangle of R.areasToUpdate
-				# 	if rectangle.intersects(P.view.bounds)
-				# 		R.updateView()
-				# 		break
-
-				# loadFonts()
-				# P.view.draw()
-				# updateView()
-
-				if Utils.isEmpty(@pathsToCreate)
-					@hideLoadingBar()
-
-				@dispatchLoadFinished()
-
-			if typeof window.saveOnServer == "function"
-				console.log "rasterizeAndSaveOnServer"
-				R.rasterizeAndSaveOnServer()
-
-			# R.stopLoadingBar()
+			@endLoading()
 			return
 
 		# check for any error in an ajax callback and display the appropriate error message
@@ -438,15 +428,18 @@ define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Loc
 			if not result? then return true
 			if result.state == 'not_logged_in'
 				R.alertManager.alert("You must be logged in to update drawings to the database.", "info")
+				@hideLoadingBar()
 				return false
 			if result.state == 'error'
 				if result.message == 'invalid_url'
 					R.alertManager.alert("Your URL is invalid or does not point to an existing page.", "error")
 				else
 					R.alertManager.alert("Error: " + result.message, "error")
+				@hideLoadingBar()
 				return false
 			else if result.state == 'system_error'
 				console.log result.message
+				@hideLoadingBar()
 				return false
 			return true
 
@@ -521,5 +514,61 @@ define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Loc
 
 		# 	Dajaxice.draw.benchmark_load(R.loader.checkError, { areasToLoad: areasToLoad })
 		# 	return
+
+	class RasterizerLoader extends Loader
+
+		loadRequired: ()->
+			return true
+
+		nothingToLoad: (areasToLoad)->
+			return false
+
+		getAreaToLoad: (areasToLoad, pos, planet, x, y, scale, qZoom)->
+			area = { pos: pos, planet: planet }
+
+			areasToLoad.push(area)
+
+			if @debug then @createAreaDebugRectangle(x, y, scale)
+
+			if not @areaIsLoaded(pos, planet)
+				@loadedAreas.push(area)
+			return
+
+		createItemsDates: ()->
+			itemsDates = {}
+			for pk, item of R.items
+				# if bounds.contains(item.getBounds())
+				# type = ''
+				# if Lock.prototype.isPrototypeOf(item)
+				# 	type = 'Box'
+				# else if Div.prototype.isPrototypeOf(item)
+				# 	type = 'Div'
+				# else if Path.prototype.isPrototypeOf(item)
+				# 	type = 'Path'
+				itemsDates[pk] = item.lastUpdateDate
+				# itemsDates.push( pk: pk, lastUpdate: item.lastUpdateDate, type: type )
+			return itemsDates
+
+		requestAreas: (rectangle, areasToLoad, qZoom)->
+			itemsDates = @createItemsDates()
+			Dajaxice.draw.loadRasterizer(@loadCallback, { areasToLoad: areasToLoad, itemsDates: itemsDates, city: R.city })
+			return
+
+		mustLoadItem: ()->
+			return true
+
+		unloadItem: (item)->
+			itemToReplace = R.items[item._id.$oid]
+			if itemToReplace?
+				console.log "itemToReplace: " + itemToReplace.pk
+				itemToReplace.remove() 	# if item is loaded: remove it (it must be updated)
+			return
+
+		endLoading: ()->
+			if typeof window.saveOnServer == "function"
+				R.rasterizerBot.rasterizeAndSaveOnServer()
+			return
+
+	Loader.RasterizerLoader = RasterizerLoader
 
 	return Loader

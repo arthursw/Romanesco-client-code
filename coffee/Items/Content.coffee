@@ -258,10 +258,10 @@ define [ 'Items/Item' ], (Item) ->
 			locks = Item.Lock.getLocksWhichIntersect(bounds)
 
 			for lock in locks
-				if lock.rectangle.contains(bounds)
-					if lock.owner == R.me
+				if lock.rectangle.intersects(bounds)
+					if lock.rectangle.contains(bounds) and lock.owner == R.me
 						lock.addItem(@)
-					else
+					else if lock.owner != R.me
 						R.alertManager.alert("The item intersects with a lock", "Warning")
 						@remove()
 						return false
@@ -282,4 +282,5 @@ define [ 'Items/Item' ], (Item) ->
 		update: ()->
 			return
 
+	Item.Content = Content
 	return Content

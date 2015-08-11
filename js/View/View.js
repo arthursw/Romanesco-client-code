@@ -177,12 +177,16 @@
           hashParameters['city-owner'] = R.city.owner;
           hashParameters['city-name'] = R.city.name;
         }
-        hashParameters['location'] = P.view.center.x.toFixed(2) + ',' + P.view.center.y.toFixed(2);
+        hashParameters['location'] = Utils.pointToString(P.view.center);
         location.hash = Utils.URL.setParameters(hashParameters);
       };
 
+      View.prototype.setPositionFromString = function(positionString) {
+        this.moveTo(Utils.stringToPoint(positionString));
+      };
+
       View.prototype.onHashChange = function(event) {
-        var p, parameters, pos;
+        var p, parameters;
         if (this.ignoreHashChange) {
           this.ignoreHashChange = false;
           return;
@@ -193,46 +197,33 @@
           return;
         }
         if (parameters['location'] != null) {
-          pos = parameters['location'].split(',');
-          p = new P.Point(pos[0], pos[1]);
-          if (!_.isFinite(p.x)) {
-            p.x = 0;
-          }
-          if (!_.isFinite(p.y)) {
-            p.y = 0;
-          }
+          p = Utils.stringToPoint(parameters['location']);
         }
         if (R.city.name !== parameters['city-name'] || R.city.owner !== parameters['city-owner']) {
-          R.city.loadCity(parameters['city-name'], parameters['city-owner'], p);
+          R.cityManager.loadCity(parameters['city-name'], parameters['city-owner'], p);
           return;
         }
         this.moveTo(p);
       };
 
       View.prototype.initializePosition = function() {
-        var box, boxRectangle, boxString, br, controller, folder, folderName, loadEntireArea, planet, pos, site, siteString, tl, _i, _len, _ref, _ref1;
-        if (R.rasterizerMode) {
-          return;
-        }
+        var boxRectangle, br, controller, folder, folderName, planet, pos, site, siteString, tl, _i, _len, _ref, _ref1;
         R.city = {
           owner: R.canvasJ.attr("data-owner") !== '' ? R.canvasJ.attr("data-owner") : void 0,
           city: R.canvasJ.attr("data-city") !== '' ? R.canvasJ.attr("data-city") : void 0,
           site: R.canvasJ.attr("data-site") !== '' ? R.canvasJ.attr("data-site") : void 0
         };
-        boxString = R.canvasJ.attr("data-box");
-        if (!boxString || boxString.length === 0) {
+        if (R.loadedBox == null) {
           window.onhashchange();
           return;
         }
-        box = JSON.parse(boxString);
-        planet = new P.Point(box.planetX, box.planetY);
-        tl = Utils.CS.posOnPlanetToProject(box.box.coordinates[0][0], planet);
-        br = Utils.CS.posOnPlanetToProject(box.box.coordinates[0][2], planet);
+        planet = new P.Point(R.loadedBox.planetX, R.loadedBox.planetY);
+        tl = Utils.CS.posOnPlanetToProject(R.loadedBox.box.coordinates[0][0], planet);
+        br = Utils.CS.posOnPlanetToProject(R.loadedBox.box.coordinates[0][2], planet);
         boxRectangle = new P.Rectangle(tl, br);
         pos = boxRectangle.center;
         this.moveTo(pos);
-        loadEntireArea = R.canvasJ.attr("data-load-entire-area");
-        if (loadEntireArea) {
+        if (R.loadEntireArea) {
           this.entireArea = boxRectangle;
           R.loader.load(boxRectangle);
         }

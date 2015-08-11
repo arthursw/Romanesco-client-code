@@ -3,8 +3,10 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 	class CityManager
 
 		constructor: ()->
-			@cityPanelJ = $('#CityPanel')
-			@citiesListJ = @cityPanelJ.find('.city-list')
+			@cityPanelJ = $('#City')
+			@citiesListsJ = @cityPanelJ.find('.city-list')
+			@userCitiesJ = @cityPanelJ.find('.user-cities')
+			@publicCitiesJ = @cityPanelJ.find('.public-cities')
 
 			@createCityBtnJ = @cityPanelJ.find('.create-city')
 			@citiesListBtnJ = @cityPanelJ.find('.load-city')
@@ -12,41 +14,73 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 			@createCityBtnJ.click @createCityModal
 			@citiesListBtnJ.click @citiesModal
 
-			Dajaxice.draw.loadPrivateCities(@addPrivateCities)
+			Dajaxice.draw.loadCities(@addCities)
 			return
 
-		createCity: (data)->
-			Dajaxice.draw.createCity(R.loadCityFromServer, name: data.name, public: data.public)
+		createCity: (data)=>
+			Dajaxice.draw.createCity(@createCityCallback, name: data.name, public: data.public)
 			return
 
-		createCityModal: ()->
+		createCityCallback: (result)=>
+			modal = Modal.getModalByTitle('Create city')
+			modal.hide()
+			if not R.loader.checkError(result) then return
+			city = JSON.parse(result.city)
+			@addCity(city, true)
+			@loadCity(city.name, city.owner)
+			return
+
+		createCityModal: ()=>
 			modal = Modal.createModal( title: 'Create city', submit: @createCity, postSubmit: 'load' )
 			modal.addTextInput( label: "City name", name: 'name', required: true, submitShortcut: true, placeholder: 'Paris' )
 			modal.addCheckbox( label: "Public", name: 'public', helpMessage: "Public cities will be accessible by anyone.", defaultValue: true )
 			modal.show()
 			return
 
-		addPrivateCities: (result)->
-			if not R.loader.checkError(result) then return
+		addCity: (city, userCity)->
+			cityJ = $("<li>")
+			cityJ.append($('<span>').addClass('name').text(city.name))
+			cityJ.attr('data-owner', city.owner).attr('data-pk', city._id.$oid).attr('data-public', city.public or 0).attr('data-name', city.name)
+			cityJ.click @onCityClicked
+			# popover
+			cityJ.attr('data-placement', 'right')
+			cityJ.attr('data-container', 'body')
+			cityJ.attr('data-trigger', 'hover')
+			cityJ.attr('data-delay', {show: 500, hide: 100})
+			cityJ.attr('data-content', 'by ' + city.owner)
+			# cityJ.attr('data-content', 'by '+city.owner)
+			cityJ.popover()
 
-			userCities = JSON.parse(result.userCities)
-
-			for city in userCities
-				cityJ = $("<li>")
-				cityJ.text(city.name)
-				cityJ.attr('data-owner', city.owner).attr('data-pk', city._id.$oid).attr('data-public', 0)
-				cityJ.click @loadCity
+			if userCity
 				btnJ = $('<button type="button"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>')
 				btnJ.click @openCitySettings
 				cityJ.append(btnJ)
-				@citiesListJ.apppend(cityJ)
+				@userCitiesJ.append(cityJ)
+			else
+				@publicCitiesJ.append(cityJ)
+			return
 
+		addCities: (result)=>
+			if not R.loader.checkError(result) then return
+
+			userCities = JSON.parse(result.userCities)
+			publicCities = JSON.parse(result.publicCities)
+
+			for cities, i in [userCities, publicCities]
+				userCity = i==0
+				for city in cities
+					@addCity(city, userCity)
+			return
+
+		onCityClicked: (event)=>
+			parentJ = $(event.target).closest('li')
+			name = parentJ.attr('data-name')
+			owner = parentJ.attr('data-owner')
+			@loadCity(name, owner)
 			return
 
 		loadCity: (name, owner)->
-			name ?= $(this).parents('tr:first').attr('data-name')
-			owner ?= $(this).parents('tr:first').attr('data-owner')
-			R.unload()
+			R.loader.unload()
 			R.city =
 				owner: owner
 				name: name
@@ -55,76 +89,92 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 			R.view.updateHash()
 			return
 
-		openCitySettings: (event)->
+		openCitySettings: (event)=>
 			event.stopPropagation()
 
-			buttonJ = $(this)
-			parentJ = buttonJ.parents('tr:first')
-			name = parentJ.attr('data-name')
-			isPublic = parseInt(parentJ.attr('data-public'))
-			pk = parentJ.attr('data-pk')
+			liJ = $(event.target).closest('li')
+			name = liJ.attr('data-name')
+			isPublic = parseInt(liJ.attr('data-public'))
+			pk = liJ.attr('data-pk')
 
-			modal = Modal.createModal(title: 'Modify city', submit: @updateCity, data: { pk: pk }, postSubmit: 'load' )
+			modal = Modal.createModal(title: 'Modify city', submit: @updateCity, data: { pk: pk, name: name }, postSubmit: 'load' )
 			modal.addTextInput( name: 'name', label: 'Name', defaultValue: name, required: true, submitShortcut: true )
 			modal.addCheckbox( name: 'public', label: 'Public', helpMessage: "Public cities will be accessible by anyone.", defaultValue: isPublic )
+			modal.addButton( name: 'Delete', type: 'danger', submit: @deleteCity)
 			modal.show()
 			return
 
 		updateCity: (data)=>
+			if R.city.name == data.data.name
+				@modifyingCurrentCity = true
 			Dajaxice.draw.updateCity(@updateCityCallback, pk: data.data.pk, name: data.name, public: data.public )
 			return
 
-		updateCityCallback: ()->
+		updateCityCallback: (result)=>
 			modal = Modal.getModalByTitle('Modify city')
 			modal.hide()
-			if not R.loader.checkError(result) then return
+			if not R.loader.checkError(result)
+				@modifyingCurrentCity = false
+				return
 			city = JSON.parse(result.city)
-			R.alertManager.alert "City successfully renamed to: " + city.name, "info"
-			modalBodyJ = Modal.getModalByTitle('Open city').modalBodyJ
-			rowJ = modalBodyJ.find('[data-pk="' + city._id.$oid + '"]')
-			rowJ.attr('data-name', city.name)
-			rowJ.attr('data-public', Number(city.public or 0))
-			rowJ.find('.name').text(city.name)
-			rowJ.find('.public').text(if city.public then 'Public' else 'Private')
+			if @modifyingCurrentCity
+				R.city.name = city.name
+				R.city.owner = city.owner
+				R.view.updateHash()
+				@modifyingCurrentCity = false
+			cityJ = @citiesListsJ.find('li[data-pk="' + city._id.$oid + '"]')
+			cityJ.attr('data-name', city.name)
+			cityJ.attr('data-public', Number(city.public or 0))
+			cityJ.attr('data-content', 'by ' + city.owner)
+			cityJ.find('.name').text(city.name)
 			return
 
-		displayCities: ()->
-			Dajaxice.draw.loadPublicCities(@loadPublicCitiesCallback)
+		deleteCity: (data)=>
+			Dajaxice.draw.deleteCity(@deleteCityCallback, {name: data.data.name})
 			return
 
-		cityRowClicked: (field, value, row, $element)=>
-			console.log row.pk
-			@loadCity(row.name, row.author)
-			return
-
-		loadPublicCitiesCallback: (result)->
+		deleteCityCallback: (result)=>
 			if not R.loader.checkError(result) then return
-
-			modal = Modal.createModal( title: 'Cities', submit: null )
-
-			tableData =
-				columns: [
-					field: 'name'
-					title: 'Name'
-				,
-					field: 'author'
-					title: 'Author'
-				,
-					field: 'date'
-					title: 'Date'
-				,
-					field: 'public'
-					title: 'Public'
-				]
-				data: []
-
-			for city in publicCities
-				tableData.data.push( name: city.name, author: city.author, date: city.date, public: city.public, pk: city._id.$oid )
-
-			tableJ = modal.addTable(tableData)
-			tableJ.on 'click-cell.bs.table', @cityRowClicked
-			modal.show()
+			@citiesListsJ.find('li[data-pk="'+result.cityPk+'"]').remove()
 			return
+
+		# displayCities: ()->
+		# 	Dajaxice.draw.loadPublicCities(@loadPublicCitiesCallback)
+		# 	return
+		#
+		# cityRowClicked: (field, value, row, $element)=>
+		# 	console.log row.pk
+		# 	@loadCity(row.name, row.author)
+		# 	return
+
+		# loadPublicCitiesCallback: (result)->
+		# 	if not R.loader.checkError(result) then return
+		#
+		# 	modal = Modal.createModal( title: 'Cities', submit: null )
+		#
+		# 	tableData =
+		# 		columns: [
+		# 			field: 'name'
+		# 			title: 'Name'
+		# 		,
+		# 			field: 'author'
+		# 			title: 'Author'
+		# 		,
+		# 			field: 'date'
+		# 			title: 'Date'
+		# 		,
+		# 			field: 'public'
+		# 			title: 'Public'
+		# 		]
+		# 		data: []
+		#
+		# 	for city in publicCities
+		# 		tableData.data.push( name: city.name, author: city.author, date: city.date, public: city.public, pk: city._id.$oid )
+		#
+		# 	tableJ = modal.addTable(tableData)
+		# 	tableJ.on 'click-cell.bs.table', @cityRowClicked
+		# 	modal.show()
+		# 	return
 
 	# R.initializeCities = ()->
 	# 	R.toolsJ.find("[data-name='Create']").click ()->

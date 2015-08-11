@@ -58,7 +58,6 @@ define [ 'Utils/Utils' ], () ->
 
 			@extractors = {}
 			@modalJ.find("h4.modal-title").html(args.title)
-			@modalJ.find(".modal-footer").show().find(".btn").show()
 
 			return
 
@@ -90,7 +89,7 @@ define [ 'Utils/Utils' ], () ->
 
 			extractor = (data, inputJ, name, required=false)->
 				data[name] = inputJ.val()
-				return ( not required ) or ( data[name]? and data[name] != '' )
+				return ( not required ) or ( not inputJ.is(':visible') ) or ( data[name]? and data[name] != '' )
 
 			if label
 				inputID = 'modal-' + name + '-' + Math.random().toString()
@@ -112,6 +111,7 @@ define [ 'Utils/Utils' ], () ->
 			defaultValue = args.defaultValue
 
 			divJ = $("<div>")
+			divJ.addClass('checkbox')
 
 			checkboxJ = $("<label><input type='checkbox' form-control>#{label}</label>")
 			if defaultValue
@@ -150,7 +150,7 @@ define [ 'Utils/Utils' ], () ->
 			extractor = (data, divJ, name, required=false)->
 				choiceJ = divJ.find("input[type=radio][name=#{name}]:checked")
 				data[name] = choiceJ[0]?.value
-				return ( not required ) or ( data[name]? )
+				return ( not required ) or ( not divJ.is(':visible') ) or ( data[name]? )
 
 			@addCustomContent( { name: name, divJ: divJ, extractor: extractor } )
 
@@ -170,6 +170,17 @@ define [ 'Utils/Utils' ], () ->
 			@modalBodyJ.append(args.divJ)
 			@extractors[args.name] = args
 			return
+
+		addButton: (args)->
+			args.type ?= 'default'
+			buttonJ = $("<button type='button' class='btn btn-#{args.type}' name='#{args.name}'>#{args.name}</button>")
+			buttonJ.click (event)=>
+				args.submit(@data)
+				buttonJ.remove()
+				@hide()
+				return
+			@modalJ.find(".modal-footer .btn-primary").before(buttonJ)
+			return buttonJ
 
 		show: ()->
 			@modalJ.find('.submit-shortcut').keypress (event) => 		# submit modal when enter is pressed

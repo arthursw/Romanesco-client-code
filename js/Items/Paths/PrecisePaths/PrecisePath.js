@@ -497,7 +497,7 @@
       };
 
       PrecisePath.prototype.highlightSelectedPoint = function() {
-        var offset, point, _base;
+        var offset, point, _base, _ref;
         if (!this.controlPath.selected) {
           return;
         }
@@ -525,7 +525,9 @@
         this.selectionHighlight.strokeColor = R.selectionBlue;
         this.selectionHighlight.strokeWidth = 1;
         R.view.selectionLayer.addChild(this.selectionHighlight);
-        this.constructor.parameters['Edit curve'].pointType.controller.setValue(this.selectedSegment.rtype);
+        if ((_ref = R.controllerManager.getController('Edit curve', 'pointType')) != null) {
+          _ref.setValue(this.selectedSegment.rtype);
+        }
       };
 
       PrecisePath.prototype.updateSelectionHighlight = function() {

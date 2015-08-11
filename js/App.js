@@ -30,8 +30,6 @@
 
   window.Utils = Utils;
 
-  window.R = {};
-
   window.P = {};
 
   R.DajaxiceXMLHttpRequest = window.XMLHttpRequest;

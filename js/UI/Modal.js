@@ -80,7 +80,6 @@
         })(this));
         this.extractors = {};
         this.modalJ.find("h4.modal-title").html(args.title);
-        this.modalJ.find(".modal-footer").show().find(".btn").show();
         return;
       }
 
@@ -117,7 +116,7 @@
             required = false;
           }
           data[name] = inputJ.val();
-          return (!required) || ((data[name] != null) && data[name] !== '');
+          return (!required) || (!inputJ.is(':visible')) || ((data[name] != null) && data[name] !== '');
         };
         if (label) {
           inputID = 'modal-' + name + '-' + Math.random().toString();
@@ -146,6 +145,7 @@
         helpMessage = args.helpMessage;
         defaultValue = args.defaultValue;
         divJ = $("<div>");
+        divJ.addClass('checkbox');
         checkboxJ = $("<label><input type='checkbox' form-control>" + label + "</label>");
         if (defaultValue) {
           checkboxJ.find('input').attr('checked', true);
@@ -192,7 +192,7 @@
           }
           choiceJ = divJ.find("input[type=radio][name=" + name + "]:checked");
           data[name] = (_ref = choiceJ[0]) != null ? _ref.value : void 0;
-          return (!required) || (data[name] != null);
+          return (!required) || (!divJ.is(':visible')) || (data[name] != null);
         };
         this.addCustomContent({
           name: name,
@@ -219,6 +219,23 @@
         args.divJ.attr('id', 'modal-' + args.name);
         this.modalBodyJ.append(args.divJ);
         this.extractors[args.name] = args;
+      };
+
+      Modal.prototype.addButton = function(args) {
+        var buttonJ;
+        if (args.type == null) {
+          args.type = 'default';
+        }
+        buttonJ = $("<button type='button' class='btn btn-" + args.type + "' name='" + args.name + "'>" + args.name + "</button>");
+        buttonJ.click((function(_this) {
+          return function(event) {
+            args.submit(_this.data);
+            buttonJ.remove();
+            _this.hide();
+          };
+        })(this));
+        this.modalJ.find(".modal-footer .btn-primary").before(buttonJ);
+        return buttonJ;
       };
 
       Modal.prototype.show = function() {

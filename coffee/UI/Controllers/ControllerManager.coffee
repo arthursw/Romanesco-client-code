@@ -32,8 +32,7 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 				default: '0.0, 0.0'
 				permanent: true
 				onFinishChange: (value)->
-					R.ignoreHashChange = false
-					location.hash = value
+					R.view.setPositionFromString(value)
 					return
 			R.parameters['General'].zoom =
 				type: 'slider'
@@ -465,6 +464,14 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 				for name, controller of folder.controllers
 					item.data[controller.name] ?= controller.getValue()
 			return
+
+		getController: (folderNames, controllerName)->
+			if not Utils.Array.isArray(folderNames) then folderNames = [folderNames]
+			folder = folders: @folders
+			for folderName in folderNames
+				folder = folder.folders[folderName]
+				if not folder? then return
+			return folder.controllers[controllerName]
 
 		# todo: replace parameters() with getParameters() and get only once
 

@@ -1,4 +1,4 @@
-define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
+define [ 'Items/Item', 'Items/Content', 'Tools/PathTool' ], (Item, Content, PathTool) ->
 
 	# todo: Actions, undo & redo...
 	# todo: strokeWidth min = 0?
@@ -55,48 +55,41 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 		# parameters are defined as in {RTool}
 		# The following parameters are reserved for romanesco: id, polygonMode, points, planet, step, smooth, speeds, showSpeeds
 		@initializeParameters: ()->
-			return parameters =
-				'Items':
-					# zoom: R.parameters.zoom
-					# displayGrid: R.parameters.displayGrid
-					# snap: R.parameters.snap
-					align: R.parameters.align 				# common parameters are defined in R.parameters
-					distribute: R.parameters.distribute
-					duplicate: R.parameters.duplicate
-					delete: R.parameters.delete
-					editTool:
-						type: 'button'
-						label: 'Edit tool'
-						default: ()=> R.codeEditor.setSource(@source)
-				'Style':
-					strokeWidth: $.extend(true, {}, R.parameters.strokeWidth)
-					strokeColor: $.extend(true, {}, R.parameters.strokeColor)
-					fillColor: $.extend(true, {}, R.parameters.fillColor)
-				'Shadow':
-					folderIsClosedByDefault: true
-					shadowOffsetX:
-						type: 'slider'
-						label: 'Shadow offset x'
-						min: -25
-						max: 25
-						default: 0
-					shadowOffsetY:
-						type: 'slider'
-						label: 'Shadow offset y'
-						min: -25
-						max: 25
-						default: 0
-					shadowBlur:
-						type: 'slider'
-						label: 'Shadow blur'
-						min: 0
-						max: 50
-						default: 0
-					shadowColor:
-						type: 'color'
-						label: 'Shadow color'
-						default: '#000'
-						defaultCheck: false
+			parameters = super()
+			parameters['Items'].duplicate = R.parameters.duplicate
+			parameters['Items'].editTool =
+				type: 'button'
+				label: 'Edit tool'
+				default: ()=> R.codeEditor.setSource(@source)
+			parameters['Style'].strokeWidth = Utils.clone(R.parameters.strokeWidth)
+			parameters['Style'].strokeColor = Utils.clone(R.parameters.strokeColor)
+			parameters['Style'].fillColor = Utils.clone(R.parameters.fillColor)
+			parameters['Shadow'] =
+				folderIsClosedByDefault: true
+				shadowOffsetX:
+					type: 'slider'
+					label: 'Shadow offset x'
+					min: -25
+					max: 25
+					default: 0
+				shadowOffsetY:
+					type: 'slider'
+					label: 'Shadow offset y'
+					min: -25
+					max: 25
+					default: 0
+				shadowBlur:
+					type: 'slider'
+					label: 'Shadow blur'
+					min: 0
+					max: 50
+					default: 0
+				shadowColor:
+					type: 'color'
+					label: 'Shadow color'
+					default: '#000'
+					defaultCheck: false
+			return parameters
 
 		@parameters = @initializeParameters()
 
@@ -612,4 +605,5 @@ define [ 'Items/Content', 'Tools/PathTool' ], (Content, PathTool) ->
 				points.push( Utils.CS.pointToArray(p) )
 			return points
 
+	Item.Path = Path
 	return Path

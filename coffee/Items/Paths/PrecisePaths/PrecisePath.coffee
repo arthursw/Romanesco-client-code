@@ -564,7 +564,8 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 			@selectionHighlight.strokeColor = R.selectionBlue
 			@selectionHighlight.strokeWidth = 1
 			R.view.selectionLayer.addChild(@selectionHighlight)
-			@constructor.parameters['Edit curve'].pointType.controller.setValue(@selectedSegment.rtype)
+			R.controllerManager.getController('Edit curve', 'pointType')?.setValue(@selectedSegment.rtype)
+			# @constructor.parameters['Edit curve'].pointType.controller.setValue(@selectedSegment.rtype)
 			return
 
 		updateSelectionHighlight: ()->

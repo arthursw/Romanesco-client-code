@@ -232,10 +232,10 @@
         locks = Item.Lock.getLocksWhichIntersect(bounds);
         for (_i = 0, _len = locks.length; _i < _len; _i++) {
           lock = locks[_i];
-          if (lock.rectangle.contains(bounds)) {
-            if (lock.owner === R.me) {
+          if (lock.rectangle.intersects(bounds)) {
+            if (lock.rectangle.contains(bounds) && lock.owner === R.me) {
               lock.addItem(this);
-            } else {
+            } else if (lock.owner !== R.me) {
               R.alertManager.alert("The item intersects with a lock", "Warning");
               this.remove();
               return false;
@@ -268,6 +268,7 @@
       return Content;
 
     })(Item);
+    Item.Content = Content;
     return Content;
   });
 

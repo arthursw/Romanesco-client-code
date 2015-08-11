@@ -96,9 +96,9 @@
         });
         modal.addTextInput({
           name: 'message',
-          label: 'Enter the message you want others to see when they look at this link.',
+          label: 'Link message',
           type: 'text',
-          placeholder: 'Message',
+          placeholder: 'The message displayed when looking at the link.',
           required: true
         });
         radioGroupJ.click(function(event) {
@@ -111,9 +111,9 @@
               for (name in _ref) {
                 extractor = _ref[name];
                 if (radioButton.linked.indexOf(name) >= 0) {
-                  extractor.div.show();
+                  extractor.divJ.show();
                 } else if (name !== 'object_type') {
-                  extractor.div.hide();
+                  extractor.divJ.hide();
                 }
               }
             }

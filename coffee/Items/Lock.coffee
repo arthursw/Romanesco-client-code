@@ -69,7 +69,7 @@ define [ 'Items/Item', 'UI/Modal' ], (Item, Modal) ->
 				data.siteURL = siteURLJ.find("#modalSiteName").val()
 				return true
 			modal.addCustomContent(name: 'siteName', divJ: siteURLJ, extractor: siteUrlExtractor)
-			modal.addTextInput(name: 'message', label: 'Enter the message you want others to see when they look at this link.', type: 'text', placeholder: 'Message', required: true)
+			modal.addTextInput(name: 'message', label: 'Link message', type: 'text', placeholder: 'The message displayed when looking at the link.', required: true)
 
 			radioGroupJ.click (event)->
 				lockType = radioGroupJ.find('input[type=radio][name=object_type]:checked')[0].value
@@ -77,9 +77,9 @@ define [ 'Items/Item', 'UI/Modal' ], (Item, Modal) ->
 					if radioButton.value == lockType
 						for name, extractor of modal.extractors
 							if radioButton.linked.indexOf(name) >= 0
-								extractor.div.show()
+								extractor.divJ.show()
 							else if name != 'object_type'
-								extractor.div.hide()
+								extractor.divJ.hide()
 				return
 			radioGroupJ.click()
 			modal.show()

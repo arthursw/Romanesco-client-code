@@ -45,6 +45,7 @@
         this.loadMainRepository = __bind(this.loadMainRepository, this);
         this.listForks = __bind(this.listForks, this);
         this.displayForks = __bind(this.displayForks, this);
+        this.updateTable = __bind(this.updateTable, this);
         this.forkRowClicked = __bind(this.forkRowClicked, this);
         this.checkHasForkCallback = __bind(this.checkHasForkCallback, this);
         this.displayDesiredFile = __bind(this.displayDesiredFile, this);
@@ -227,17 +228,79 @@
         }
       };
 
-      FileManager.prototype.getForks = function(callback) {
-        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/forks', callback);
-      };
-
       FileManager.prototype.forkRowClicked = function(event, field, value, row, $element) {
         this.loadFork(row);
         Modal.getModalByTitle('Forks').hide();
       };
 
+      FileManager.prototype.getForksLinks = function(headerLink) {
+        var link, linkName, links, rawLink, result, _i, _len;
+        if (!headerLink) {
+          return null;
+        }
+        links = headerLink.split(',');
+        result = {};
+        for (_i = 0, _len = links.length; _i < _len; _i++) {
+          link = links[_i];
+          rawLink = link.split(';');
+          if (rawLink.length <= 1) {
+            continue;
+          }
+          linkName = rawLink[1].replace(' rel="', '').replace('"', '');
+          if (linkName === 'prev') {
+            linkName = 'pre';
+          }
+          result[linkName] = rawLink[0].substring(1, rawLink[0].length - 1);
+        }
+        return result;
+      };
+
+      FileManager.prototype.updateForksLinks = function(links) {
+        var link, linkName;
+        this.forksTableJ.find('li').hide();
+        if (links == null) {
+          return;
+        }
+        for (linkName in links) {
+          link = links[linkName];
+          this.forksTableJ.find('li.page-' + linkName).show().off('click').on('click', (function(_this) {
+            return function() {
+              return _this.request(link, _this.updateTable);
+            };
+          })(this));
+        }
+      };
+
+      FileManager.prototype.formatForksData = function(forks) {
+        var data, date, fork, _i, _len;
+        data = [];
+        for (_i = 0, _len = forks.length; _i < _len; _i++) {
+          fork = forks[_i];
+          date = new Date(fork.updated_at);
+          data.push({
+            owner: fork.owner.login,
+            date: date.toLocaleString(),
+            githubURL: fork.html_url
+          });
+        }
+        return data;
+      };
+
+      FileManager.prototype.updateTable = function(forks) {
+        var links, _ref;
+        links = this.getForksLinks((_ref = forks.headers) != null ? _ref.link : void 0);
+        forks = this.checkError(forks);
+        if (!forks) {
+          return;
+        }
+        this.forksTableJ.bootstrapTable('removeAll');
+        this.forksTableJ.bootstrapTable('append', this.formatForksData(forks));
+        this.updateForksLinks();
+      };
+
       FileManager.prototype.displayForks = function(forks) {
-        var date, fork, modal, tableData, tableJ, _i, _len;
+        var links, modal, tableData, _ref;
+        links = this.getForksLinks((_ref = forks.headers) != null ? _ref.link : void 0);
         forks = this.checkError(forks);
         if (!forks) {
           return;
@@ -259,22 +322,16 @@
               title: 'Github URL'
             }
           ],
-          data: [],
+          data: this.formatForksData(forks),
+          pagination: true,
+          sidePagination: 'client',
           formatter: function(value, row, index) {
             return "<a href='" + value + "'>value</a>";
           }
         };
-        for (_i = 0, _len = forks.length; _i < _len; _i++) {
-          fork = forks[_i];
-          date = new Date(fork.updated_at);
-          tableData.data.push({
-            owner: fork.owner.login,
-            date: date.toLocaleString(),
-            githubURL: fork.html_url
-          });
-        }
-        tableJ = modal.addTable(tableData);
-        tableJ.on('click-cell.bs.table', this.forkRowClicked);
+        this.forksTableJ = modal.addTable(tableData);
+        this.updateForksLinks();
+        this.forksTableJ.on('click-cell.bs.table', this.forkRowClicked);
         modal.show();
       };
 
@@ -282,7 +339,7 @@
         if (event != null) {
           event.preventDefault();
         }
-        this.getForks(this.displayForks);
+        this.request('https://api.github.com/repos/arthursw/romanesco-client-code/forks', this.displayForks);
       };
 
       FileManager.prototype.loadMainRepository = function(event) {
@@ -373,23 +430,23 @@
       };
 
       FileManager.prototype.getNodeFromPath = function(path) {
-        var dirName, dirs, i, node, _i, _len;
+        var dirName, dirs, node, _i, _len;
         dirs = path.split('/');
         dirs.shift();
         node = this.tree;
-        for (i = _i = 0, _len = dirs.length; _i < _len; i = ++_i) {
-          dirName = dirs[i];
+        for (_i = 0, _len = dirs.length; _i < _len; _i++) {
+          dirName = dirs[_i];
           node = node.leaves[dirName];
         }
         return node;
       };
 
       FileManager.prototype.getParentNode = function(file, node) {
-        var dirName, dirs, i, _base, _i, _len;
+        var dirName, dirs, _base, _i, _len;
         dirs = file.path.split('/');
         file.name = dirs.pop();
-        for (i = _i = 0, _len = dirs.length; _i < _len; i = ++_i) {
-          dirName = dirs[i];
+        for (_i = 0, _len = dirs.length; _i < _len; _i++) {
+          dirName = dirs[_i];
           if ((_base = node.leaves)[dirName] == null) {
             _base[dirName] = {
               leaves: {},
@@ -445,11 +502,11 @@
       };
 
       FileManager.prototype.updateLeaves = function(tree) {
-        var i, node, _i, _len, _ref;
+        var node, _i, _len, _ref;
         tree.leaves = {};
         _ref = tree.children;
-        for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-          node = _ref[i];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          node = _ref[_i];
           tree.leaves[node.name] = node;
           this.updateLeaves(node);
         }
@@ -866,13 +923,13 @@
       };
 
       FileManager.prototype.getOrCreateParentNode = function(mainFile) {
-        var dirName, dirs, i, node, previousNode, _i, _len;
+        var dirName, dirs, node, previousNode, _i, _len;
         dirs = mainFile.path.split('/');
         dirs.pop();
         dirs.shift();
         node = this.tree;
-        for (i = _i = 0, _len = dirs.length; _i < _len; i = ++_i) {
-          dirName = dirs[i];
+        for (_i = 0, _len = dirs.length; _i < _len; _i++) {
+          dirName = dirs[_i];
           previousNode = node;
           node = node.leaves[dirName];
           if (node == null) {

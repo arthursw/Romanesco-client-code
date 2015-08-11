@@ -237,6 +237,13 @@
     SelectionRectangleCommand = (function(_super) {
       __extends(SelectionRectangleCommand, _super);
 
+      SelectionRectangleCommand.create = function(items, state) {
+        var command;
+        command = new this(items);
+        command.state = state;
+        return command;
+      };
+
       function SelectionRectangleCommand(items) {
         SelectionRectangleCommand.__super__.constructor.call(this, this.constructor.Method + ' items', items);
         this.updateType = this.constructor.method;

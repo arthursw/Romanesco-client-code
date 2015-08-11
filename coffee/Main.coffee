@@ -15,13 +15,12 @@ define [
 	'Commands/CommandManager'
 	'View/View'
 	'Tools/ToolManager'
-], (Utils, Global, FontManager, Loader, Socket, City, RasterizerManager, Sidebar, FileManager, CodeEditor, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager) ->
+	'RasterizerBot'
+], (Utils, Global, FontManager, Loader, Socket, CityManager, RasterizerManager, Sidebar, FileManager, CodeEditor, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager, RasterizerBot) ->
 
 	console.log 'FORK from arthur-test-account :-)'
 	# R.rasterizerMode = window.rasterizerMode
 
-	# if R.rasterizerMode
-	# 	R.initializeRasterizerMode()
 
 	# TODO: manage items and path in the same way (R.paths and R.items)? make an interface on top of path and div, and use events to update them
 	# todo: add else case in switches
@@ -232,15 +231,12 @@ define [
 	# Initialize Romanesco and handlers
 	$(document).ready () ->
 
-
 		# parameters
 		R.catchErrors = false 					# the error will not be caught when drawing an RPath (let chrome catch them at the right time)
 		R.ignoreSockets = false 				# whether sockets messages are ignored
 
+		# global variables
 		R.currentPaths = {} 					# map of username -> path id corresponding to the paths currently being created
-
-		# R.loadingBarTimeout = null 				# timeout id of the loading bar
-
 		R.paths = new Object() 					# a map of RPath.pk (or RPath.id) -> RPath. RPath are first added with their id, and then with their pk
 												# (as soon as server saved it and responds)
 		R.items = new Object() 					# map Item.id or Item.pk -> Item, all loaded RItems. The key is Item.id before Item is saved
@@ -249,23 +245,22 @@ define [
 		R.divs = [] 							# array of loaded RDivs
 		R.sortedPaths = []						# an array where paths are sorted by index (z-index)
 		R.sortedDivs = []						# an array where divs are sorted by index (z-index)
-
 		R.animatedItems = [] 					# an array of animated items to be updated each frame
-
-
 		R.cars = {} 							# a map of username -> cars which will be updated each frame
-
 		R.currentDiv = null 					# the div currently being edited (dragged, moved or resized) used to also send jQuery mouse event to divs
-
+		R.selectedItems = [] 					# the selectedItems
 		# R.areasToUpdateRectangles = {} 			# debug map: area to update pk -> rectangle path
 
-
-		R.selectedItems = [] 					# the selectedItems
+		if location.pathname == '/rasterizer/'
+			R.rasterizerBot = new RasterizerBot(@)
+			R.loader = new Loader.RasterizerLoader()
+		else
+			R.loader = new Loader()
 
 		R.socket = new Socket()
 		R.sidebar = new Sidebar()
+		R.cityManager = new CityManager()
 		R.view = new View()
-		R.loader = new Loader()
 		R.alertManager = new AlertManager()
 		R.controllerManager = new ControllerManager()
 		R.controllerManager.createGlobalControllers()
@@ -280,12 +275,9 @@ define [
 		R.sidebar.initialize()
 
 		window.setPageFullyLoaded?(true)
-
-		# init()
-
-		# if R.rasterizerMode then return
-
 		return
+
+
 
 	# R.showCodeEditor = (fileNode)->
 	# 	if not R.codeEditor?

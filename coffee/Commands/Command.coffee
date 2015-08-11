@@ -193,6 +193,11 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 
 	class SelectionRectangleCommand extends DeferredCommand
 
+		@create: (items, state)->
+			command = new @(items)
+			command.state = state
+			return command
+
 		constructor: (items)->
 			super(@constructor.Method + ' items', items)
 			@updateType = @constructor.method
@@ -271,7 +276,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 	class TranslateCommand extends SelectionRectangleCommand
 
 		@initialize('translate')
-
+		
 		newState: ()->
 			return [@state.delta]
 

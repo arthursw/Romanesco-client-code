@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Items/Content', 'Tools/PathTool'], function(Content, PathTool) {
+  define(['Items/Item', 'Items/Content', 'Tools/PathTool'], function(Item, Content, PathTool) {
     var Path;
     Path = (function(_super) {
       __extends(Path, _super);
@@ -25,58 +25,51 @@
 
       Path.initializeParameters = function() {
         var parameters;
-        return parameters = {
-          'Items': {
-            align: R.parameters.align,
-            distribute: R.parameters.distribute,
-            duplicate: R.parameters.duplicate,
-            "delete": R.parameters["delete"],
-            editTool: {
-              type: 'button',
-              label: 'Edit tool',
-              "default": (function(_this) {
-                return function() {
-                  return R.codeEditor.setSource(_this.source);
-                };
-              })(this)
-            }
+        parameters = Path.__super__.constructor.initializeParameters.call(this);
+        parameters['Items'].duplicate = R.parameters.duplicate;
+        parameters['Items'].editTool = {
+          type: 'button',
+          label: 'Edit tool',
+          "default": (function(_this) {
+            return function() {
+              return R.codeEditor.setSource(_this.source);
+            };
+          })(this)
+        };
+        parameters['Style'].strokeWidth = Utils.clone(R.parameters.strokeWidth);
+        parameters['Style'].strokeColor = Utils.clone(R.parameters.strokeColor);
+        parameters['Style'].fillColor = Utils.clone(R.parameters.fillColor);
+        parameters['Shadow'] = {
+          folderIsClosedByDefault: true,
+          shadowOffsetX: {
+            type: 'slider',
+            label: 'Shadow offset x',
+            min: -25,
+            max: 25,
+            "default": 0
           },
-          'Style': {
-            strokeWidth: $.extend(true, {}, R.parameters.strokeWidth),
-            strokeColor: $.extend(true, {}, R.parameters.strokeColor),
-            fillColor: $.extend(true, {}, R.parameters.fillColor)
+          shadowOffsetY: {
+            type: 'slider',
+            label: 'Shadow offset y',
+            min: -25,
+            max: 25,
+            "default": 0
           },
-          'Shadow': {
-            folderIsClosedByDefault: true,
-            shadowOffsetX: {
-              type: 'slider',
-              label: 'Shadow offset x',
-              min: -25,
-              max: 25,
-              "default": 0
-            },
-            shadowOffsetY: {
-              type: 'slider',
-              label: 'Shadow offset y',
-              min: -25,
-              max: 25,
-              "default": 0
-            },
-            shadowBlur: {
-              type: 'slider',
-              label: 'Shadow blur',
-              min: 0,
-              max: 50,
-              "default": 0
-            },
-            shadowColor: {
-              type: 'color',
-              label: 'Shadow color',
-              "default": '#000',
-              defaultCheck: false
-            }
+          shadowBlur: {
+            type: 'slider',
+            label: 'Shadow blur',
+            min: 0,
+            max: 50,
+            "default": 0
+          },
+          shadowColor: {
+            type: 'color',
+            label: 'Shadow color',
+            "default": '#000',
+            defaultCheck: false
           }
         };
+        return parameters;
       };
 
       Path.parameters = Path.initializeParameters();
@@ -526,6 +519,7 @@
       return Path;
 
     })(Content);
+    Item.Path = Path;
     return Path;
   });
 

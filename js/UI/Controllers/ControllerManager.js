@@ -26,8 +26,7 @@
           "default": '0.0, 0.0',
           permanent: true,
           onFinishChange: function(value) {
-            R.ignoreHashChange = false;
-            location.hash = value;
+            R.view.setPositionFromString(value);
           }
         };
         R.parameters['General'].zoom = {
@@ -630,6 +629,24 @@
             }
           }
         }
+      };
+
+      ControllerManager.prototype.getController = function(folderNames, controllerName) {
+        var folder, folderName, _i, _len;
+        if (!Utils.Array.isArray(folderNames)) {
+          folderNames = [folderNames];
+        }
+        folder = {
+          folders: this.folders
+        };
+        for (_i = 0, _len = folderNames.length; _i < _len; _i++) {
+          folderName = folderNames[_i];
+          folder = folder.folders[folderName];
+          if (folder == null) {
+            return;
+          }
+        }
+        return folder.controllers[controllerName];
       };
 
       return ControllerManager;

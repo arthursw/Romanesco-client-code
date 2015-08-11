@@ -4,7 +4,7 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command'], function(Tool, Content, Div, Command) {
+  define(['Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Commands/Command'], function(Tool, Item, Content, Div, Command) {
     var ScreenshotRectangle, SelectionRectangle, SelectionRotationRectangle;
     SelectionRectangle = (function() {
       SelectionRectangle.indexToName = {
@@ -204,6 +204,7 @@
         }
         this.rectangle = this.getBoundingRectangle(this.items);
         this.updatePath();
+        Item.updatePositionAndSizeControllers(this.rectangle.position, this.rectangle.size);
         Div.showDivs();
       };
 
@@ -371,6 +372,30 @@
         };
       };
 
+      SelectionRectangle.prototype.setPosition = function(position) {
+        var delta;
+        delta = position.subtract(this.rectangle.topLeft);
+        R.commandManager.add(Command.Translate.create(R.selectedItems, {
+          delta: delta
+        }), true);
+      };
+
+      SelectionRectangle.prototype.translateBy = function(delta) {
+        R.commandManager.add(Command.Translate.create(R.selectedItems, {
+          delta: delta
+        }), true);
+      };
+
+      SelectionRectangle.prototype.setSize = function(newSize) {
+        var state;
+        state = {
+          previous: this.rectangle,
+          "new": new Rectangle(this.rectangle.topLeft, newSize),
+          rotation: this.rotation || 0
+        };
+        R.commandManager.add(Command.Scale.create(R.selectedItems, state), true);
+      };
+
       return SelectionRectangle;
 
     })();
@@ -470,6 +495,24 @@
           delta: this.deltaRotation,
           center: this.rectangle.center
         };
+      };
+
+      SelectionRotationRectangle.prototype.setRotation = function(rotation, center) {
+        var delta;
+        delta = {
+          delta: rotation - this.rotation,
+          center: center
+        };
+        R.commandManager.add(Command.Rotate.create(R.selectedItems, delta), true);
+      };
+
+      SelectionRotationRectangle.prototype.rotateBy = function(rotation, center) {
+        var delta;
+        delta = {
+          delta: rotation,
+          center: center
+        };
+        R.commandManager.add(Command.Rotate.create(R.selectedItems, delta), true);
       };
 
       return SelectionRotationRectangle;

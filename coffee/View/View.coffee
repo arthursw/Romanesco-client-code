@@ -205,8 +205,12 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 			if R.city.owner? and R.city.name? and R.city.owner != 'RomanescoOrg' and R.city.name != 'Romanesco'
 				hashParameters['city-owner'] = R.city.owner
 				hashParameters['city-name'] = R.city.name
-			hashParameters['location'] = P.view.center.x.toFixed(2) + ',' + P.view.center.y.toFixed(2)
+			hashParameters['location'] = Utils.pointToString(P.view.center)
 			location.hash = Utils.URL.setParameters(hashParameters)
+			return
+
+		setPositionFromString: (positionString)->
+			@moveTo(Utils.stringToPoint(positionString))
 			return
 
 		# Update hash (the string after '#' in the url bar) according to the location of the (center of the) view
@@ -223,13 +227,10 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 				return
 
 			if parameters['location']?
-				pos = parameters['location'].split(',')
-				p = new P.Point(pos[0], pos[1])
-				if not _.isFinite(p.x) then p.x = 0
-				if not _.isFinite(p.y) then p.y = 0
+				p = Utils.stringToPoint(parameters['location'])
 
 			if R.city.name != parameters['city-name'] or R.city.owner != parameters['city-owner']
-				R.city.loadCity(parameters['city-name'], parameters['city-owner'], p)
+				R.cityManager.loadCity(parameters['city-name'], parameters['city-owner'], p)
 				return
 
 			@moveTo(p)
@@ -240,7 +241,6 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 		# update @entireArea and @restrictedArea according to site settings
 		# update sidebar according to site settings
 		initializePosition: ()->
-			if R.rasterizerMode then return
 
 			# R.githubLogin = R.canvasJ.attr("data-github-login")
 
@@ -250,19 +250,20 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 				site: if R.canvasJ.attr("data-site") != '' then R.canvasJ.attr("data-site") else undefined
 
 			# check if canvas has an attribute 'data-box'
-			boxString = R.canvasJ.attr("data-box")
-
-			if not boxString or boxString.length==0
+			# boxString = R.canvasJ.attr("data-box")
+			#
+			# if not boxString or boxString.length==0
+			if not R.loadedBox?
 				window.onhashchange()
 				return
 
 			# initialize the area rectangle *boxRectangle* from 'data-box' attr and move to the center of the box
-			box = JSON.parse( boxString )
+			# box = JSON.parse( boxString )
 
-			planet = new P.Point(box.planetX, box.planetY)
+			planet = new P.Point(R.loadedBox.planetX, R.loadedBox.planetY)
 
-			tl = Utils.CS.posOnPlanetToProject(box.box.coordinates[0][0], planet)
-			br = Utils.CS.posOnPlanetToProject(box.box.coordinates[0][2], planet)
+			tl = Utils.CS.posOnPlanetToProject(R.loadedBox.box.coordinates[0][0], planet)
+			br = Utils.CS.posOnPlanetToProject(R.loadedBox.box.coordinates[0][2], planet)
 
 			boxRectangle = new P.Rectangle(tl, br)
 			pos = boxRectangle.center
@@ -270,9 +271,9 @@ define [ 'View/Grid', 'Commands/Command', 'Items/Divs/Div', 'mousewheel', 'tween
 			@moveTo(pos)
 
 			# load the entire area if 'data-load-entire-area' is set to true, and set @entireArea
-			loadEntireArea = R.canvasJ.attr("data-load-entire-area")
+			# loadEntireArea = R.canvasJ.attr("data-load-entire-area")
 
-			if loadEntireArea
+			if R.loadEntireArea
 				@entireArea = boxRectangle
 				R.loader.load(boxRectangle)
 

@@ -516,6 +516,24 @@
     Utils.Animation.deregisterAnimation = function(item) {
       Utils.Array.remove(R.animatedItems, item);
     };
+    Utils.stringToPoint = function(string) {
+      var p, pos;
+      pos = string.split(',');
+      p = new P.Point(parseFloat(pos[0]), parseFloat(pos[1]));
+      if (!_.isFinite(p.x)) {
+        p.x = 0;
+      }
+      if (!_.isFinite(p.y)) {
+        p.y = 0;
+      }
+      return p;
+    };
+    Utils.pointToString = function(point, precision) {
+      if (precision == null) {
+        precision = 2;
+      }
+      return point.x.toFixed(precision) + ',' + point.y.toFixed(precision);
+    };
     Utils.logElapsedTime = function() {
       var time;
       time = (Date.now() - R.startTime) / 1000;

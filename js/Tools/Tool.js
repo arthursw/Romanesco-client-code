@@ -120,7 +120,7 @@
 
       Tool.prototype.updateCursor = function() {
         if (this.constructor.cursor.icon != null) {
-          R.stageJ.css('cursor', 'url(static/images/cursors/' + this.constructor.cursor.icon + '.png) ' + this.constructor.cursor.position.x + ' ' + this.constructor.cursor.position.y + ',' + this.constructor.cursor.name);
+          R.stageJ.css('cursor', 'url(' + location.origin + '/static/images/cursors/' + this.constructor.cursor.icon + '.png) ' + this.constructor.cursor.position.x + ' ' + this.constructor.cursor.position.y + ',' + this.constructor.cursor.name);
         } else {
           R.stageJ.css('cursor', this.constructor.cursor.name);
         }

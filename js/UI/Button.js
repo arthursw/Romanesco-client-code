@@ -9,7 +9,7 @@
         this.onClickWhenLoaded = __bind(this.onClickWhenLoaded, this);
         this.onClickWhenNotLoaded = __bind(this.onClickWhenNotLoaded, this);
         this.fileLoaded = __bind(this.fileLoaded, this);
-        var categories, category, favorite, favoriteBtnJ, hJ, iconURL, liJ, name, order, parentJ, shortName, shortNameJ, toolNameJ, ulJ, word, words, _i, _j, _len, _len1;
+        var categories, category, favorite, favoriteBtnJ, hJ, iconRootURL, iconURL, liJ, name, order, parentJ, shortName, shortNameJ, toolNameJ, ulJ, word, words, _i, _j, _len, _len1;
         name = parameters.name;
         iconURL = parameters.iconURL;
         favorite = parameters.favorite;
@@ -41,8 +41,12 @@
         this.btnJ.attr("data-name", name);
         this.btnJ.attr("alt", name);
         if ((iconURL != null) && iconURL !== '') {
-          if (iconURL.indexOf('//') < 0 && iconURL.indexOf('static/images/icons/inverted/') < 0) {
-            iconURL = 'static/images/icons/inverted/' + iconURL;
+          iconRootURL = 'static/images/icons/inverted/';
+          if (iconURL.indexOf('//') < 0 && iconURL.indexOf(iconRootURL) < 0) {
+            iconURL = iconRootURL + iconURL;
+          }
+          if (iconURL.indexOf(iconRootURL) === 0) {
+            iconURL = location.origin + '/' + iconURL;
           }
           this.btnJ.append('<img src="' + iconURL + '" alt="' + name + '-icon">');
         } else {

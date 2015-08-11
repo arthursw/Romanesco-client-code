@@ -53,7 +53,7 @@
         if (Item.Div.prototype.isPrototypeOf(item)) {
           item.sortedItems = parent.sortedDivs;
           parent.itemListsJ.find(".rDiv-list").append(item.liJ);
-        } else if (R.RPath.prototype.isPrototypeOf(item)) {
+        } else if (Item.Path.prototype.isPrototypeOf(item)) {
           item.sortedItems = parent.sortedPaths;
           parent.itemListsJ.find(".rPath-list").append(item.liJ);
         } else {
@@ -62,6 +62,34 @@
         item.updateZindex();
         if (wasSelected) {
           item.select();
+        }
+      };
+
+      Item.updatePositionAndSizeControllers = function(position, size) {
+        var _ref, _ref1;
+        if ((_ref = R.controllerManager.getController('Position & size', 'position')) != null) {
+          _ref.setValue(Utils.pointToString(position));
+        }
+        if ((_ref1 = R.controllerManager.getController('Position & size', 'size')) != null) {
+          _ref1.setValue(Utils.pointToString(size));
+        }
+      };
+
+      Item.onPositionFinishChange = function(position) {
+        var _ref, _ref1;
+        if ((_ref = R.tools.select) != null) {
+          if ((_ref1 = _ref.selectionRectangle) != null) {
+            _ref1.setPosition(Utils.stringToPoint(position));
+          }
+        }
+      };
+
+      Item.onSizeFinishChange = function(size) {
+        var _ref, _ref1;
+        if ((_ref = R.tools.select) != null) {
+          if ((_ref1 = _ref.selectionRectangle) != null) {
+            _ref1.setSize(Utils.stringToPoint(size));
+          }
         }
       };
 
@@ -79,7 +107,7 @@
             strokeColor: R.parameters.strokeColor,
             fillColor: R.parameters.fillColor
           },
-          'Pos. & size': {
+          'Position & size': {
             position: {
               "default": '',
               label: 'Position',
@@ -88,7 +116,7 @@
             },
             size: {
               "default": '',
-              label: 'P.Size',
+              label: 'Size',
               onChange: function() {},
               onFinishChange: this.onSizeFinishChange
             }

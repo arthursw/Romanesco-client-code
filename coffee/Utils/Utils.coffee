@@ -571,6 +571,16 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 	# 		prototype = prototype.constructor.__super__
 	# 	return prototype
 
+	Utils.stringToPoint = (string)->
+		pos = string.split(',')
+		p = new P.Point(parseFloat(pos[0]), parseFloat(pos[1]))
+		if not _.isFinite(p.x) then p.x = 0
+		if not _.isFinite(p.y) then p.y = 0
+		return p
+
+	Utils.pointToString = (point, precision=2)->
+		return point.x.toFixed(precision) + ',' + point.y.toFixed(precision)
+
 	Utils.logElapsedTime = ()->
 		time = (Date.now() - R.startTime) / 1000
 		console.log "Time elapsed: " + time + " sec."

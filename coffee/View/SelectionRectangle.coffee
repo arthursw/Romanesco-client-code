@@ -1,4 +1,4 @@
-define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], (Tool, Content, Div, Command) ->
+define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], (Tool, Item, Content, Div, Command) ->
 
 	class SelectionRectangle
 
@@ -155,6 +155,7 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 				return
 			@rectangle = @getBoundingRectangle(@items)
 			@updatePath()
+			Item.updatePositionAndSizeControllers(@rectangle.position, @rectangle.size)
 			Div.showDivs()
 			return
 
@@ -392,6 +393,25 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 		endScale: ()->
 			return previous: @previousRectangle.clone(), new: @rectangle.clone(), rotation: @rotation
 
+		# commands
+
+		setPosition: (position)->
+			delta = position.subtract(@rectangle.topLeft)
+			R.commandManager.add(Command.Translate.create(R.selectedItems, delta: delta), true)
+			return
+
+		translateBy: (delta)->
+			R.commandManager.add(Command.Translate.create(R.selectedItems, delta: delta), true)
+			return
+
+		setSize: (newSize)->
+			state =
+				previous: @rectangle
+				new: new Rectangle(@rectangle.topLeft, newSize)
+				rotation: @rotation or 0
+			R.commandManager.add(Command.Scale.create(R.selectedItems, state), true)
+			return
+
 	class SelectionRotationRectangle extends SelectionRectangle
 
 		@indexToName =
@@ -498,6 +518,21 @@ define [ 'Tools/Tool', 'Items/Content', 'Items/Divs/Div', 'Commands/Command' ], 
 		endRotate: ()->
 			return delta: @deltaRotation, center: @rectangle.center
 
+		# commands
+
+		setRotation: (rotation, center)->
+			delta =
+				delta: rotation - @rotation
+				center: center
+			R.commandManager.add(Command.Rotate.create(R.selectedItems, delta), true)
+			return
+
+		rotateBy: (rotation, center)->
+			delta =
+				delta: rotation
+				center: center
+			R.commandManager.add(Command.Rotate.create(R.selectedItems, delta), true)
+			return
 
 
 	class ScreenshotRectangle extends SelectionRectangle

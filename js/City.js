@@ -6,23 +6,45 @@
     var CityManager;
     CityManager = (function() {
       function CityManager() {
-        this.cityRowClicked = __bind(this.cityRowClicked, this);
+        this.deleteCityCallback = __bind(this.deleteCityCallback, this);
+        this.deleteCity = __bind(this.deleteCity, this);
+        this.updateCityCallback = __bind(this.updateCityCallback, this);
         this.updateCity = __bind(this.updateCity, this);
-        this.cityPanelJ = $('#CityPanel');
-        this.citiesListJ = this.cityPanelJ.find('.city-list');
+        this.openCitySettings = __bind(this.openCitySettings, this);
+        this.onCityClicked = __bind(this.onCityClicked, this);
+        this.addCities = __bind(this.addCities, this);
+        this.createCityModal = __bind(this.createCityModal, this);
+        this.createCityCallback = __bind(this.createCityCallback, this);
+        this.createCity = __bind(this.createCity, this);
+        this.cityPanelJ = $('#City');
+        this.citiesListsJ = this.cityPanelJ.find('.city-list');
+        this.userCitiesJ = this.cityPanelJ.find('.user-cities');
+        this.publicCitiesJ = this.cityPanelJ.find('.public-cities');
         this.createCityBtnJ = this.cityPanelJ.find('.create-city');
         this.citiesListBtnJ = this.cityPanelJ.find('.load-city');
         this.createCityBtnJ.click(this.createCityModal);
         this.citiesListBtnJ.click(this.citiesModal);
-        Dajaxice.draw.loadPrivateCities(this.addPrivateCities);
+        Dajaxice.draw.loadCities(this.addCities);
         return;
       }
 
       CityManager.prototype.createCity = function(data) {
-        Dajaxice.draw.createCity(R.loadCityFromServer, {
+        Dajaxice.draw.createCity(this.createCityCallback, {
           name: data.name,
           "public": data["public"]
         });
+      };
+
+      CityManager.prototype.createCityCallback = function(result) {
+        var city, modal;
+        modal = Modal.getModalByTitle('Create city');
+        modal.hide();
+        if (!R.loader.checkError(result)) {
+          return;
+        }
+        city = JSON.parse(result.city);
+        this.addCity(city, true);
+        this.loadCity(city.name, city.owner);
       };
 
       CityManager.prototype.createCityModal = function() {
@@ -48,33 +70,59 @@
         modal.show();
       };
 
-      CityManager.prototype.addPrivateCities = function(result) {
-        var btnJ, city, cityJ, userCities, _i, _len;
+      CityManager.prototype.addCity = function(city, userCity) {
+        var btnJ, cityJ;
+        cityJ = $("<li>");
+        cityJ.append($('<span>').addClass('name').text(city.name));
+        cityJ.attr('data-owner', city.owner).attr('data-pk', city._id.$oid).attr('data-public', city["public"] || 0).attr('data-name', city.name);
+        cityJ.click(this.onCityClicked);
+        cityJ.attr('data-placement', 'right');
+        cityJ.attr('data-container', 'body');
+        cityJ.attr('data-trigger', 'hover');
+        cityJ.attr('data-delay', {
+          show: 500,
+          hide: 100
+        });
+        cityJ.attr('data-content', 'by ' + city.owner);
+        cityJ.popover();
+        if (userCity) {
+          btnJ = $('<button type="button"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>');
+          btnJ.click(this.openCitySettings);
+          cityJ.append(btnJ);
+          this.userCitiesJ.append(cityJ);
+        } else {
+          this.publicCitiesJ.append(cityJ);
+        }
+      };
+
+      CityManager.prototype.addCities = function(result) {
+        var cities, city, i, publicCities, userCities, userCity, _i, _j, _len, _len1, _ref;
         if (!R.loader.checkError(result)) {
           return;
         }
         userCities = JSON.parse(result.userCities);
-        for (_i = 0, _len = userCities.length; _i < _len; _i++) {
-          city = userCities[_i];
-          cityJ = $("<li>");
-          cityJ.text(city.name);
-          cityJ.attr('data-owner', city.owner).attr('data-pk', city._id.$oid).attr('data-public', 0);
-          cityJ.click(this.loadCity);
-          btnJ = $('<button type="button"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>');
-          btnJ.click(this.openCitySettings);
-          cityJ.append(btnJ);
-          this.citiesListJ.apppend(cityJ);
+        publicCities = JSON.parse(result.publicCities);
+        _ref = [userCities, publicCities];
+        for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+          cities = _ref[i];
+          userCity = i === 0;
+          for (_j = 0, _len1 = cities.length; _j < _len1; _j++) {
+            city = cities[_j];
+            this.addCity(city, userCity);
+          }
         }
       };
 
+      CityManager.prototype.onCityClicked = function(event) {
+        var name, owner, parentJ;
+        parentJ = $(event.target).closest('li');
+        name = parentJ.attr('data-name');
+        owner = parentJ.attr('data-owner');
+        this.loadCity(name, owner);
+      };
+
       CityManager.prototype.loadCity = function(name, owner) {
-        if (name == null) {
-          name = $(this).parents('tr:first').attr('data-name');
-        }
-        if (owner == null) {
-          owner = $(this).parents('tr:first').attr('data-owner');
-        }
-        R.unload();
+        R.loader.unload();
         R.city = {
           owner: owner,
           name: name,
@@ -85,18 +133,18 @@
       };
 
       CityManager.prototype.openCitySettings = function(event) {
-        var buttonJ, isPublic, modal, name, parentJ, pk;
+        var isPublic, liJ, modal, name, pk;
         event.stopPropagation();
-        buttonJ = $(this);
-        parentJ = buttonJ.parents('tr:first');
-        name = parentJ.attr('data-name');
-        isPublic = parseInt(parentJ.attr('data-public'));
-        pk = parentJ.attr('data-pk');
+        liJ = $(event.target).closest('li');
+        name = liJ.attr('data-name');
+        isPublic = parseInt(liJ.attr('data-public'));
+        pk = liJ.attr('data-pk');
         modal = Modal.createModal({
           title: 'Modify city',
           submit: this.updateCity,
           data: {
-            pk: pk
+            pk: pk,
+            name: name
           },
           postSubmit: 'load'
         });
@@ -113,10 +161,18 @@
           helpMessage: "Public cities will be accessible by anyone.",
           defaultValue: isPublic
         });
+        modal.addButton({
+          name: 'Delete',
+          type: 'danger',
+          submit: this.deleteCity
+        });
         modal.show();
       };
 
       CityManager.prototype.updateCity = function(data) {
+        if (R.city.name === data.data.name) {
+          this.modifyingCurrentCity = true;
+        }
         Dajaxice.draw.updateCity(this.updateCityCallback, {
           pk: data.data.pk,
           name: data.name,
@@ -124,72 +180,39 @@
         });
       };
 
-      CityManager.prototype.updateCityCallback = function() {
-        var city, modal, modalBodyJ, rowJ;
+      CityManager.prototype.updateCityCallback = function(result) {
+        var city, cityJ, modal;
         modal = Modal.getModalByTitle('Modify city');
         modal.hide();
         if (!R.loader.checkError(result)) {
+          this.modifyingCurrentCity = false;
           return;
         }
         city = JSON.parse(result.city);
-        R.alertManager.alert("City successfully renamed to: " + city.name, "info");
-        modalBodyJ = Modal.getModalByTitle('Open city').modalBodyJ;
-        rowJ = modalBodyJ.find('[data-pk="' + city._id.$oid + '"]');
-        rowJ.attr('data-name', city.name);
-        rowJ.attr('data-public', Number(city["public"] || 0));
-        rowJ.find('.name').text(city.name);
-        rowJ.find('.public').text(city["public"] ? 'Public' : 'Private');
+        if (this.modifyingCurrentCity) {
+          R.city.name = city.name;
+          R.city.owner = city.owner;
+          R.view.updateHash();
+          this.modifyingCurrentCity = false;
+        }
+        cityJ = this.citiesListsJ.find('li[data-pk="' + city._id.$oid + '"]');
+        cityJ.attr('data-name', city.name);
+        cityJ.attr('data-public', Number(city["public"] || 0));
+        cityJ.attr('data-content', 'by ' + city.owner);
+        cityJ.find('.name').text(city.name);
       };
 
-      CityManager.prototype.displayCities = function() {
-        Dajaxice.draw.loadPublicCities(this.loadPublicCitiesCallback);
+      CityManager.prototype.deleteCity = function(data) {
+        Dajaxice.draw.deleteCity(this.deleteCityCallback, {
+          name: data.data.name
+        });
       };
 
-      CityManager.prototype.cityRowClicked = function(field, value, row, $element) {
-        console.log(row.pk);
-        this.loadCity(row.name, row.author);
-      };
-
-      CityManager.prototype.loadPublicCitiesCallback = function(result) {
-        var city, modal, tableData, tableJ, _i, _len;
+      CityManager.prototype.deleteCityCallback = function(result) {
         if (!R.loader.checkError(result)) {
           return;
         }
-        modal = Modal.createModal({
-          title: 'Cities',
-          submit: null
-        });
-        tableData = {
-          columns: [
-            {
-              field: 'name',
-              title: 'Name'
-            }, {
-              field: 'author',
-              title: 'Author'
-            }, {
-              field: 'date',
-              title: 'Date'
-            }, {
-              field: 'public',
-              title: 'Public'
-            }
-          ],
-          data: []
-        };
-        for (_i = 0, _len = publicCities.length; _i < _len; _i++) {
-          city = publicCities[_i];
-          tableData.data.push({
-            name: city.name,
-            author: city.author,
-            date: city.date,
-            "public": city["public"],
-            pk: city._id.$oid
-          });
-        }
-        tableJ = modal.addTable(tableData);
-        tableJ.on('click-cell.bs.table', this.cityRowClicked);
-        modal.show();
+        this.citiesListsJ.find('li[data-pk="' + result.cityPk + '"]').remove();
       };
 
       return CityManager;

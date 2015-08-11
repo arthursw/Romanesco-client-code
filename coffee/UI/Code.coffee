@@ -183,17 +183,56 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 				@loadOwnForkBtnJ.show()
 				@createForkBtnJ.hide()
 			return
-
-		getForks: (callback)->
-			@request('https://api.github.com/repos/arthursw/romanesco-client-code/forks', callback)
-			return
+		#
+		# getForks: (callback)->
+		# 	@request('https://api.github.com/repos/arthursw/romanesco-client-code/forks', callback)
+		# 	return
 
 		forkRowClicked: (event, field, value, row, $element)=>
 			@loadFork(row)
 			Modal.getModalByTitle('Forks').hide()
 			return
 
+		getForksLinks: (headerLink)->
+			if not headerLink then return null
+			links = headerLink.split(',')
+			result = {}
+			for link in links
+				rawLink = link.split(';')
+				if rawLink.length<=1 then continue
+				linkName = rawLink[1].replace(' rel="', '').replace('"', '')
+				if linkName == 'prev' then linkName = 'pre'
+				result[linkName] = rawLink[0].substring(1, rawLink[0].length-1)
+			return result
+
+		updateForksLinks: (links)->
+			@forksTableJ.find('li').hide()
+			if not links?
+				return
+			for linkName, link of links
+				@forksTableJ.find('li.page-'+linkName).show().off('click').on('click', ()=> return @request(link, @updateTable))
+			return
+
+		formatForksData: (forks)->
+			data = []
+			for fork in forks
+				date = new Date(fork.updated_at)
+				data.push( owner: fork.owner.login, date: date.toLocaleString(), githubURL: fork.html_url )
+			return data
+
+		updateTable: (forks)=>
+			links = @getForksLinks(forks.headers?.link)
+			forks = @checkError(forks)
+			if not forks then return
+
+			@forksTableJ.bootstrapTable('removeAll')
+			@forksTableJ.bootstrapTable('append', @formatForksData(forks))
+
+			@updateForksLinks()
+			return
+
 		displayForks: (forks)=>
+			links = @getForksLinks(forks.headers?.link)
 			forks = @checkError(forks)
 			if not forks then return
 			modal = Modal.createModal( title: 'Forks', submit: null )
@@ -209,22 +248,23 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 					field: 'githubURL'
 					title: 'Github URL'
 				]
-				data: []
+				data: @formatForksData(forks)
+				pagination: true
+				sidePagination: 'client'
 				formatter: (value, row, index)->
 					return "<a href='#{value}'>value</a>"
 
-			for fork in forks
-				date = new Date(fork.updated_at)
-				tableData.data.push( owner: fork.owner.login, date: date.toLocaleString(), githubURL: fork.html_url )
+			@forksTableJ = modal.addTable(tableData)
+			@updateForksLinks()
 
-			tableJ = modal.addTable(tableData)
-			tableJ.on 'click-cell.bs.table', @forkRowClicked
+			@forksTableJ.on 'click-cell.bs.table', @forkRowClicked
 			modal.show()
 			return
 
 		listForks: (event)=>
 			event?.preventDefault()
-			@getForks(@displayForks)
+			@request('https://api.github.com/repos/arthursw/romanesco-client-code/forks', @displayForks)
+			# @getForks(@displayForks)
 			return
 
 		loadMainRepository: (event)=>
@@ -284,7 +324,7 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 			dirs = path.split('/')
 			dirs.shift() 			# remove 'coffee' since tree is based from coffee
 			node = @tree
-			for dirName, i in dirs
+			for dirName in dirs
 				node = node.leaves[dirName]
 			return node
 
@@ -292,7 +332,7 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 			dirs = file.path.split('/')
 			file.name = dirs.pop()
 
-			for dirName, i in dirs
+			for dirName in dirs
 				node.leaves[dirName] ?= { leaves: {}, children: [] }
 				node = node.leaves[dirName]
 			return node
@@ -323,7 +363,7 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 
 		updateLeaves: (tree)->
 			tree.leaves = {}
-			for node, i in tree.children
+			for node in tree.children
 				tree.leaves[node.name] = node
 				@updateLeaves(node)
 			return
@@ -703,7 +743,7 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 			dirs.pop() 				# remove the file name since we will create it
 			dirs.shift() 			# remove 'coffee' since tree is based from coffee
 			node = @tree
-			for dirName, i in dirs
+			for dirName in dirs
 				previousNode = node
 				node = node.leaves[dirName]
 				if not node?

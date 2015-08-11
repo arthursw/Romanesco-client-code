@@ -73,7 +73,7 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 			if Item.Div.prototype.isPrototypeOf(item)
 				item.sortedItems = parent.sortedDivs
 				parent.itemListsJ.find(".rDiv-list").append(item.liJ)
-			else if R.RPath.prototype.isPrototypeOf(item)
+			else if Item.Path.prototype.isPrototypeOf(item)
 				item.sortedItems = parent.sortedPaths
 				parent.itemListsJ.find(".rPath-list").append(item.liJ)
 			else
@@ -143,6 +143,19 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 		# 					item.resizeCommand(new P.Rectangle(item.rectangle.point, new P.Size(width, height)))
 		# 	return
 
+		@updatePositionAndSizeControllers: (position, size)->
+			R.controllerManager.getController('Position & size', 'position')?.setValue(Utils.pointToString(position))
+			R.controllerManager.getController('Position & size', 'size')?.setValue(Utils.pointToString(size))
+			return
+
+		@onPositionFinishChange: (position)->
+			R.tools.select?.selectionRectangle?.setPosition(Utils.stringToPoint(position))
+			return
+
+		@onSizeFinishChange: (size)->
+			R.tools.select?.selectionRectangle?.setSize(Utils.stringToPoint(size))
+			return
+
 		@initializeParameters: ()->
 			console.log 'Item.initializeParameters'
 			parameters =
@@ -154,7 +167,7 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 					strokeWidth: R.parameters.strokeWidth
 					strokeColor: R.parameters.strokeColor
 					fillColor: R.parameters.fillColor
-				'Pos. & size':
+				'Position & size':
 					position:
 						default: ''
 						label: 'Position'
@@ -162,7 +175,7 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 						onFinishChange: @onPositionFinishChange
 					size:
 						default: ''
-						label: 'P.Size'
+						label: 'Size'
 						onChange: ()-> return
 						onFinishChange: @onSizeFinishChange
 

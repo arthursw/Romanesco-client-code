@@ -147,7 +147,8 @@ define [ 'Tools/Tool' ], (Tool) ->
 
 			@car.previousSpeed = @car.speed
 
-			@constructor.parameters['Car'].speed.controller.setValue(@car.speed.toFixed(2), false)
+			R.controllerManager.getController('Car', 'speed').setValue(@car.speed.toFixed(2))
+			# @constructor.parameters['Car'].speed.controller.setValue(@car.speed.toFixed(2), false)
 
 			@car.rotation = @car.direction.angle+90
 
