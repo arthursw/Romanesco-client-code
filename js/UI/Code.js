@@ -203,13 +203,22 @@
       };
 
       FileManager.prototype.request = function(request, callback, method, data, params, headers) {
-        Dajaxice.draw.githubRequest(callback, {
-          githubRequest: request,
-          method: method,
-          data: data,
-          params: params,
-          headers: headers
-        });
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'githubRequest',
+              args: {
+                githubRequest: request,
+                method: method,
+                data: data,
+                params: params,
+                headers: headers
+              }
+            })
+          }
+        }).done(callback);
       };
 
       FileManager.prototype.checkHasFork = function() {

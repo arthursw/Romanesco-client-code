@@ -614,7 +614,8 @@ define [ 'Items/Item', 'bootstrap', 'tween', 'mousewheel', 'scrollbar' ], (Item)
 		return
 
 	R.setDebugMode = (debugMode)->
-		Dajaxice.draw.setDebugMode(R.loader.checkError, debug: debugMode)
+#		Dajaxice.draw.setDebugMode(R.loader.checkError, debug: debugMode)
+		$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'setDebugMode', args: debug: debugMode } ).done(R.loader.checkError)
 		return
 
 	R.roughSizeOfObject = (object, maxDepth=4) ->

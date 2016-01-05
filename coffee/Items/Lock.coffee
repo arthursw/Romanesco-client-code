@@ -29,12 +29,6 @@ define [ 'Items/Item', 'UI/Modal' ], (Item, Modal) ->
 				switch data.object_type
 					when 'lock'
 						lock = new Lock(rectangle, data)
-					when 'website'
-						lock = new Website(rectangle, data)
-					when 'video-game'
-						lock = new VideoGame(rectangle, data)
-					when 'link'
-						lock = new Link(rectangle, data)
 				lock.save(true)
 				lock.update('rectangle') 	# update to add items which are under the lock
 				lock.select()
@@ -42,48 +36,23 @@ define [ 'Items/Item', 'UI/Modal' ], (Item, Modal) ->
 
 
 			modal = Modal.createModal( title: 'Create a locked area', submit: submit )
-
-			radioButtons = [
-				{ value: 'lock', checked: true, label: 'Create simple lock', submitShortcut: true, linked: [] }
-				{ value: 'link', checked: false, label: 'Create link', linked: ['linkName', 'url', 'message'] }
-				{ value: 'website', checked: false, label: 'Create  website (® x2)', linked: ['restrictArea', 'disableToolbar', 'siteName'] }
-				# { value: 'video-game', checked: false, label: 'Create  video game (® x2)', linked: ['message'] }
-			]
-
-			radioGroupJ = modal.addRadioGroup(name: 'object_type', radioButtons: radioButtons)
-
-			modal.addCheckbox(name: 'restrictArea', label: 'Restrict area', helpMessage: "Users visiting your website will not be able to go out of the site boundaries.")
-			modal.addCheckbox(name: 'disableToolbar', label: 'Disable toolbar', helpMessage: "Users will not have access to the toolbar on your site.")
-			modal.addTextInput(name: 'linkName', label: 'Site name', type: 'text', placeholder: 'Site name')
-			modal.addTextInput(name: 'url', placeholder: 'http://', type: 'url', class: 'url', label: 'URL')
 			siteURLJ = $("""
 				<div class="form-group siteName">
 					<label for="modalSiteName">Site name</label>
 					<div class="input-group">
 						<span class="input-group-addon">romanesco.city/#</span>
-						<input id="modalSiteName" type="text" class="name form-control" placeholder="Site name">
+						<input id="modalSiteName" type="text" class="site-name form-control" placeholder="Site name">
 					</div>
 				</div>
 			""")
+			siteURLJ.find('input.site-name').attr('placeholder', R.me)
 			siteUrlExtractor = (data, siteURLJ)->
 				data.siteURL = siteURLJ.find("#modalSiteName").val()
 				return true
 			modal.addCustomContent(name: 'siteName', divJ: siteURLJ, extractor: siteUrlExtractor)
-			modal.addTextInput(name: 'message', label: 'Link message', type: 'text', placeholder: 'The message displayed when looking at the link.', required: true)
-
-			radioGroupJ.click (event)->
-				lockType = radioGroupJ.find('input[type=radio][name=object_type]:checked')[0].value
-				for radioButton in radioButtons
-					if radioButton.value == lockType
-						for name, extractor of modal.extractors
-							if radioButton.linked.indexOf(name) >= 0
-								extractor.divJ.show()
-							else if name != 'object_type'
-								extractor.divJ.hide()
-				return
-			radioGroupJ.click()
+			modal.addCheckbox(name: 'restrictArea', label: 'Restrict area', helpMessage: "Users visiting your website will not be able to go out of the site boundaries.")
+			modal.addCheckbox(name: 'disableToolbar', label: 'Disable toolbar', helpMessage: "Users will not have access to the toolbar on your site.")
 			modal.show()
-			radioGroupJ.find('input:first').focus()
 			return
 
 		@highlightStage: (color)->
@@ -298,7 +267,8 @@ define [ 'Items/Item', 'UI/Modal' ], (Item, Modal) ->
 				R.view.entireAreas.push(@)
 
 			if @modulePk?
-				Dajaxice.draw.getModuleSource(R.initializeModule, { pk: @modulePk, accepted: true })
+#				Dajaxice.draw.getModuleSource(R.initializeModule, { pk: @modulePk, accepted: true })
+				$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'getModuleSource', args: { pk: @modulePk, accepted: true } } ).done(R.initializeModule)
 
 			return
 
@@ -358,7 +328,7 @@ define [ 'Items/Item', 'UI/Modal' ], (Item, Modal) ->
 				object_type: @constructor.object_type
 				data: JSON.stringify(data)
 				siteData: JSON.stringify(siteData)
-				name: data.name
+				siteName: data.siteName
 			Dajaxice.draw.saveBox( @saveCallback, args)
 			super
 			return
@@ -503,7 +473,8 @@ define [ 'Items/Item', 'UI/Modal' ], (Item, Modal) ->
 			return
 
 		askForModule: ()->
-			Dajaxice.draw.getModuleList(@createSelectModuleModal)
+#			Dajaxice.draw.getModuleList(@createSelectModuleModal)
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'getModuleList', args: {} } ).done(@createSelectModuleModal)
 			return
 
 		createSelectModuleModal: (result)->

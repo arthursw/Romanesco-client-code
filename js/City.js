@@ -24,15 +24,33 @@
         this.citiesListBtnJ = this.cityPanelJ.find('.load-city');
         this.createCityBtnJ.click(this.createCityModal);
         this.citiesListBtnJ.click(this.citiesModal);
-        Dajaxice.draw.loadCities(this.addCities);
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'loadCities',
+              args: {}
+            })
+          }
+        }).done(this.addCities);
         return;
       }
 
       CityManager.prototype.createCity = function(data) {
-        Dajaxice.draw.createCity(this.createCityCallback, {
-          name: data.name,
-          "public": data["public"]
-        });
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'createCity',
+              args: {
+                name: data.name,
+                "public": data["public"]
+              }
+            })
+          }
+        }).done(this.createCityCallback);
       };
 
       CityManager.prototype.createCityCallback = function(result) {
@@ -173,11 +191,20 @@
         if (R.city.name === data.data.name) {
           this.modifyingCurrentCity = true;
         }
-        Dajaxice.draw.updateCity(this.updateCityCallback, {
-          pk: data.data.pk,
-          name: data.name,
-          "public": data["public"]
-        });
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'updateCity',
+              args: {
+                pk: data.data.pk,
+                name: data.name,
+                "public": data["public"]
+              }
+            })
+          }
+        }).done(this.updateCityCallback);
       };
 
       CityManager.prototype.updateCityCallback = function(result) {
@@ -203,9 +230,18 @@
       };
 
       CityManager.prototype.deleteCity = function(data) {
-        Dajaxice.draw.deleteCity(this.deleteCityCallback, {
-          name: data.data.name
-        });
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'deleteCity',
+              args: {
+                name: data.data.name
+              }
+            })
+          }
+        }).done(this.deleteCityCallback);
       };
 
       CityManager.prototype.deleteCityCallback = function(result) {

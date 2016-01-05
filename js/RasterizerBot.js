@@ -76,7 +76,16 @@
 
       RasterizerBot.prototype.getAreasToUpdate = function() {
         if (this.areasToRasterize.length === 0 && this.imageSaved) {
-          Dajaxice.draw.getAreasToUpdate(this.getAreasToUpdateCallback);
+          $.ajax({
+            method: "POST",
+            url: "ajaxCall/",
+            data: {
+              data: JSON.stringify({
+                "function": 'getAreasToUpdate',
+                args: {}
+              })
+            }
+          }).done(this.getAreasToUpdateCallback);
         }
       };
 
@@ -105,9 +114,18 @@
         console.log('position: ' + x + ', ' + y);
         console.log('finished: ' + finished);
         if (finished) {
-          Dajaxice.draw.deleteAreaToUpdate(this.deleteAreaToUpdateCallback, {
-            pk: this.areaToRasterizePk
-          });
+          $.ajax({
+            method: "POST",
+            url: "ajaxCall/",
+            data: {
+              data: JSON.stringify({
+                "function": 'deleteAreaToUpdate',
+                args: {
+                  pk: this.areaToRasterizePk
+                }
+              })
+            }
+          }).done(this.deleteAreaToUpdateCallback);
         } else {
           this.loopRasterize();
         }

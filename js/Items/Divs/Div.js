@@ -184,7 +184,16 @@
           date: Date.now(),
           data: this.getStringifiedData()
         };
-        Dajaxice.draw.saveDiv(this.saveCallback, args);
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'saveDiv',
+              args: args
+            })
+          }
+        }).done(this.saveCallback);
         Div.__super__.save.apply(this, arguments);
       };
 

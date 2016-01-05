@@ -461,7 +461,16 @@
           return;
         }
         delete this.updateAfterSave;
-        Dajaxice.draw.updatePath(this.updatePathCallback, this.getUpdateArguments(type));
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'updatePath',
+              args: this.getUpdateArguments(type)
+            })
+          }
+        }).done(this.updatePathCallback);
       };
 
       Path.prototype.updatePathCallback = function(result) {
@@ -496,9 +505,18 @@
       };
 
       Path.prototype.deleteFromDatabase = function() {
-        Dajaxice.draw.deletePath(R.loader.checkError, {
-          pk: this.pk
-        });
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'deletePath',
+              args: {
+                pk: this.pk
+              }
+            })
+          }
+        }).done(R.loader.checkError);
       };
 
       Path.prototype.pathOnPlanet = function(controlSegments) {

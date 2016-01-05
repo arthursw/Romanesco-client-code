@@ -159,7 +159,8 @@ define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 				date: Date.now()
 				data: @getStringifiedData()
 
-			Dajaxice.draw.saveDiv(@saveCallback, args)
+#			Dajaxice.draw.saveDiv(@saveCallback, args)
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'saveDiv', args: args } ).done(@saveCallback)
 			super
 			return
 

@@ -14,21 +14,12 @@
       Lock.object_type = 'lock';
 
       Lock.initialize = function(rectangle) {
-        var modal, radioButtons, radioGroupJ, siteURLJ, siteUrlExtractor, submit;
+        var modal, siteURLJ, siteUrlExtractor, submit;
         submit = function(data) {
           var lock;
           switch (data.object_type) {
             case 'lock':
               lock = new Lock(rectangle, data);
-              break;
-            case 'website':
-              lock = new Website(rectangle, data);
-              break;
-            case 'video-game':
-              lock = new VideoGame(rectangle, data);
-              break;
-            case 'link':
-              lock = new Link(rectangle, data);
           }
           lock.save(true);
           lock.update('rectangle');
@@ -38,28 +29,16 @@
           title: 'Create a locked area',
           submit: submit
         });
-        radioButtons = [
-          {
-            value: 'lock',
-            checked: true,
-            label: 'Create simple lock',
-            submitShortcut: true,
-            linked: []
-          }, {
-            value: 'link',
-            checked: false,
-            label: 'Create link',
-            linked: ['linkName', 'url', 'message']
-          }, {
-            value: 'website',
-            checked: false,
-            label: 'Create  website (® x2)',
-            linked: ['restrictArea', 'disableToolbar', 'siteName']
-          }
-        ];
-        radioGroupJ = modal.addRadioGroup({
-          name: 'object_type',
-          radioButtons: radioButtons
+        siteURLJ = $("<div class=\"form-group siteName\">\n	<label for=\"modalSiteName\">Site name</label>\n	<div class=\"input-group\">\n		<span class=\"input-group-addon\">romanesco.city/#</span>\n		<input id=\"modalSiteName\" type=\"text\" class=\"site-name form-control\" placeholder=\"Site name\">\n	</div>\n</div>");
+        siteURLJ.find('input.site-name').attr('placeholder', R.me);
+        siteUrlExtractor = function(data, siteURLJ) {
+          data.siteURL = siteURLJ.find("#modalSiteName").val();
+          return true;
+        };
+        modal.addCustomContent({
+          name: 'siteName',
+          divJ: siteURLJ,
+          extractor: siteUrlExtractor
         });
         modal.addCheckbox({
           name: 'restrictArea',
@@ -71,57 +50,7 @@
           label: 'Disable toolbar',
           helpMessage: "Users will not have access to the toolbar on your site."
         });
-        modal.addTextInput({
-          name: 'linkName',
-          label: 'Site name',
-          type: 'text',
-          placeholder: 'Site name'
-        });
-        modal.addTextInput({
-          name: 'url',
-          placeholder: 'http://',
-          type: 'url',
-          "class": 'url',
-          label: 'URL'
-        });
-        siteURLJ = $("<div class=\"form-group siteName\">\n	<label for=\"modalSiteName\">Site name</label>\n	<div class=\"input-group\">\n		<span class=\"input-group-addon\">romanesco.city/#</span>\n		<input id=\"modalSiteName\" type=\"text\" class=\"name form-control\" placeholder=\"Site name\">\n	</div>\n</div>");
-        siteUrlExtractor = function(data, siteURLJ) {
-          data.siteURL = siteURLJ.find("#modalSiteName").val();
-          return true;
-        };
-        modal.addCustomContent({
-          name: 'siteName',
-          divJ: siteURLJ,
-          extractor: siteUrlExtractor
-        });
-        modal.addTextInput({
-          name: 'message',
-          label: 'Link message',
-          type: 'text',
-          placeholder: 'The message displayed when looking at the link.',
-          required: true
-        });
-        radioGroupJ.click(function(event) {
-          var extractor, lockType, name, radioButton, _i, _len, _ref;
-          lockType = radioGroupJ.find('input[type=radio][name=object_type]:checked')[0].value;
-          for (_i = 0, _len = radioButtons.length; _i < _len; _i++) {
-            radioButton = radioButtons[_i];
-            if (radioButton.value === lockType) {
-              _ref = modal.extractors;
-              for (name in _ref) {
-                extractor = _ref[name];
-                if (radioButton.linked.indexOf(name) >= 0) {
-                  extractor.divJ.show();
-                } else if (name !== 'object_type') {
-                  extractor.divJ.hide();
-                }
-              }
-            }
-          }
-        });
-        radioGroupJ.click();
         modal.show();
-        radioGroupJ.find('input:first').focus();
       };
 
       Lock.highlightStage = function(color) {
@@ -372,10 +301,19 @@
           R.view.entireAreas.push(this);
         }
         if (this.modulePk != null) {
-          Dajaxice.draw.getModuleSource(R.initializeModule, {
-            pk: this.modulePk,
-            accepted: true
-          });
+          $.ajax({
+            method: "POST",
+            url: "ajaxCall/",
+            data: {
+              data: JSON.stringify({
+                "function": 'getModuleSource',
+                args: {
+                  pk: this.modulePk,
+                  accepted: true
+                }
+              })
+            }
+          }).done(R.initializeModule);
         }
         return;
       }
@@ -448,7 +386,7 @@
           object_type: this.constructor.object_type,
           data: JSON.stringify(data),
           siteData: JSON.stringify(siteData),
-          name: data.name
+          siteName: data.siteName
         };
         Dajaxice.draw.saveBox(this.saveCallback, args);
         Lock.__super__.save.apply(this, arguments);
@@ -640,7 +578,16 @@
       };
 
       Lock.prototype.askForModule = function() {
-        Dajaxice.draw.getModuleList(this.createSelectModuleModal);
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'getModuleList',
+              args: {}
+            })
+          }
+        }).done(this.createSelectModuleModal);
       };
 
       Lock.prototype.createSelectModuleModal = function(result) {};

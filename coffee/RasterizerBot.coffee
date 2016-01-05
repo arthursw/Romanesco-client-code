@@ -128,7 +128,8 @@ define [], () ->
 
 		getAreasToUpdate: ()=>
 			if @areasToRasterize.length==0 and @imageSaved
-				Dajaxice.draw.getAreasToUpdate(@getAreasToUpdateCallback)
+#				Dajaxice.draw.getAreasToUpdate(@getAreasToUpdateCallback)
+				$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'getAreasToUpdate', args: {} } ).done(@getAreasToUpdateCallback)
 			return
 
 		loadNextArea: ()->
@@ -152,7 +153,8 @@ define [], () ->
 			console.log 'position: ' + x + ', ' + y
 			console.log 'finished: ' + finished
 			if finished
-				Dajaxice.draw.deleteAreaToUpdate(@deleteAreaToUpdateCallback, { pk: @areaToRasterizePk } )
+#				Dajaxice.draw.deleteAreaToUpdate(@deleteAreaToUpdateCallback, { pk: @areaToRasterizePk } )
+				$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'deleteAreaToUpdate', args: { pk: @areaToRasterizePk }  } ).done(@deleteAreaToUpdateCallback)
 			else
 				@loopRasterize()
 			return

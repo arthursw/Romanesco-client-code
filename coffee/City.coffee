@@ -14,11 +14,13 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 			@createCityBtnJ.click @createCityModal
 			@citiesListBtnJ.click @citiesModal
 
-			Dajaxice.draw.loadCities(@addCities)
+#			Dajaxice.draw.loadCities(@addCities)
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'loadCities', args: {} } ).done(@addCities)
 			return
 
 		createCity: (data)=>
-			Dajaxice.draw.createCity(@createCityCallback, name: data.name, public: data.public)
+#			Dajaxice.draw.createCity(@createCityCallback, name: data.name, public: data.public)
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'createCity', args: name: data.name, public: data.public } ).done(@createCityCallback)
 			return
 
 		createCityCallback: (result)=>
@@ -107,7 +109,8 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 		updateCity: (data)=>
 			if R.city.name == data.data.name
 				@modifyingCurrentCity = true
-			Dajaxice.draw.updateCity(@updateCityCallback, pk: data.data.pk, name: data.name, public: data.public )
+#			Dajaxice.draw.updateCity(@updateCityCallback, pk: data.data.pk, name: data.name, public: data.public )
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'updateCity', args: pk: data.data.pk, name: data.name, public: data.public  } ).done(@updateCityCallback)
 			return
 
 		updateCityCallback: (result)=>
@@ -130,7 +133,8 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 			return
 
 		deleteCity: (data)=>
-			Dajaxice.draw.deleteCity(@deleteCityCallback, {name: data.data.name})
+#			Dajaxice.draw.deleteCity(@deleteCityCallback, {name: data.data.name})
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'deleteCity', args: {name: data.data.name} } ).done(@deleteCityCallback)
 			return
 
 		deleteCityCallback: (result)=>
@@ -139,7 +143,8 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 			return
 
 		# displayCities: ()->
-		# 	Dajaxice.draw.loadPublicCities(@loadPublicCitiesCallback)
+#		# 	Dajaxice.draw.loadPublicCities(@loadPublicCitiesCallback)
+		# 	$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'loadPublicCities', args: {} } ).done(@loadPublicCitiesCallback)
 		# 	return
 		#
 		# cityRowClicked: (field, value, row, $element)=>
@@ -179,7 +184,8 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 	# R.initializeCities = ()->
 	# 	R.toolsJ.find("[data-name='Create']").click ()->
 	# 		submit = (data)->
-	# 			Dajaxice.draw.createCity(R.loadCityFromServer, name: data.name, public: data.public)
+#	# 			Dajaxice.draw.createCity(R.loadCityFromServer, name: data.name, public: data.public)
+	# 			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'createCity', args: name: data.name, public: data.public } ).done(R.loadCityFromServer))
 	# 			return
 	# 		modal = Modal.createModal( title: 'Create city', submit: submit, postSubmit: 'load' )
 	# 		modal.addTextInput( label: "City name", name: 'name', required: true, submitShortcut: true, placeholder: 'Paris' )
@@ -192,7 +198,8 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 	# 		modal.modalBodyJ.find('.modal-footer').hide()
 	# 		modal.addProgressBar()
 	# 		modal.show()
-	# 		Dajaxice.draw.loadCities(R.loadCities)
+#	# 		Dajaxice.draw.loadCities(R.loadCities)
+	# 		$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'loadCities', args: {} } ).done(R.loadCities)
 	# 		return
 	# 	return
 
@@ -221,7 +228,8 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 	# 			rowJ.find('.public').text(if city.public then 'Public' else 'Private')
 	# 			return
 
-	# 		Dajaxice.draw.updateCity(callback, pk: data.data.pk, name: data.name, public: data.public )
+#	# 		Dajaxice.draw.updateCity(callback, pk: data.data.pk, name: data.name, public: data.public )
+	# 		$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'updateCity', args: pk: data.data.pk, name: data.name, public: data.public  } ).done(callback))
 	# 		return
 
 	# 	modal = Modal.createModal(title: 'Modify city', submit: updateCity, data: { pk: pk }, postSubmit: 'load' )
@@ -251,7 +259,8 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 	# 	# 		R.alertManager.alert "City successfully renamed to: " + city.name, "info"
 	# 	# 		return
 
-	# 	# 	Dajaxice.draw.updateCity(callback, pk: pk, name: newName, 'public': isPublic )
+#	# 	# 	Dajaxice.draw.updateCity(callback, pk: pk, name: newName, 'public': isPublic )
+	# 	# 	$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'updateCity', args: pk: pk, name: newName, 'public': isPublic  } ).done(callback))
 	# 	# 	inputJ.hide()
 	# 	# 	publicJ.attr('disabled', true)
 	# 	# 	buttonJ.off('click').click(R.modifyCity)
@@ -305,7 +314,8 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 	# 				deleteButtonJ.click (event)->
 	# 					event.stopPropagation()
 	# 					name = $(this).parents('tr:first').attr('data-name')
-	# 					Dajaxice.draw.deleteCity(R.loader.checkError, name: name)
+#	# 					Dajaxice.draw.deleteCity(R.loader.checkError, name: name)
+	# 					$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'deleteCity', args: name: name } ).done(R.loader.checkError))
 	# 					return
 	# 				td3J.append(modifyButtonJ)
 	# 				td3J.append(deleteButtonJ)

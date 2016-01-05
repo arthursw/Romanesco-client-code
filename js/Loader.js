@@ -196,12 +196,21 @@
       };
 
       Loader.prototype.requestAreas = function(rectangle, areasToLoad, qZoom) {
-        Dajaxice.draw.load(this.loadCallback, {
-          rectangle: rectangle,
-          areasToLoad: areasToLoad,
-          qZoom: qZoom,
-          city: R.city
-        });
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'load',
+              args: {
+                rectangle: rectangle,
+                areasToLoad: areasToLoad,
+                qZoom: qZoom,
+                city: R.city
+              }
+            })
+          }
+        }).done(this.loadCallback);
       };
 
       Loader.prototype.load = function(area) {
@@ -575,11 +584,20 @@
       RasterizerLoader.prototype.requestAreas = function(rectangle, areasToLoad, qZoom) {
         var itemsDates;
         itemsDates = this.createItemsDates();
-        Dajaxice.draw.loadRasterizer(this.loadCallback, {
-          areasToLoad: areasToLoad,
-          itemsDates: itemsDates,
-          city: R.city
-        });
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'loadRasterizer',
+              args: {
+                areasToLoad: areasToLoad,
+                itemsDates: itemsDates,
+                city: R.city
+              }
+            })
+          }
+        }).done(this.loadCallback);
       };
 
       RasterizerLoader.prototype.mustLoadItem = function() {

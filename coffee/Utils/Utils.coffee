@@ -6,12 +6,46 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 	# Utils = {}
 	Utils.CS = CS
 
-	# Display a R.alertManager.alert message when a dajaxice error happens (problem on the server)
-	Dajaxice.setup( 'default_exception_callback': (error)->
-		console.log 'Dajaxice error!'
-		R.alertManager.alert "Connection error", "error"
+	$.ajaxSetup beforeSend: (xhr, settings) ->
+
+		getCookie = (name) ->
+			cookieValue = null
+			if document.cookie and document.cookie != ''
+				cookies = document.cookie.split(';')
+				i = 0
+				while i < cookies.length
+					cookie = jQuery.trim(cookies[i])
+					# Does this cookie string begin with the name we want?
+					if cookie.substring(0, name.length + 1) == name + '='
+						cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
+						break
+					i++
+			cookieValue
+
+		if !(/^http:.*/.test(settings.url) or /^https:.*/.test(settings.url))
+			# Only send the token to relative URLs i.e. locally.
+			xhr.setRequestHeader 'X-CSRFToken', getCookie('csrftoken')
 		return
-	)
+
+
+
+	window.Dajaxice =
+		draw: new Proxy({},
+			get: (target, name)->
+				if not name in target
+					return (callback, args)->
+						$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: name, args: args } ).done(callback)
+						return
+				return target[name]
+		)
+
+	# Display a R.alertManager.alert message when a dajaxice error happens (problem on the server)
+	# Dajaxice.setup( 'default_exception_callback': (error)->
+	# 	console.log 'Dajaxice error!'
+	# 	R.alertManager.alert "Connection error", "error"
+	# 	return
+	# )
+
 	# static
 	R.romanescoURL = 'http://localhost:8000/'
 	R.me = null 							# R.me is the username of the user (sent by the server in each ajax "load")

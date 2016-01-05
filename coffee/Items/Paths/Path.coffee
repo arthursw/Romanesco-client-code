@@ -520,7 +520,8 @@ define [ 'Items/Item', 'Items/Content', 'Tools/PathTool' ], (Item, Content, Path
 				return
 			delete @updateAfterSave
 
-			Dajaxice.draw.updatePath(@updatePathCallback, @getUpdateArguments(type))
+#			Dajaxice.draw.updatePath(@updatePathCallback, @getUpdateArguments(type))
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'updatePath', args: @getUpdateArguments(type) }).done(@updatePathCallback)
 
 			# if not @data?.animate
 
@@ -592,7 +593,8 @@ define [ 'Items/Item', 'Items/Content', 'Tools/PathTool' ], (Item, Content, Path
 			return
 
 		deleteFromDatabase: ()->
-			Dajaxice.draw.deletePath(R.loader.checkError, { pk: @pk })
+#			Dajaxice.draw.deletePath(R.loader.checkError, { pk: @pk })
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'deletePath', args: { pk: @pk } } ).done(R.loader.checkError)
 			return
 
 		# @param controlSegments [Array<Paper P.Segment>] the control path segments to convert in planet coordinates
