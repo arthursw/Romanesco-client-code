@@ -155,7 +155,7 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 				return
 			@rectangle = @getBoundingRectangle(@items)
 			@updatePath()
-			Item.updatePositionAndSizeControllers(@rectangle.position, @rectangle.size)
+			Item.updatePositionAndSizeControllers(@rectangle.point, @rectangle.size)
 			Div.showDivs()
 			return
 

@@ -204,7 +204,7 @@
         }
         this.rectangle = this.getBoundingRectangle(this.items);
         this.updatePath();
-        Item.updatePositionAndSizeControllers(this.rectangle.position, this.rectangle.size);
+        Item.updatePositionAndSizeControllers(this.rectangle.point, this.rectangle.size);
         Div.showDivs();
       };
 
