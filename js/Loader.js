@@ -23,28 +23,28 @@
       Loader.prototype.initializeLoadingBar = function() {
         var opts, target;
         opts = {
-          lines: 13,
-          length: 45,
-          width: 41,
+          lines: 17,
+          length: 13,
+          width: 8,
           radius: 0,
-          scale: 0.25,
-          corners: 1,
-          color: '#000',
+          scale: 1.5,
+          corners: 0,
+          color: '#ccc',
           opacity: 0.15,
           rotate: 0,
           direction: 1,
           speed: 1,
-          trail: 42,
+          trail: 38,
           fps: 20,
           zIndex: 2e9,
           className: 'spinner',
           top: '50%',
-          left: '50%',
+          left: '130px',
           shadow: false,
           hwaccel: false,
-          position: 'absolute'
+          position: 'relative'
         };
-        target = document.getElementById('loadingBar');
+        target = document.getElementById('spinner');
         this.spinner = new Spinner(opts).spin(target);
       };
 

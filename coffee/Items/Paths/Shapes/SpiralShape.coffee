@@ -80,7 +80,7 @@ define [ 'Items/Paths/Shapes/Shape' ], (Shape) ->
 			@shape.add(new P.Point(c.x+hw*Math.cos(angle), c.y+hh*Math.sin(angle)))
 			@shape.pivot = @rectangle.center
 
-			@path.strokeCap = 'round'
+			@shape.strokeCap = 'round'
 			return
 
 		# called at each frame event
