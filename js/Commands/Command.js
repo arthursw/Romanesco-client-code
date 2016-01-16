@@ -218,9 +218,18 @@
           item = _ref[pk];
           item.addUpdateFunctionAndArguments(args, type);
         }
-        Dajaxice.draw.multipleCalls(this.updateCallback, {
-          functionsAndArguments: args
-        });
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'multipleCalls',
+              args: {
+                functionsAndArguments: args
+              }
+            })
+          }
+        }).done(this.updateCallback);
       };
 
       DeferredCommand.prototype.updateCallback = function(results) {

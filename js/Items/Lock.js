@@ -388,7 +388,16 @@
           siteData: JSON.stringify(siteData),
           siteName: data.siteName
         };
-        Dajaxice.draw.saveBox(this.saveCallback, args);
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'saveBox',
+              args: args
+            })
+          }
+        }).done(this.saveCallback);
         Lock.__super__.save.apply(this, arguments);
       };
 
@@ -459,9 +468,18 @@
             });
           }
         }
-        Dajaxice.draw.multipleCalls(this.updateCallback, {
-          functionsAndArguments: args
-        });
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'multipleCalls',
+              args: {
+                functionsAndArguments: args
+              }
+            })
+          }
+        }).done(this.updateCallback);
       };
 
       Lock.prototype.updateCallback = function(results) {
@@ -473,9 +491,18 @@
       };
 
       Lock.prototype.deleteFromDatabase = function() {
-        Dajaxice.draw.deleteBox(R.loader.checkError, {
-          'pk': this.pk
-        });
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'deleteBox',
+              args: {
+                'pk': this.pk
+              }
+            })
+          }
+        }).done(R.loader.checkError);
       };
 
       Lock.prototype.setRectangle = function(rectangle, update) {

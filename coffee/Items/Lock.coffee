@@ -329,7 +329,9 @@ define [ 'Items/Item', 'UI/Modal' ], (Item, Modal) ->
 				data: JSON.stringify(data)
 				siteData: JSON.stringify(siteData)
 				siteName: data.siteName
-			Dajaxice.draw.saveBox( @saveCallback, args)
+
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'saveBox', args: args } ).done(@saveCallback)
+			# Dajaxice.draw.saveBox( @saveCallback, args)
 			super
 			return
 
@@ -391,7 +393,8 @@ define [ 'Items/Item', 'UI/Modal' ], (Item, Modal) ->
 				for item in itemsToUpdate
 					args.push( function: item.getUpdateFunction(), arguments: item.getUpdateArguments() )
 
-			Dajaxice.draw.multipleCalls( @updateCallback, functionsAndArguments: args)
+			# Dajaxice.draw.multipleCalls( @updateCallback, functionsAndArguments: args)
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'multipleCalls', args: functionsAndArguments: args } ).done(@updateCallback)
 			return
 
 		updateCallback: (results)->
@@ -403,7 +406,8 @@ define [ 'Items/Item', 'UI/Modal' ], (Item, Modal) ->
 		# @delete() removes the item and delete it in the database
 		# @remove() just removes visually
 		deleteFromDatabase: () ->
-			Dajaxice.draw.deleteBox( R.loader.checkError, { 'pk': @pk } )
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'deleteBox', args: { 'pk': @pk } } ).done(R.loader.checkError)
+			# Dajaxice.draw.deleteBox( R.loader.checkError, { 'pk': @pk } )
 			return
 
 		setRectangle: (rectangle, update=true)->

@@ -415,7 +415,16 @@
           date: this.date,
           object_type: this.constructor.label
         };
-        Dajaxice.draw.savePath(this.saveCallback, args);
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'savePath',
+              args: args
+            })
+          }
+        }).done(this.saveCallback);
         Path.__super__.save.apply(this, arguments);
       };
 

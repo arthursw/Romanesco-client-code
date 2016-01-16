@@ -284,7 +284,8 @@ define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 			if R.view.grid.rectangleOverlapsTwoPlanets(bounds)
 				return
 
-			Dajaxice.draw.updateDiv( @updateCallback, @getUpdateArguments(type) )
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'updateDiv', args: @getUpdateArguments(type) } ).done(@updateCallback)
+			# Dajaxice.draw.updateDiv( @updateCallback, @getUpdateArguments(type) )
 
 			return
 
@@ -345,7 +346,8 @@ define [ 'Items/Item', 'Items/Content' ], (Item, Content) ->
 		# @delete() removes the path and delete it in the database
 		# @remove() just removes visually
 		deleteFromDatabase: () ->
-			Dajaxice.draw.deleteDiv( R.loader.checkError, { 'pk': @pk } )
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'deleteDiv', args: { 'pk': @pk } } ).done(R.loader.checkError)
+			# Dajaxice.draw.deleteDiv( R.loader.checkError, { 'pk': @pk } )
 			return
 
 	Item.Div = Div

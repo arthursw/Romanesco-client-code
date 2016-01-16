@@ -168,7 +168,9 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 			args = []
 			for pk, item of @items
 				item.addUpdateFunctionAndArguments(args, type)
-			Dajaxice.draw.multipleCalls( @updateCallback, functionsAndArguments: args)
+
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'multipleCalls', args: {functionsAndArguments: args} } ).done(@updateCallback)
+			# Dajaxice.draw.multipleCalls( @updateCallback, functionsAndArguments: args)
 			return
 
 		updateCallback: (results)->
@@ -276,7 +278,7 @@ define ['Utils/Utils', 'UI/Controllers/ControllerManager'], (Utils, ControllerMa
 	class TranslateCommand extends SelectionRectangleCommand
 
 		@initialize('translate')
-		
+
 		newState: ()->
 			return [@state.delta]
 

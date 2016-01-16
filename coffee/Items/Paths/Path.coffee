@@ -480,7 +480,8 @@ define [ 'Items/Item', 'Items/Content', 'Tools/PathTool' ], (Item, Content, Path
 				date: @date
 				object_type: @constructor.label
 
-			Dajaxice.draw.savePath( @saveCallback, args )
+			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'savePath', args: args } ).done(@saveCallback)
+			# Dajaxice.draw.savePath( @saveCallback, args )
 			super
 			return
 

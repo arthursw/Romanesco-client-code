@@ -331,7 +331,16 @@
         if (R.view.grid.rectangleOverlapsTwoPlanets(bounds)) {
           return;
         }
-        Dajaxice.draw.updateDiv(this.updateCallback, this.getUpdateArguments(type));
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'updateDiv',
+              args: this.getUpdateArguments(type)
+            })
+          }
+        }).done(this.updateCallback);
       };
 
       Div.prototype.updateCallback = function(result) {
@@ -413,9 +422,18 @@
       };
 
       Div.prototype.deleteFromDatabase = function() {
-        Dajaxice.draw.deleteDiv(R.loader.checkError, {
-          'pk': this.pk
-        });
+        $.ajax({
+          method: "POST",
+          url: "ajaxCall/",
+          data: {
+            data: JSON.stringify({
+              "function": 'deleteDiv',
+              args: {
+                'pk': this.pk
+              }
+            })
+          }
+        }).done(R.loader.checkError);
       };
 
       return Div;
