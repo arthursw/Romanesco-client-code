@@ -28,16 +28,16 @@ define [ 'Utils/CoordinateSystems', 'underscore', 'jquery', 'tinycolor', 'paper'
 		return
 
 
-
-	window.Dajaxice =
-		draw: new Proxy({},
-			get: (target, name)->
-				if not name in target
-					return (callback, args)->
-						$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: name, args: args } ).done(callback)
-						return
-				return target[name]
-		)
+	# 
+	# window.Dajaxice =
+	# 	draw: new Proxy({},
+	# 		get: (target, name)->
+	# 			if not name in target
+	# 				return (callback, args)->
+	# 					$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: name, args: args } ).done(callback)
+	# 					return
+	# 			return target[name]
+	# 	)
 
 	# Display a R.alertManager.alert message when a dajaxice error happens (problem on the server)
 	# Dajaxice.setup( 'default_exception_callback': (error)->
