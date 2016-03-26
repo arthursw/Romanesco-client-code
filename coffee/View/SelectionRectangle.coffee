@@ -80,6 +80,8 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 		constructor: (@rectangle)->
 			@items = if not @rectangle? then R.selectedItems else []
 			@rectangle ?= @getBoundingRectangle(@items)
+			@translation = new P.Point()
+			@previousRectangle = @rectangle.clone()
 
 			@transformState = null
 
@@ -101,6 +103,8 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 			R.view.selectionLayer.addChild(@group)
 
 			@path.pivot = @rectangle.center
+
+			@debugHasBegan = false
 			return
 
 		getBoundingRectangle: (items)->
@@ -214,9 +218,11 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 
 		beginTranslate: (event)->
 			@translation = new P.Point()
+			@debugHasBegan = true
 			return
 
 		updateTranslate: (event)->
+			if not @debugHasBegan then throw 'did not begin'
 			if Utils.Snap.getSnap() <= 1
 				@translate(event.delta)
 			else
@@ -227,6 +233,7 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 			return
 
 		endTranslate: ()->
+			@debugHasBegan = false
 			@dragOffset = null
 			return delta: @translation
 
@@ -407,7 +414,7 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 		setSize: (newSize)->
 			state =
 				previous: @rectangle
-				new: new Rectangle(@rectangle.topLeft, newSize)
+				new: new P.Rectangle(@rectangle.topLeft, new P.Size(newSize))
 				rotation: @rotation or 0
 			R.commandManager.add(Command.Scale.create(R.selectedItems, state), true)
 			return
@@ -434,6 +441,7 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 
 		constructor: ()->
 			@rotation = 0
+			@deltaRotation = 0
 			super()
 			return
 

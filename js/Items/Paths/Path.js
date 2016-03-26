@@ -104,6 +104,7 @@
           points = null;
         }
         this.lock = lock != null ? lock : null;
+        this.sendToSpacebrew = __bind(this.sendToSpacebrew, this);
         this.update = __bind(this.update, this);
         this.saveCallback = __bind(this.saveCallback, this);
         if (!this.lock) {
@@ -541,6 +542,50 @@
           points.push(Utils.CS.pointToArray(p));
         }
         return points;
+      };
+
+      Path.prototype.getPathList = function(item, paths) {
+        var child, path, segment, segments, _i, _j, _len, _len1, _ref;
+        switch (item.className) {
+          case 'Group':
+          case 'CompoundPath':
+            _ref = item.children;
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              child = _ref[_i];
+              this.getPathList(child, paths);
+            }
+            break;
+          case 'Path':
+          case 'Shape':
+            segments = item.className === 'Shape' ? item.toPath(false).segments : item.segments;
+            path = [];
+            for (_j = 0, _len1 = segments.length; _j < _len1; _j++) {
+              segment = segments[_j];
+              path.push(segment.point.toJSON());
+            }
+            if (item.closed) {
+              path.push(item.firstSegment.point.toJSON());
+            }
+            paths.push(path);
+        }
+      };
+
+      Path.prototype.requireAndSendToSpacebrew = function() {
+        if (typeof spacebrew === "undefined" || spacebrew === null) {
+          require(['Spacebrew'], this.sendToSpacebrew);
+        }
+      };
+
+      Path.prototype.sendToSpacebrew = function(spacebrew) {
+        var data, json, paths;
+        paths = [];
+        this.getPathList(this.drawing, paths);
+        data = {
+          paths: paths,
+          bounds: paper.view.bounds.toJSON()
+        };
+        json = JSON.stringify(data);
+        spacebrew.send("commands", "string", json);
       };
 
       return Path;

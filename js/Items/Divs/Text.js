@@ -231,7 +231,6 @@
         this.setCss();
         this.contentJ.focus(this.onFocus);
         this.contentJ.blur(this.onBlur);
-        this.contentJ.focus();
         if (!lockedForMe) {
           this.contentJ.bind('input propertychange', (function(_this) {
             return function(event) {

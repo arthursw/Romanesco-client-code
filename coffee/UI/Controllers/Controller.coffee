@@ -430,6 +430,11 @@ define [ 'Utils/Utils' ], () ->
 			@parameter.value ?= @parameter.default
 			firstOptionalParameter = if @parameter.min? then @parameter.min else @parameter.values
 
+			if @parameter.type == 'button' or @parameter.type == 'action' or typeof(@parameter.default) == 'function'
+				if not @parameter.onChange? and not @parameter.default? then throw "Action parameter has no function."
+				@parameter.onChange ?= @parameter.default
+				@parameter.default ?= @parameter.onChange
+
 			controllerBox = @folder.datFolder.add(@parameter, 'value', firstOptionalParameter, @parameter.max)
 			.name(@parameter.label)
 			.onChange(@parameter.onChange or @onChange)

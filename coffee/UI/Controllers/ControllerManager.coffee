@@ -77,6 +77,13 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 				snap: 0
 				permanent: true
 				onChange: ()-> R.view.grid.update()
+			R.parameters['General'].sendToSpacebrew =
+				type: 'button'
+				label: 'Send Spacebrew'
+				permanent: true
+				default: ()-> item.requireAndSendToSpacebrew?() for item in R.selectedItems; return
+				onChange: ()-> return
+
 			# R.parameters.fastMode =
 			# 	type: 'checkbox'
 			# 	label: 'Fast mode'
@@ -112,6 +119,7 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 					for item in selectedItems
 						item.deleteCommand()
 					return
+				onChange: ()-> return
 			R.parameters.duplicate =
 				type: 'button'
 				label: 'Duplicate items'

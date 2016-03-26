@@ -110,12 +110,42 @@
           'Position & size': {
             position: {
               "default": '',
+              initializeController: function(controller) {
+                var averagePosition, item, n, _i, _len, _ref;
+                averagePosition = new P.Point();
+                n = 0;
+                _ref = R.selectedItems;
+                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                  item = _ref[_i];
+                  if (item.rectangle != null) {
+                    averagePosition = averagePosition.add(item.rectangle.center);
+                    n++;
+                  }
+                }
+                averagePosition = averagePosition.divide(n);
+                controller.setValue('' + averagePosition.x.toFixed(2) + ', ' + averagePosition.y.toFixed(2));
+              },
               label: 'Position',
               onChange: function() {},
               onFinishChange: this.onPositionFinishChange
             },
             size: {
               "default": '',
+              initializeController: function(controller) {
+                var averageSize, item, n, _i, _len, _ref;
+                averageSize = new P.Point();
+                n = 0;
+                _ref = R.selectedItems;
+                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                  item = _ref[_i];
+                  if (item.rectangle != null) {
+                    averageSize = averageSize.add(item.rectangle.size);
+                    n++;
+                  }
+                }
+                averageSize = averageSize.divide(n);
+                controller.setValue('' + averageSize.x.toFixed(2) + ', ' + averageSize.y.toFixed(2));
+              },
               label: 'Size',
               onChange: function() {},
               onFinishChange: this.onSizeFinishChange

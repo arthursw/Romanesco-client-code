@@ -207,7 +207,12 @@ define [ 'UI/Controllers/Controller', 'colorpickersliders' ], (Controller) ->
 			return
 
 		enableCheckboxChanged: (event)=>
+			checked = @enableCheckboxJ[0].checked
 			value = @getValue()
+			if checked
+				@colorInputJ.popover('show')
+			else
+				@colorInputJ.popover('hide')
 			@onChange(value)
 			@setColor(value, false)
 			return

@@ -82,6 +82,22 @@
             return R.view.grid.update();
           }
         };
+        R.parameters['General'].sendToSpacebrew = {
+          type: 'button',
+          label: 'Send Spacebrew',
+          permanent: true,
+          "default": function() {
+            var item, _j, _len, _ref;
+            _ref = R.selectedItems;
+            for (_j = 0, _len = _ref.length; _j < _len; _j++) {
+              item = _ref[_j];
+              if (typeof item.requireAndSendToSpacebrew === "function") {
+                item.requireAndSendToSpacebrew();
+              }
+            }
+          },
+          onChange: function() {}
+        };
         R.parameters["default"] = {};
         R.parameters.strokeWidth = {
           type: 'slider',
@@ -115,7 +131,8 @@
               item = selectedItems[_j];
               item.deleteCommand();
             }
-          }
+          },
+          onChange: function() {}
         };
         R.parameters.duplicate = {
           type: 'button',

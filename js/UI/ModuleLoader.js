@@ -116,6 +116,24 @@
         iconURL: void 0,
         file: "Items/Paths/Shapes/StripeAnimation",
         category: void 0
+      }, {
+        name: 'Space path',
+        description: "Precise path which sends draw commands to spacebrew.",
+        iconURL: void 0,
+        file: "Items/Paths/PrecisePaths/SpacePath",
+        category: 'Spacebrew'
+      }, {
+        name: 'Space colony',
+        description: "Space colony algorithm.",
+        iconURL: void 0,
+        file: "Items/Paths/Shapes/SpaceColony",
+        category: 'Spacebrew'
+      }, {
+        name: 'Square fractal',
+        description: "Square fractal.",
+        iconURL: void 0,
+        file: "Items/Paths/Shapes/SquareFractal",
+        category: void 0
       }
     ];
     ModuleLoader.initialize = function() {

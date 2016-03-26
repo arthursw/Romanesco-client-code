@@ -246,8 +246,14 @@
       };
 
       ColorController.prototype.enableCheckboxChanged = function(event) {
-        var value;
+        var checked, value;
+        checked = this.enableCheckboxJ[0].checked;
         value = this.getValue();
+        if (checked) {
+          this.colorInputJ.popover('show');
+        } else {
+          this.colorInputJ.popover('hide');
+        }
         this.onChange(value);
         this.setColor(value, false);
       };

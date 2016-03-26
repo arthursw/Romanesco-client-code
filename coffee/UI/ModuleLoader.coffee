@@ -25,6 +25,9 @@ define ['UI/Button', 'UI/Code'], (Button) ->
         { name: 'Medusa', description: "Creates a bunch of aniamted Medusa.", iconURL: undefined, file: "Items/Paths/Shapes/Medusa", category: undefined }
         # { name: 'Shape', description: "Base shape class", iconURL: undefined, file: "Items/Paths/Shapes/Shape", category: undefined }
         { name: 'Stripe animation', description: "Creates a stripe animation from a set sequence of image.", iconURL: undefined, file: "Items/Paths/Shapes/StripeAnimation", category: undefined }
+        { name: 'Space path', description: "Precise path which sends draw commands to spacebrew.", iconURL: undefined, file: "Items/Paths/PrecisePaths/SpacePath", category: 'Spacebrew' }
+        { name: 'Space colony', description: "Space colony algorithm.", iconURL: undefined, file: "Items/Paths/Shapes/SpaceColony", category: 'Spacebrew' }
+        { name: 'Square fractal', description: "Square fractal.", iconURL: undefined, file: "Items/Paths/Shapes/SquareFractal", category: undefined }
     ]
 
     ModuleLoader.initialize = ()->

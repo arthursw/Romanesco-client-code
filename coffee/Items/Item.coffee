@@ -170,11 +170,31 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 				'Position & size':
 					position:
 						default: ''
+						initializeController: (controller)->
+							averagePosition = new P.Point()
+							n = 0
+							for item in R.selectedItems
+								if item.rectangle?
+									averagePosition = averagePosition.add(item.rectangle.center)
+									n++
+							averagePosition = averagePosition.divide(n)
+							controller.setValue('' + averagePosition.x.toFixed(2) + ', ' + averagePosition.y.toFixed(2))
+							return
 						label: 'Position'
 						onChange: ()-> return
 						onFinishChange: @onPositionFinishChange
 					size:
 						default: ''
+						initializeController: (controller)->
+							averageSize = new P.Point()
+							n = 0
+							for item in R.selectedItems
+								if item.rectangle?
+									averageSize = averageSize.add(item.rectangle.size)
+									n++
+							averageSize = averageSize.divide(n)
+							controller.setValue('' + averageSize.x.toFixed(2) + ', ' + averageSize.y.toFixed(2))
+							return
 						label: 'Size'
 						onChange: ()-> return
 						onFinishChange: @onSizeFinishChange

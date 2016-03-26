@@ -8,6 +8,7 @@
     var Loader, RasterizerLoader;
     Loader = (function() {
       function Loader() {
+        this.checkError = __bind(this.checkError, this);
         this.loadCallback = __bind(this.loadCallback, this);
         this.hideLoadingBar = __bind(this.hideLoadingBar, this);
         this.showLoadingBar = __bind(this.showLoadingBar, this);

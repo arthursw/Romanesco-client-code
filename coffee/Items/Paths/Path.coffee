@@ -608,5 +608,36 @@ define [ 'Items/Item', 'Items/Content', 'Tools/PathTool' ], (Item, Content, Path
 				points.push( Utils.CS.pointToArray(p) )
 			return points
 
+		getPathList: (item, paths)->
+			switch item.className
+				when 'Group', 'CompoundPath'
+					for child in item.children
+						@getPathList(child, paths)
+				when 'Path', 'Shape'
+					segments = if item.className == 'Shape' then item.toPath(false).segments else item.segments
+					path = []
+					for segment in segments
+						path.push(segment.point.toJSON())
+					if item.closed
+						path.push(item.firstSegment.point.toJSON())
+					paths.push(path)
+			return
+
+		# send path to spacebrew
+		requireAndSendToSpacebrew: ()->
+			if not spacebrew?
+				require(['Spacebrew'], @sendToSpacebrew)
+			return
+
+		sendToSpacebrew: (spacebrew)=>
+			paths = []
+			@getPathList(@drawing, paths)
+			data =
+				paths: paths
+				bounds: paper.view.bounds.toJSON()
+			json = JSON.stringify(data)
+			spacebrew.send("commands", "string", json)
+			return
+
 	Item.Path = Path
 	return Path

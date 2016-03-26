@@ -424,7 +424,7 @@ define [ 'Commands/Command', 'Items/Item', 'UI/ModuleLoader', 'spin', 'Items/Loc
 
 		# check for any error in an ajax callback and display the appropriate error message
 		# @return [Boolean] true if there was no error, false otherwise
-		checkError: (result)->
+		checkError: (result)=>
 			# console.log result
 			if not result? then return true
 			if result.state == 'not_logged_in'

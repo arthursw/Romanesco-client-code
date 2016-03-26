@@ -107,6 +107,7 @@ requirejs.config
 		'jqtree': libs + 'jqtree/tree.jquery'
 		'js-cookie': libs + 'js.cookie'
 		'octokat': libs + 'octokat'
+		'spacebrew': libs + 'sb-1.4.1.min'
 
 	shim:
 		'oembed': ['jquery']

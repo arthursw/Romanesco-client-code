@@ -106,6 +106,8 @@
         if (this.rectangle == null) {
           this.rectangle = this.getBoundingRectangle(this.items);
         }
+        this.translation = new P.Point();
+        this.previousRectangle = this.rectangle.clone();
         this.transformState = null;
         this.group = new P.Group();
         this.group.name = "selection rectangle group";
@@ -121,6 +123,7 @@
         this.group.addChild(this.path);
         R.view.selectionLayer.addChild(this.group);
         this.path.pivot = this.rectangle.center;
+        this.debugHasBegan = false;
         return;
       }
 
@@ -279,9 +282,13 @@
 
       SelectionRectangle.prototype.beginTranslate = function(event) {
         this.translation = new P.Point();
+        this.debugHasBegan = true;
       };
 
       SelectionRectangle.prototype.updateTranslate = function(event) {
+        if (!this.debugHasBegan) {
+          throw 'did not begin';
+        }
         if (Utils.Snap.getSnap() <= 1) {
           this.translate(event.delta);
         } else {
@@ -294,6 +301,7 @@
       };
 
       SelectionRectangle.prototype.endTranslate = function() {
+        this.debugHasBegan = false;
         this.dragOffset = null;
         return {
           delta: this.translation
@@ -390,7 +398,7 @@
         var state;
         state = {
           previous: this.rectangle,
-          "new": new Rectangle(this.rectangle.topLeft, newSize),
+          "new": new P.Rectangle(this.rectangle.topLeft, new P.Size(newSize)),
           rotation: this.rotation || 0
         };
         R.commandManager.add(Command.Scale.create(R.selectedItems, state), true);
@@ -425,6 +433,7 @@
 
       function SelectionRotationRectangle() {
         this.rotation = 0;
+        this.deltaRotation = 0;
         SelectionRotationRectangle.__super__.constructor.call(this);
         return;
       }

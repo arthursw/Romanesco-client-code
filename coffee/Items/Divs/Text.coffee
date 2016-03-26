@@ -162,7 +162,7 @@ define [ 'Items/Item', 'Items/Divs/Div', 'Commands/Command' ], (Item, Div, Comma
 
 			@contentJ.focus(@onFocus)
 			@contentJ.blur(@onBlur)
-			@contentJ.focus()
+
 			# @contentJ.keydown (event)=>
 			# 	if event.metaKey or event.ctrlKey
 			# 		@deselect()

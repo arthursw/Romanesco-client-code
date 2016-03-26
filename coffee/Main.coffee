@@ -22,6 +22,7 @@ define [
 	# R.rasterizerMode = window.rasterizerMode
 
 
+
 	# TODO: manage items and path in the same way (R.paths and R.items)? make an interface on top of path and div, and use events to update them
 	# todo: add else case in switches
 	# todo: bug when creating a small div (happened with text)

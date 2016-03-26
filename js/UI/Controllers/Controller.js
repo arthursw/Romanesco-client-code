@@ -16,11 +16,22 @@
       }
 
       Controller.prototype.initialize = function() {
-        var controllerBox, firstOptionalParameter, _base;
+        var controllerBox, firstOptionalParameter, _base, _base1, _base2;
         if ((_base = this.parameter).value == null) {
           _base.value = this.parameter["default"];
         }
         firstOptionalParameter = this.parameter.min != null ? this.parameter.min : this.parameter.values;
+        if (this.parameter.type === 'button' || this.parameter.type === 'action' || typeof this.parameter["default"] === 'function') {
+          if ((this.parameter.onChange == null) && (this.parameter["default"] == null)) {
+            throw "Action parameter has no function.";
+          }
+          if ((_base1 = this.parameter).onChange == null) {
+            _base1.onChange = this.parameter["default"];
+          }
+          if ((_base2 = this.parameter)["default"] == null) {
+            _base2["default"] = this.parameter.onChange;
+          }
+        }
         controllerBox = this.folder.datFolder.add(this.parameter, 'value', firstOptionalParameter, this.parameter.max).name(this.parameter.label).onChange(this.parameter.onChange || this.onChange).onFinishChange(this.parameter.onFinishChange);
         this.datController = _.last(this.folder.datFolder.__controllers);
         if (this.parameter.step != null) {
