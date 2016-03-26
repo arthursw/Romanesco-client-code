@@ -41,6 +41,12 @@
         parameters['Style'].fillColor = Utils.clone(R.parameters.fillColor);
         parameters['Shadow'] = {
           folderIsClosedByDefault: true,
+          shadowColor: {
+            type: 'color',
+            label: 'Shadow color',
+            "default": '#000',
+            defaultCheck: false
+          },
           shadowOffsetX: {
             type: 'slider',
             label: 'Shadow offset x',
@@ -61,12 +67,6 @@
             min: 0,
             max: 50,
             "default": 0
-          },
-          shadowColor: {
-            type: 'color',
-            label: 'Shadow color',
-            "default": '#000',
-            defaultCheck: false
           }
         };
         return parameters;

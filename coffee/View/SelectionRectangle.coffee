@@ -104,7 +104,6 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 
 			@path.pivot = @rectangle.center
 
-			@debugHasBegan = false
 			return
 
 		getBoundingRectangle: (items)->
@@ -216,13 +215,23 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 			@translate(rectangle.center.subtract(@rectangle.center))
 			return
 
+		updatePositionController: ()->
+			position = @rectangle.topLeft
+			string = '' + position.x.toFixed(2) + ', ' + position.y.toFixed(2)
+			R.controllerManager.folders["Position & size"]?.controllers.position?.setValue(string)
+			return
+
+		updateSizeController: ()->
+			size = @rectangle.size
+			string = '' + size.width.toFixed(2) + ', ' + size.height.toFixed(2)
+			R.controllerManager.folders["Position & size"]?.controllers.size?.setValue(string)
+			return
+
 		beginTranslate: (event)->
 			@translation = new P.Point()
-			@debugHasBegan = true
 			return
 
 		updateTranslate: (event)->
-			if not @debugHasBegan then throw 'did not begin'
 			if Utils.Snap.getSnap() <= 1
 				@translate(event.delta)
 			else
@@ -230,11 +239,12 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 					@snapEdgePosition(event)
 				else 							# if snap and dragging anything else: snap the new position
 					@snapPosition(event)
+			@updatePositionController()
 			return
 
 		endTranslate: ()->
-			@debugHasBegan = false
 			@dragOffset = null
+			@updatePositionController()
 			return delta: @translation
 
 		# scale
@@ -362,6 +372,7 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 			@constructor.setRectangle(@items, @rectangle, rectangle, rotation, false)
 			@rectangle = rectangle
 			@updatePath()
+			@updateSizeController()
 			return
 		#
 		# updateScale: (event)->
@@ -398,6 +409,7 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 		# 	return
 
 		endScale: ()->
+			@updateSizeController()
 			return previous: @previousRectangle.clone(), new: @rectangle.clone(), rotation: @rotation
 
 		# commands

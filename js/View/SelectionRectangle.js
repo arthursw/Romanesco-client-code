@@ -123,7 +123,6 @@
         this.group.addChild(this.path);
         R.view.selectionLayer.addChild(this.group);
         this.path.pivot = this.rectangle.center;
-        this.debugHasBegan = false;
         return;
       }
 
@@ -280,15 +279,33 @@
         this.translate(rectangle.center.subtract(this.rectangle.center));
       };
 
+      SelectionRectangle.prototype.updatePositionController = function() {
+        var position, string, _ref, _ref1;
+        position = this.rectangle.topLeft;
+        string = '' + position.x.toFixed(2) + ', ' + position.y.toFixed(2);
+        if ((_ref = R.controllerManager.folders["Position & size"]) != null) {
+          if ((_ref1 = _ref.controllers.position) != null) {
+            _ref1.setValue(string);
+          }
+        }
+      };
+
+      SelectionRectangle.prototype.updateSizeController = function() {
+        var size, string, _ref, _ref1;
+        size = this.rectangle.size;
+        string = '' + size.width.toFixed(2) + ', ' + size.height.toFixed(2);
+        if ((_ref = R.controllerManager.folders["Position & size"]) != null) {
+          if ((_ref1 = _ref.controllers.size) != null) {
+            _ref1.setValue(string);
+          }
+        }
+      };
+
       SelectionRectangle.prototype.beginTranslate = function(event) {
         this.translation = new P.Point();
-        this.debugHasBegan = true;
       };
 
       SelectionRectangle.prototype.updateTranslate = function(event) {
-        if (!this.debugHasBegan) {
-          throw 'did not begin';
-        }
         if (Utils.Snap.getSnap() <= 1) {
           this.translate(event.delta);
         } else {
@@ -298,11 +315,12 @@
             this.snapPosition(event);
           }
         }
+        this.updatePositionController();
       };
 
       SelectionRectangle.prototype.endTranslate = function() {
-        this.debugHasBegan = false;
         this.dragOffset = null;
+        this.updatePositionController();
         return {
           delta: this.translation
         };
@@ -370,9 +388,11 @@
         this.constructor.setRectangle(this.items, this.rectangle, rectangle, rotation, false);
         this.rectangle = rectangle;
         this.updatePath();
+        this.updateSizeController();
       };
 
       SelectionRectangle.prototype.endScale = function() {
+        this.updateSizeController();
         return {
           previous: this.previousRectangle.clone(),
           "new": this.rectangle.clone(),

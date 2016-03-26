@@ -175,7 +175,7 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 							n = 0
 							for item in R.selectedItems
 								if item.rectangle?
-									averagePosition = averagePosition.add(item.rectangle.center)
+									averagePosition = averagePosition.add(item.rectangle.topLeft)
 									n++
 							averagePosition = averagePosition.divide(n)
 							controller.setValue('' + averagePosition.x.toFixed(2) + ', ' + averagePosition.y.toFixed(2))
