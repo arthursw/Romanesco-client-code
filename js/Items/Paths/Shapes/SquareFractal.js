@@ -30,7 +30,7 @@
           type: 'slider',
           label: 'Depth',
           min: 1,
-          max: 6,
+          max: 8,
           "default": 5
         };
         return parameters;

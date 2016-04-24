@@ -144,6 +144,7 @@ define [ 'Items/Paths/Path' ], (Path) ->
 		# overload {RPath#endCreate} + initialize the control path and draw
 		endCreate: (point, event) ->
 			@initializeControlPath(@downPoint, point, event?.modifiers?.shift, R.specialKey(event))
+			@initialize()
 			@draw()
 			super()
 			return

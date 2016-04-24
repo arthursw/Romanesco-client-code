@@ -632,6 +632,11 @@ define [ 'Items/Item', 'Items/Content', 'Tools/PathTool' ], (Item, Content, Path
 		sendToSpacebrew: (spacebrew)=>
 			paths = []
 			@getPathList(@drawing, paths)
+			linkAllPaths = []
+			for path in paths
+				for point in path
+					linkAllPaths.push(point)
+			paths = [linkAllPaths]
 			data =
 				paths: paths
 				bounds: paper.view.bounds.toJSON()

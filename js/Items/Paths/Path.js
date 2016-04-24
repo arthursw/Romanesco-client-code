@@ -577,9 +577,18 @@
       };
 
       Path.prototype.sendToSpacebrew = function(spacebrew) {
-        var data, json, paths;
+        var data, json, linkAllPaths, path, paths, point, _i, _j, _len, _len1;
         paths = [];
         this.getPathList(this.drawing, paths);
+        linkAllPaths = [];
+        for (_i = 0, _len = paths.length; _i < _len; _i++) {
+          path = paths[_i];
+          for (_j = 0, _len1 = path.length; _j < _len1; _j++) {
+            point = path[_j];
+            linkAllPaths.push(point);
+          }
+        }
+        paths = [linkAllPaths];
         data = {
           paths: paths,
           bounds: paper.view.bounds.toJSON()

@@ -134,6 +134,12 @@
         iconURL: void 0,
         file: "Items/Paths/Shapes/SquareFractal",
         category: void 0
+      }, {
+        name: 'Vectorizer',
+        description: "Creates a vectorized version of an image.",
+        iconURL: void 0,
+        file: "Items/Paths/Shapes/Vectorizer",
+        category: void 0
       }
     ];
     ModuleLoader.initialize = function() {

@@ -212,6 +212,72 @@
         return tableJ;
       };
 
+      Modal.prototype.addImageSelector = function(args) {
+        var divJ, dropZone, handleDragOver, handleFileSelect, name;
+        name = args.name || 'image-selector';
+        divJ = $("<div class=\"form-group url-group\">\n	<label>Add your image</label>\n	<input data-name='" + name + "-file-selector' type=\"file\" class=\"form-control\" name=\"file[]\"/>\n	<div data-name='" + name + "-drop-zone' style=\"border: 2px dashed #bbb;padding: 25px;text-align: center;color: #bbb;\">\n		<div data-name='" + name + "-gallery'></div>\n		Drop your image file here.\n	</div>\n</div>");
+        this.data.imageSelector = {
+          nRasterLoaded: 0,
+          nRastersLoaded: 0,
+          rasters: {},
+          rastersLoadedCallback: args.rastersLoadedCallback
+        };
+        handleFileSelect = (function(_this) {
+          return function(event) {
+            var f, files, i, reader, _ref, _ref1;
+            event.stopPropagation();
+            event.preventDefault();
+            files = ((_ref = event.dataTransfer) != null ? _ref.files : void 0) || ((_ref1 = event.target) != null ? _ref1.files : void 0);
+            _this.data.imageSelector.nRasterToLoad = files.length;
+            i = 0;
+            f = void 0;
+            while (f = files[i]) {
+              if (_this.data.imageSelector.rasters.hasOwnProperty(f)) {
+                continue;
+              }
+              if (!f.type.match('image.*')) {
+                i++;
+                continue;
+              }
+              reader = new FileReader;
+              reader.onload = (function(file, data) {
+                return function(event) {
+                  var imageSelector, span;
+                  imageSelector = data.imageSelector;
+                  span = document.createElement('span');
+                  span.innerHTML = ['<img class="thumb" src="' + event.target.result + '" title="' + escape(file.name) + '"/>'].join('');
+                  divJ.find('[data-name="' + name + '-gallery"]').append(span);
+                  imageSelector.rasters[file] = new P.Raster(event.target.result);
+                  imageSelector.nRasterLoaded++;
+                  if (imageSelector.nRasterLoaded === imageSelector.nRasterToLoad) {
+                    imageSelector.rastersLoadedCallback(imageSelector.rasters);
+                  }
+                };
+              })(f, _this.data);
+              reader.readAsDataURL(f);
+              i++;
+            }
+          };
+        })(this);
+        handleDragOver = function(event) {
+          event.stopPropagation();
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'copy';
+        };
+        divJ.find('[data-name="' + name + '-file-selector"]').change(handleFileSelect);
+        dropZone = divJ.find('[data-name="' + name + '-drop-zone"]')[0];
+        dropZone.addEventListener('dragover', handleDragOver, false);
+        dropZone.addEventListener('drop', handleFileSelect, false);
+        this.addCustomContent({
+          name: name,
+          divJ: divJ,
+          extractor: args.extractor || function() {
+            return true;
+          }
+        });
+        return divJ;
+      };
+
       Modal.prototype.addCustomContent = function(args) {
         if (args.args == null) {
           args.args = args.divJ;
@@ -258,6 +324,7 @@
         var progressJ;
         progressJ = $(" <div class=\"progress modal-progress-bar\">\n	<div class=\"progress-bar progress-bar-striped active\" role=\"progressbar\" aria-valuenow=\"100\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 100%\">\n		<span class=\"sr-only\">Loading...</span>\n	</div>\n</div>");
         this.modalBodyJ.append(progressJ);
+        return progressJ;
       };
 
       Modal.prototype.removeProgressBar = function() {

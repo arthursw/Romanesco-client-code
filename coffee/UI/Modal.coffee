@@ -164,6 +164,81 @@ define [ 'Utils/Utils' ], () ->
 				return
 			return tableJ
 
+		addImageSelector: (args)->
+			name = args.name or 'image-selector'
+
+			divJ = $("""
+				<div class="form-group url-group">
+					<label>Add your image</label>
+					<input data-name='#{name}-file-selector' type="file" class="form-control" name="file[]"/>
+					<div data-name='#{name}-drop-zone' style="border: 2px dashed #bbb;padding: 25px;text-align: center;color: #bbb;">
+						<div data-name='#{name}-gallery'></div>
+						Drop your image file here.
+					</div>
+				</div>
+			""")
+
+			@data.imageSelector =
+				nRasterLoaded: 0
+				nRastersLoaded: 0
+				rasters: {}
+				rastersLoadedCallback: args.rastersLoadedCallback
+
+			handleFileSelect = (event) =>
+				event.stopPropagation()
+				event.preventDefault()
+				files = event.dataTransfer?.files or event.target?.files
+
+				# FileList object
+				# Loop through the FileList and render image files as thumbnails.
+
+				@data.imageSelector.nRasterToLoad = files.length
+
+				i = 0
+				f = undefined
+				while f = files[i]
+					if @data.imageSelector.rasters.hasOwnProperty(f) then continue
+					# Only process image files.
+					if not f.type.match('image.*')
+						i++
+						continue
+					reader = new FileReader
+					# Closure to capture the file information.
+					reader.onload = ((file, data) ->
+						(event)->
+							imageSelector = data.imageSelector
+							# Render thumbnail.
+							span = document.createElement('span')
+							span.innerHTML = [ '<img class="thumb" src="' + event.target.result + '" title="' + escape(file.name) + '"/>' ].join('')
+							divJ.find('[data-name="'+name+'-gallery"]').append(span)
+
+							imageSelector.rasters[file] = new P.Raster(event.target.result)
+
+							imageSelector.nRasterLoaded++
+							if imageSelector.nRasterLoaded == imageSelector.nRasterToLoad
+								imageSelector.rastersLoadedCallback(imageSelector.rasters)
+							return
+					)(f, @data)
+					# Read in the image file as a data URL.
+					reader.readAsDataURL f
+					i++
+				return
+
+			handleDragOver = (event) ->
+				event.stopPropagation()
+				event.preventDefault()
+				event.dataTransfer.dropEffect = 'copy'
+				return
+
+			divJ.find('[data-name="'+name+'-file-selector"]').change(handleFileSelect)
+
+			dropZone = divJ.find('[data-name="'+name+'-drop-zone"]')[0]
+			dropZone.addEventListener 'dragover', handleDragOver, false
+			dropZone.addEventListener 'drop', handleFileSelect, false
+
+			@addCustomContent( { name: name, divJ: divJ, extractor: args.extractor or () -> true } )
+			return divJ
+
 		addCustomContent: (args)->
 			args.args ?= args.divJ
 			args.divJ.attr('id', 'modal-' + args.name)
@@ -203,7 +278,7 @@ define [ 'Utils/Utils' ], () ->
 				</div>
 			</div>""")
 			@modalBodyJ.append(progressJ)
-			return
+			return progressJ
 
 		removeProgressBar: ()->
 			@modalBodyJ.find('.modal-progress-bar').remove()

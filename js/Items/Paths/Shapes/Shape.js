@@ -150,6 +150,7 @@
       Shape.prototype.endCreate = function(point, event) {
         var _ref;
         this.initializeControlPath(this.downPoint, point, event != null ? (_ref = event.modifiers) != null ? _ref.shift : void 0 : void 0, R.specialKey(event));
+        this.initialize();
         this.draw();
         Shape.__super__.endCreate.call(this);
       };
