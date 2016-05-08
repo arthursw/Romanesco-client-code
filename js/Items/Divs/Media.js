@@ -22,8 +22,7 @@
         var modal, submit;
         submit = function(data) {
           var div;
-          div = new Media(rectangle);
-          div.setURL(data.url);
+          div = new Media(rectangle, data);
           div.finish();
           if (!div.group) {
             return;

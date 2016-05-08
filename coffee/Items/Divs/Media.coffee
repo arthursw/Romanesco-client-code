@@ -19,8 +19,8 @@ define ['Items/Item', 'Items/Divs/Div', 'UI/Modal', 'oembed'], (Item, Div, Modal
 
 		@initialize: (rectangle)->
 			submit = (data)->
-				div = new Media(rectangle)
-				div.setURL(data.url)
+				div = new Media(rectangle, data)
+				# div.setURL(data.url)
 				div.finish()
 				if not div.group then return
 				div.save()
