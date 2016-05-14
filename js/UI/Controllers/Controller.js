@@ -18,7 +18,7 @@
       Controller.prototype.initialize = function() {
         var controllerBox, firstOptionalParameter, _base, _base1, _base2;
         if ((_base = this.parameter).value == null) {
-          _base.value = this.parameter["default"];
+          _base.value = this.parameter.defaultFunction != null ? this.parameter.defaultFunction() : this.parameter["default"];
         }
         firstOptionalParameter = this.parameter.min != null ? this.parameter.min : this.parameter.values;
         if (this.parameter.type === 'button' || this.parameter.type === 'action' || typeof this.parameter["default"] === 'function') {
@@ -42,7 +42,7 @@
       Controller.prototype.onChange = function(value) {
         R.c = this;
         if (R.selectedItems.length > 0) {
-          R.commandManager.deferredAction(R.Command.SetParameter, R.selectedItems, this.name, value);
+          R.commandManager.deferredAction(R.Command.SetParameter, R.selectedItems, null, this.name, value);
         }
       };
 

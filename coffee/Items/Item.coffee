@@ -727,6 +727,7 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 		rasterize: ()->
 			if @raster? or not @drawing? then return
 			if not R.rasterizer.rasterizeItems then return
+			if @drawing.bounds.area == 0 then return
 			@raster = @drawing.rasterize()
 			@group.addChild(@raster)
 			@raster.sendToBack() 	# the raster (of a lock) must be send behind other items

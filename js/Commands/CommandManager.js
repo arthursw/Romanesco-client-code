@@ -128,10 +128,10 @@
       };
 
       CommandManager.prototype.deferredAction = function() {
-        var ActionCommand, args, items;
-        ActionCommand = arguments[0], items = arguments[1], args = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
+        var ActionCommand, args, event, items;
+        ActionCommand = arguments[0], items = arguments[1], event = arguments[2], args = 4 <= arguments.length ? __slice.call(arguments, 3) : [];
         if (!ActionCommand.prototype.isPrototypeOf(this.actionCommand)) {
-          this.beginAction(new ActionCommand(items, args));
+          this.beginAction(new ActionCommand(items, args), event);
         }
         this.updateAction.apply(this, args);
         Utils.deferredExecution(this.endAction, 'addCurrentCommand-' + this.actionCommand.id);

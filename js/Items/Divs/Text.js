@@ -264,7 +264,7 @@
       Text.prototype.textChanged = function(event) {
         var newText;
         newText = this.contentJ.val();
-        R.commandManager.deferredAction(Command.ModifyText, this, newText);
+        R.commandManager.deferredAction(Command.ModifyText, this, event, newText);
       };
 
       Text.prototype.setText = function(newText, update) {

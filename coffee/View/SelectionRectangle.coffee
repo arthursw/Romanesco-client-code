@@ -143,10 +143,10 @@ define [ 'Tools/Tool', 'Items/Item', 'Items/Content', 'Items/Divs/Div', 'Command
 		hitTest: (event)->
 			hitResult = @path.hitTest(event.point, @constructor.hitOptions)
 			if not hitResult? then return false
-			@beginAction(hitResult)
+			@beginAction(hitResult, event)
 			return true
 
-		beginAction: (hitResult)->
+		beginAction: (hitResult, event)->
 			@setTransformState(hitResult)
 			R.commandManager.beginAction(new Command[@transformState.command](R.selectedItems), event)
 			return

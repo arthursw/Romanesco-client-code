@@ -217,7 +217,7 @@
           }
         }
         if (modifyPoint) {
-          R.commandManager.beginAction(new Command.ModifyPoint(this));
+          R.commandManager.beginAction(new Command.ModifyPoint(this), event);
         }
       };
 
@@ -841,8 +841,8 @@
           case 'corner':
             if (this.selectedSegment.linear = true) {
               this.selectedSegment.linear = false;
-              this.selectedSegment.handleIn = this.selectedSegment.previous.point.subtract(this.selectedSegment.point).multiply(0.5);
-              this.selectedSegment.handleOut = this.selectedSegment.next.point.subtract(this.selectedSegment.point).multiply(0.5);
+              this.selectedSegment.handleIn = this.selectedSegment.previous != null ? this.selectedSegment.previous.point.subtract(this.selectedSegment.point).multiply(0.5) : null;
+              this.selectedSegment.handleOut = this.selectedSegment.next != null ? this.selectedSegment.next.point.subtract(this.selectedSegment.point).multiply(0.5) : null;
             }
             break;
           case 'point':

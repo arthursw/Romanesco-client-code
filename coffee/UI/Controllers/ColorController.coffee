@@ -62,11 +62,12 @@ define [ 'UI/Controllers/Controller', 'colorpickersliders' ], (Controller) ->
 			return
 
 		initialize: ()->
+			super()
+
 			value = @parameter.value
 			if value?.gradient?
 				@gradient = value
 				@parameter.value = 'black' 	# dat.gui does not like when value is a gradient...
-			super()
 
 			@colorInputJ = $(@datController.domElement).find('input')
 			@colorInputJ.popover( title: @parameter.label, container: 'body', placement: 'auto', content: @constructor.popoverContent, html: true )
@@ -183,7 +184,7 @@ define [ 'UI/Controllers/Controller', 'colorpickersliders' ], (Controller) ->
 		setColor: (color, updateColorPicker=true, defaultCheck=null)->
 			@enableCheckboxJ[0].checked = if defaultCheck? then defaultCheck else color?
 
-			if @gradient
+			if @gradient?.gradient?
 				@colorInputJ.val('Gradient')
 				colors = ''
 				for stop in @gradient.gradient.stops
@@ -191,7 +192,7 @@ define [ 'UI/Controllers/Controller', 'colorpickersliders' ], (Controller) ->
 					colors += ', ' + c.toCSS()
 				@colorInputJ.css 'background-color': ''
 				@colorInputJ.css 'background-image': 'linear-gradient( to right' + colors + ')'
-				if @gradient.gradient?.radial
+				if @gradient.gradient.radial
 					@constructor.colorTypeSelectorJ.find('[value="radial-gradient"]').prop('selected', true)
 				else
 					@constructor.colorTypeSelectorJ.find('[value="linear-gradient"]').prop('selected', true)
@@ -204,6 +205,7 @@ define [ 'UI/Controllers/Controller', 'colorpickersliders' ], (Controller) ->
 			if updateColorPicker
 				# @ignoreNextColorCounter++
 				@constructor.colorPickerJ.trigger("colorpickersliders.updateColor", [color, true])
+
 			return
 
 		enableCheckboxChanged: (event)=>

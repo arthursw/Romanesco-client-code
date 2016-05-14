@@ -203,7 +203,7 @@ define [ 'Items/Item', 'Items/Divs/Div', 'Commands/Command' ], (Item, Div, Comma
 		# @param event [jQuery Event] the key event
 		textChanged: (event) =>
 			newText = @contentJ.val()
-			R.commandManager.deferredAction(Command.ModifyText, @, newText)
+			R.commandManager.deferredAction(Command.ModifyText, @, event, newText)
 			# Utils.deferredExecution(@update, 'update', 1000, ['text'], @)
 			return
 

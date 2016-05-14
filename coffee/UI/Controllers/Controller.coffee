@@ -427,7 +427,7 @@ define [ 'Utils/Utils' ], () ->
 
 		initialize: ()->
 
-			@parameter.value ?= @parameter.default
+			@parameter.value ?= if @parameter.defaultFunction? then @parameter.defaultFunction() else @parameter.default
 			firstOptionalParameter = if @parameter.min? then @parameter.min else @parameter.values
 
 			if @parameter.type == 'button' or @parameter.type == 'action' or typeof(@parameter.default) == 'function'
@@ -449,7 +449,7 @@ define [ 'Utils/Utils' ], () ->
 		onChange: (value) =>
 			R.c = @
 			if R.selectedItems.length > 0
-				R.commandManager.deferredAction(R.Command.SetParameter, R.selectedItems, @name, value)
+				R.commandManager.deferredAction(R.Command.SetParameter, R.selectedItems, null, @name, value)
 			# itemsToUpdate = []
 			# for item in R.selectedItems
 			# 	# do not update if the value was never set (not even to null), update if it was set (even to null, for colors)

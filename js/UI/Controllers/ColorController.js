@@ -78,12 +78,12 @@
 
       ColorController.prototype.initialize = function() {
         var value;
+        ColorController.__super__.initialize.call(this);
         value = this.parameter.value;
         if ((value != null ? value.gradient : void 0) != null) {
           this.gradient = value;
           this.parameter.value = 'black';
         }
-        ColorController.__super__.initialize.call(this);
         this.colorInputJ = $(this.datController.domElement).find('input');
         this.colorInputJ.popover({
           title: this.parameter.label,
@@ -210,12 +210,12 @@
           defaultCheck = null;
         }
         this.enableCheckboxJ[0].checked = defaultCheck != null ? defaultCheck : color != null;
-        if (this.gradient) {
+        if (((_ref = this.gradient) != null ? _ref.gradient : void 0) != null) {
           this.colorInputJ.val('Gradient');
           colors = '';
-          _ref = this.gradient.gradient.stops;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            stop = _ref[_i];
+          _ref1 = this.gradient.gradient.stops;
+          for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+            stop = _ref1[_i];
             c = new P.Color(stop.color != null ? stop.color : stop[0]);
             colors += ', ' + c.toCSS();
           }
@@ -225,7 +225,7 @@
           this.colorInputJ.css({
             'background-image': 'linear-gradient( to right' + colors + ')'
           });
-          if ((_ref1 = this.gradient.gradient) != null ? _ref1.radial : void 0) {
+          if (this.gradient.gradient.radial) {
             this.constructor.colorTypeSelectorJ.find('[value="radial-gradient"]').prop('selected', true);
           } else {
             this.constructor.colorTypeSelectorJ.find('[value="linear-gradient"]').prop('selected', true);

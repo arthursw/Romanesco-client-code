@@ -189,11 +189,11 @@
         if (hitResult == null) {
           return false;
         }
-        this.beginAction(hitResult);
+        this.beginAction(hitResult, event);
         return true;
       };
 
-      SelectionRectangle.prototype.beginAction = function(hitResult) {
+      SelectionRectangle.prototype.beginAction = function(hitResult, event) {
         this.setTransformState(hitResult);
         R.commandManager.beginAction(new Command[this.transformState.command](R.selectedItems), event);
       };

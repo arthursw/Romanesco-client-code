@@ -209,10 +209,10 @@
         if (hitResult.type === 'stroke' || !wasSelected) {
           hitResult.type = 'stroke';
           if (R.tools.select.selectionRectangle != null) {
-            R.tools.select.selectionRectangle.beginAction(hitResult);
+            R.tools.select.selectionRectangle.beginAction(hitResult, event);
           } else {
             $(R.tools.select).one('selectionRectangleUpdated', function() {
-              return R.tools.select.selectionRectangle.beginAction(hitResult);
+              return R.tools.select.selectionRectangle.beginAction(hitResult, event);
             });
           }
         }

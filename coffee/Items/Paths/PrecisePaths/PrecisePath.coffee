@@ -205,7 +205,7 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 					modifyPoint = true
 
 			if modifyPoint
-				R.commandManager.beginAction(new Command.ModifyPoint(@))
+				R.commandManager.beginAction(new Command.ModifyPoint(@), event)
 
 			return
 
@@ -904,8 +904,8 @@ define [ 'Items/Item', 'Items/Paths/Path', 'Commands/Command'], (Item, Path, Com
 				when 'corner'
 					if @selectedSegment.linear = true
 						@selectedSegment.linear = false
-						@selectedSegment.handleIn = @selectedSegment.previous.point.subtract(@selectedSegment.point).multiply(0.5)
-						@selectedSegment.handleOut = @selectedSegment.next.point.subtract(@selectedSegment.point).multiply(0.5)
+						@selectedSegment.handleIn = if @selectedSegment.previous? then @selectedSegment.previous.point.subtract(@selectedSegment.point).multiply(0.5) else null
+						@selectedSegment.handleOut = if @selectedSegment.next? then @selectedSegment.next.point.subtract(@selectedSegment.point).multiply(0.5) else null
 				when 'point'
 					@selectedSegment.linear = true
 				when 'smooth'

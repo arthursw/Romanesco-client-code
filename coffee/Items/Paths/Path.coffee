@@ -224,9 +224,9 @@ define [ 'Items/Item', 'Items/Content', 'Tools/PathTool' ], (Item, Content, Path
 			if hitResult.type == 'stroke' or not wasSelected
 				hitResult.type = 'stroke'
 				if R.tools.select.selectionRectangle?
-					R.tools.select.selectionRectangle.beginAction(hitResult)
+					R.tools.select.selectionRectangle.beginAction(hitResult, event)
 				else
-					$(R.tools.select).one 'selectionRectangleUpdated', ()-> return R.tools.select.selectionRectangle.beginAction(hitResult)
+					$(R.tools.select).one 'selectionRectangleUpdated', ()-> return R.tools.select.selectionRectangle.beginAction(hitResult, event)
 			return hitResult
 
 		# select the RPath: (only if it has a control path but no selection rectangle i.e. already selected)

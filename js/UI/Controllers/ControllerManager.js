@@ -110,9 +110,6 @@
           type: 'color',
           label: 'Stroke color',
           "default": Utils.Array.random(R.defaultColors),
-          defaultFunction: function() {
-            return Utils.Array.random(R.defaultColors);
-          },
           defaultCheck: true
         };
         R.parameters.fillColor = {
@@ -564,7 +561,9 @@
                 continue;
               }
               controller = folder.controllers[name];
-              parameter.value = this.initializeValue(name, parameter, tool.items[0]);
+              if (parameter.alwaysInitializeValue) {
+                parameter.value = this.initializeValue(name, parameter, tool.items[0]);
+              }
               if (controller != null) {
                 if (resetValues) {
                   controller.setValue(parameter.value, false);

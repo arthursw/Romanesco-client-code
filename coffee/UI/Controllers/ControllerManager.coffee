@@ -104,12 +104,14 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 				type: 'color'
 				label: 'Stroke color'
 				default: Utils.Array.random(R.defaultColors)
-				defaultFunction: () -> return Utils.Array.random(R.defaultColors)
+				# defaultFunction: () -> return R.selectedStrokeColor
+				# defaultFunction: () -> return Utils.Array.random(R.defaultColors)
 				defaultCheck: true 						# checked/activated by default or not
 			R.parameters.fillColor =
 				type: 'color'
 				label: 'Fill color'
 				default: Utils.Array.random(R.defaultColors)
+				# defaultFunction: () -> return R.selectedFillColor
 				defaultCheck: false 					# checked/activated by default or not
 			R.parameters.delete =
 				type: 'button'
@@ -421,7 +423,8 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 
 						controller = folder.controllers[name]
 
-						parameter.value = @initializeValue(name, parameter, tool.items[0])
+						if parameter.alwaysInitializeValue
+							parameter.value = @initializeValue(name, parameter, tool.items[0])
 
 						if controller?
 							if resetValues then controller.setValue(parameter.value, false)

@@ -518,6 +518,9 @@
         if (!R.rasterizer.rasterizeItems) {
           return;
         }
+        if (this.drawing.bounds.area === 0) {
+          return;
+        }
         this.raster = this.drawing.rasterize();
         this.group.addChild(this.raster);
         this.raster.sendToBack();

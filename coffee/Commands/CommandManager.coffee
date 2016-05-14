@@ -97,9 +97,9 @@ define [ 'Commands/Command' ], (Command) ->
 			@actionCommand = null
 			return
 
-		deferredAction: (ActionCommand, items, args...)->
+		deferredAction: (ActionCommand, items, event, args...)->
 			if not ActionCommand.prototype.isPrototypeOf(@actionCommand)
-				@beginAction(new ActionCommand(items, args))
+				@beginAction(new ActionCommand(items, args), event)
 			@updateAction.apply(@, args)
 			Utils.deferredExecution(@endAction, 'addCurrentCommand-' + @actionCommand.id )
 			return
