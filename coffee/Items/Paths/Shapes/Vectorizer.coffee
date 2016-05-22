@@ -16,7 +16,7 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 			parameters['Parameters'] ?= {}
 			parameters['Parameters'].effectType =
 				default: 'multipleStrokes'
-				values: ['multipleStrokes', 'color', 'blackAndWhite']
+				values: ['multipleStrokes', 'color', 'blackAndWhite', 'CMYKstripes']
 				label: 'Effect type'
 			parameters['Parameters'].nStrokes =
 				type: 'slider'
@@ -30,6 +30,42 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 				min: 1
 				max: 16
 				default: 7
+			parameters['Parameters'].pixelSize =
+				type: 'slider'
+				label: 'pixelSize'
+				min: 1
+				max: 16
+				default: 7
+			parameters['Parameters'].nStripes =
+				type: 'slider'
+				label: 'nStripes'
+				min: 10
+				max: 160
+				default: 15
+			parameters['Parameters'].blackThreshold =
+				type: 'slider'
+				label: 'blackThreshold'
+				min: 0
+				max: 255
+				default: 50
+			parameters['Parameters'].cyanThreshold =
+				type: 'slider'
+				label: 'cyanThreshold'
+				min: 0
+				max: 255
+				default: 128
+			parameters['Parameters'].magentaThreshold =
+				type: 'slider'
+				label: 'magentaThreshold'
+				min: 0
+				max: 255
+				default: 128
+			parameters['Parameters'].yellowThreshold =
+				type: 'slider'
+				label: 'yellowThreshold'
+				min: 0
+				max: 255
+				default: 128
 			return parameters
 
 		@parameters = @initializeParameters()
@@ -64,6 +100,8 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 					@drawSpiralColor()
 				when 'blackAndWhite'
 					@drawSpiralColor(true)
+				when 'CMYKstripes'
+					@drawCMYKstripes()
 			return
 
 		drawSpiralColor: (blackAndWhite=false)->
@@ -143,9 +181,9 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 			return
 
 		colorToCMYK: (color)->
-			r = color.r
-			g = color.g
-			b = color.b
+			r = color.red
+			g = color.green
+			b = color.blue
 			k = Math.min(1 - r, 1 - g, 1 - b)
 			result = {
 				c: (1 - r - k) / (1 - k) or 0
@@ -161,44 +199,54 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 			raster.fitBounds(@rectangle, true)
 			raster.visible = false
 
-			maxSize = Math.max(raster.with, raster.height)
+			maxSize = Math.max(raster.width, raster.height)
 			square = new P.Rectangle(maxSize, maxSize)
 
-			pixel = new P.Rectangle(@data.pixelSize, @data.pixelSize)
+			pixel = new P.Rectangle(-@data.pixelSize/2, -@data.pixelSize/2, @data.pixelSize, @data.pixelSize)
+
+			nSteps = maxSize / @data.pixelSize
 
 			colorsToNames = {c: 'cyan', m: 'magenta', y: 'yellow', k: 'black'}
-			colorsTo = {c: 15, m: 75, y: 0, k: 45}
-			colors = [k, m, c, y]
-			# angles = [15, 75, 0, 45]
-			stripeGroups = new P.Group()
+			colorsToAngles = {c: 45, m: 75, y: 15, k: 0}
+			colorsToThreshold = { c: @data.cyanThreshold, m: @data.magentaThreshold, y: @data.yellowThreshold, k: @data.blackThreshold }
+			# colorsToAngles = {c: 15, m: 75, y: 0, k: 45}
+			colors = ['k', 'm', 'c', 'y']
+			# colors = ['k']
+			angles = [15, 75, 0, 45]
+			# stripeGroups = new P.Group()
 			for c in colors
-				stripeGroup = new P.Group()
-				angle = colorsToAngle[c]
+				# stripeGroup = new P.Group()
+				angle = colorsToAngles[c]
 				position = @rectangle.topLeft
 				center = @rectangle.center
 				position = position.rotate(angle, center)
 				delta = new P.Point(@data.pixelSize, 0)
 				deltaX = delta.rotate(angle)
-				deltaY = deltaX.rotate(-90)
+				deltaY = deltaX.rotate(90)
 				previousColor = null
 				path = null
-				for i in [0 .. @data.nStripes]
+				for i in [0 .. @data.nStripes ] # @data.nStripes]
 					startPosition = position.clone()
+					# console.log(startPosition)
 					for j in [0 .. nSteps]
-						color = raster.getAverageColor(position, pixel)
-						cymk = @drawCMYKstripes(color)
-						if cymk[c] > 0.5
+						color = raster.getAverageColor(position) # new P.Rectangle(position.subtract(@data.pixelSize/2), new P.Size(@data.pixelSize, @data.pixelSize)))
+						# console.log(color.toCSS())
+						# pixelC = @addPath(new P.Path.Rectangle(position, new P.Size(@data.pixelSize, @data.pixelSize)))
+						# pixelC.fillColor = color
+						if not color? then continue
+						cymk = @colorToCMYK(color)
+						if cymk[c] > ( colorsToThreshold[c] / 255 )
 							if not path?
-								path = new P.Path()
+								path = @addPath(new P.Path())
 								path.strokeColor = colorsToNames[c]
-								path.strokeWidth = @data.pixelSize
-								stripeGroup.addChild(path)
+								path.strokeWidth = @data.spiralWidth
+								# stripeGroup.addChild(path)
 							path.add(position)
 						else if path?
 							path = null
 						position = position.add(deltaX)
 					position = startPosition.add(deltaY)
-				stripeGroups.addChild(stripeGroup)
+				# stripeGroups.addChild(stripeGroup)
 			return
 
 		createShape: ()->

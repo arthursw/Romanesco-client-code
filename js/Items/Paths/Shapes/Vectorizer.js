@@ -33,7 +33,7 @@
         }
         parameters['Parameters'].effectType = {
           "default": 'multipleStrokes',
-          values: ['multipleStrokes', 'color', 'blackAndWhite'],
+          values: ['multipleStrokes', 'color', 'blackAndWhite', 'CMYKstripes'],
           label: 'Effect type'
         };
         parameters['Parameters'].nStrokes = {
@@ -49,6 +49,48 @@
           min: 1,
           max: 16,
           "default": 7
+        };
+        parameters['Parameters'].pixelSize = {
+          type: 'slider',
+          label: 'pixelSize',
+          min: 1,
+          max: 16,
+          "default": 7
+        };
+        parameters['Parameters'].nStripes = {
+          type: 'slider',
+          label: 'nStripes',
+          min: 10,
+          max: 160,
+          "default": 15
+        };
+        parameters['Parameters'].blackThreshold = {
+          type: 'slider',
+          label: 'blackThreshold',
+          min: 0,
+          max: 255,
+          "default": 50
+        };
+        parameters['Parameters'].cyanThreshold = {
+          type: 'slider',
+          label: 'cyanThreshold',
+          min: 0,
+          max: 255,
+          "default": 128
+        };
+        parameters['Parameters'].magentaThreshold = {
+          type: 'slider',
+          label: 'magentaThreshold',
+          min: 0,
+          max: 255,
+          "default": 128
+        };
+        parameters['Parameters'].yellowThreshold = {
+          type: 'slider',
+          label: 'yellowThreshold',
+          min: 0,
+          max: 255,
+          "default": 128
         };
         return parameters;
       };
@@ -101,11 +143,14 @@
             break;
           case 'blackAndWhite':
             this.drawSpiralColor(true);
+            break;
+          case 'CMYKstripes':
+            this.drawCMYKstripes();
         }
       };
 
       Vectorizer.prototype.drawSpiralColor = function(blackAndWhite) {
-        var c, color, colors, count, l, len, len1, n, offset, offsets, path, position, raster, ref, rot, v, value, vector;
+        var c, color, colors, count, l, len, len1, m, offset, offsets, path, position, raster, ref, rot, v, value, vector;
         if (blackAndWhite == null) {
           blackAndWhite = false;
         }
@@ -141,8 +186,8 @@
           offset = rot.clone();
           offset.length = 1;
           color = raster.getAverageColor(position.add(vector.divide(2)));
-          for (n = 0, len1 = colors.length; n < len1; n++) {
-            c = colors[n];
+          for (m = 0, len1 = colors.length; m < len1; m++) {
+            c = colors[m];
             v = blackAndWhite ? color.gray : color[c];
             value = color ? (1 - v) * this.data.spiralWidth / 2.5 : 0;
             rot.length = Math.max(value, 0.1);
@@ -160,7 +205,7 @@
       };
 
       Vectorizer.prototype.drawSpiralMultipleStrokes = function() {
-        var color, count, i, l, len, len1, n, o, offset, path, position, raster, ref, ref1, ref2, rot, step, value, vector;
+        var color, count, i, l, len, len1, m, n, offset, path, position, raster, ref, ref1, ref2, rot, step, value, vector;
         raster = this.rasters[0];
         raster.fitBounds(this.rectangle, true);
         raster.visible = false;
@@ -188,8 +233,8 @@
           offset = -1;
           step = 2 / this.paths.length;
           ref1 = this.paths;
-          for (n = 0, len = ref1.length; n < len; n++) {
-            path = ref1[n];
+          for (m = 0, len = ref1.length; m < len; m++) {
+            path = ref1[m];
             path.add(position.add(vector).add(rot.multiply(offset)));
             offset += step;
           }
@@ -197,17 +242,17 @@
           count++;
         }
         ref2 = this.paths;
-        for (o = 0, len1 = ref2.length; o < len1; o++) {
-          path = ref2[o];
+        for (n = 0, len1 = ref2.length; n < len1; n++) {
+          path = ref2[n];
           path.smooth();
         }
       };
 
       Vectorizer.prototype.colorToCMYK = function(color) {
         var b, g, k, r, result;
-        r = color.r;
-        g = color.g;
-        b = color.b;
+        r = color.red;
+        g = color.green;
+        b = color.blue;
         k = Math.min(1 - r, 1 - g, 1 - b);
         result = {
           c: (1 - r - k) / (1 - k) || 0,
@@ -219,50 +264,58 @@
       };
 
       Vectorizer.prototype.drawCMYKstripes = function() {
-        var angle, c, center, color, colors, colorsTo, colorsToNames, cymk, delta, deltaX, deltaY, i, j, l, len, maxSize, n, o, path, pixel, position, previousColor, raster, ref, ref1, square, startPosition, stripeGroup, stripeGroups;
+        var angle, angles, c, center, color, colors, colorsToAngles, colorsToNames, colorsToThreshold, cymk, delta, deltaX, deltaY, i, j, l, len, m, maxSize, n, nSteps, path, pixel, position, previousColor, raster, ref, ref1, square, startPosition;
         raster = this.rasters[0];
         raster.fitBounds(this.rectangle, true);
         raster.visible = false;
-        maxSize = Math.max(raster["with"], raster.height);
+        maxSize = Math.max(raster.width, raster.height);
         square = new P.Rectangle(maxSize, maxSize);
-        pixel = new P.Rectangle(this.data.pixelSize, this.data.pixelSize);
+        pixel = new P.Rectangle(-this.data.pixelSize / 2, -this.data.pixelSize / 2, this.data.pixelSize, this.data.pixelSize);
+        nSteps = maxSize / this.data.pixelSize;
         colorsToNames = {
           c: 'cyan',
           m: 'magenta',
           y: 'yellow',
           k: 'black'
         };
-        colorsTo = {
-          c: 15,
+        colorsToAngles = {
+          c: 45,
           m: 75,
-          y: 0,
-          k: 45
+          y: 15,
+          k: 0
         };
-        colors = [k, m, c, y];
-        stripeGroups = new P.Group();
+        colorsToThreshold = {
+          c: this.data.cyanThreshold,
+          m: this.data.magentaThreshold,
+          y: this.data.yellowThreshold,
+          k: this.data.blackThreshold
+        };
+        colors = ['k', 'm', 'c', 'y'];
+        angles = [15, 75, 0, 45];
         for (l = 0, len = colors.length; l < len; l++) {
           c = colors[l];
-          stripeGroup = new P.Group();
-          angle = colorsToAngle[c];
+          angle = colorsToAngles[c];
           position = this.rectangle.topLeft;
           center = this.rectangle.center;
           position = position.rotate(angle, center);
           delta = new P.Point(this.data.pixelSize, 0);
           deltaX = delta.rotate(angle);
-          deltaY = deltaX.rotate(-90);
+          deltaY = deltaX.rotate(90);
           previousColor = null;
           path = null;
-          for (i = n = 0, ref = this.data.nStripes; 0 <= ref ? n <= ref : n >= ref; i = 0 <= ref ? ++n : --n) {
+          for (i = m = 0, ref = this.data.nStripes; 0 <= ref ? m <= ref : m >= ref; i = 0 <= ref ? ++m : --m) {
             startPosition = position.clone();
-            for (j = o = 0, ref1 = nSteps; 0 <= ref1 ? o <= ref1 : o >= ref1; j = 0 <= ref1 ? ++o : --o) {
-              color = raster.getAverageColor(position, pixel);
-              cymk = this.drawCMYKstripes(color);
-              if (cymk[c] > 0.5) {
+            for (j = n = 0, ref1 = nSteps; 0 <= ref1 ? n <= ref1 : n >= ref1; j = 0 <= ref1 ? ++n : --n) {
+              color = raster.getAverageColor(position);
+              if (color == null) {
+                continue;
+              }
+              cymk = this.colorToCMYK(color);
+              if (cymk[c] > (colorsToThreshold[c] / 255)) {
                 if (path == null) {
-                  path = new P.Path();
+                  path = this.addPath(new P.Path());
                   path.strokeColor = colorsToNames[c];
-                  path.strokeWidth = this.data.pixelSize;
-                  stripeGroup.addChild(path);
+                  path.strokeWidth = this.data.spiralWidth;
                 }
                 path.add(position);
               } else if (path != null) {
@@ -272,7 +325,6 @@
             }
             position = startPosition.add(deltaY);
           }
-          stripeGroups.addChild(stripeGroup);
         }
       };
 
