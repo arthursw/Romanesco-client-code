@@ -242,19 +242,31 @@
               reader = new FileReader;
               reader.onload = (function(file, data) {
                 return function(event) {
-                  var imageSelector, span;
+                  var SVGLayer, imageSelector, span, svg;
                   imageSelector = data.imageSelector;
                   span = document.createElement('span');
                   span.innerHTML = ['<img class="thumb" src="' + event.target.result + '" title="' + escape(file.name) + '"/>'].join('');
                   divJ.find('[data-name="' + name + '-gallery"]').append(span);
-                  imageSelector.rasters[file] = new P.Raster(event.target.result);
+                  if (!args.svg) {
+                    imageSelector.rasters[file] = new P.Raster(event.target.result);
+                  } else {
+                    span.innerHTML = event.target.result;
+                    svg = span.querySelector('svg');
+                    SVGLayer = new P.Layer();
+                    imageSelector.rasters[file] = P.project.importSVG(svg);
+                    SVGLayer.remove();
+                  }
                   imageSelector.nRasterLoaded++;
                   if (imageSelector.nRasterLoaded === imageSelector.nRasterToLoad) {
                     imageSelector.rastersLoadedCallback(imageSelector.rasters);
                   }
                 };
               })(f, _this.data);
-              reader.readAsDataURL(f);
+              if (!args.svg) {
+                reader.readAsDataURL(f);
+              } else {
+                reader.readAsText(f);
+              }
               i++;
             }
           };

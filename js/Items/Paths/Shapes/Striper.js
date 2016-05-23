@@ -5,26 +5,26 @@
     hasProp = {}.hasOwnProperty;
 
   define(['Items/Paths/Shapes/Shape', 'UI/Modal'], function(Shape, Modal) {
-    var Vectorizer;
-    Vectorizer = (function(superClass) {
-      extend(Vectorizer, superClass);
+    var Striper;
+    Striper = (function(superClass) {
+      extend(Striper, superClass);
 
-      function Vectorizer() {
+      function Striper() {
         this.allRastersLoaded = bind(this.allRastersLoaded, this);
-        return Vectorizer.__super__.constructor.apply(this, arguments);
+        return Striper.__super__.constructor.apply(this, arguments);
       }
 
-      Vectorizer.Shape = P.Path.Rectangle;
+      Striper.Shape = P.Path.Rectangle;
 
-      Vectorizer.label = 'Vectorizer';
+      Striper.label = 'Striper';
 
-      Vectorizer.description = "Creates a vectorized version of an image.";
+      Striper.description = "Creates a striped version of an SVG.";
 
-      Vectorizer.squareByDefault = true;
+      Striper.squareByDefault = true;
 
-      Vectorizer.initializeParameters = function() {
+      Striper.initializeParameters = function() {
         var parameters;
-        parameters = Vectorizer.__super__.constructor.initializeParameters.call(this);
+        parameters = Striper.__super__.constructor.initializeParameters.call(this);
         parameters['Style'].strokeWidth["default"] = 1;
         parameters['Style'].strokeColor["default"] = 'black';
         parameters['Style'].strokeColor.defaultFunction = null;
@@ -32,23 +32,9 @@
           parameters['Parameters'] = {};
         }
         parameters['Parameters'].effectType = {
-          "default": 'multipleStrokes',
-          values: ['multipleStrokes', 'color', 'blackAndWhite', 'CMYKstripes', 'CMYKdots'],
+          "default": 'CMYKstripes',
+          values: ['CMYKstripes', 'CMYKdots'],
           label: 'Effect type'
-        };
-        parameters['Parameters'].nStrokes = {
-          type: 'slider',
-          label: 'StrokeNumber',
-          min: 2,
-          max: 16,
-          "default": 4
-        };
-        parameters['Parameters'].spiralWidth = {
-          type: 'slider',
-          label: 'Spiral width',
-          min: 1,
-          max: 16,
-          "default": 7
         };
         parameters['Parameters'].pixelSize = {
           type: 'slider',
@@ -127,14 +113,19 @@
           max: 10,
           "default": 2
         };
+        parameters['Parameters'].removeContours = {
+          type: 'checkbox',
+          label: 'remove contours',
+          "default": true
+        };
         return parameters;
       };
 
-      Vectorizer.parameters = Vectorizer.initializeParameters();
+      Striper.parameters = Striper.initializeParameters();
 
-      Vectorizer.createTool(Vectorizer);
+      Striper.createTool(Striper);
 
-      Vectorizer.prototype.initialize = function() {
+      Striper.prototype.initialize = function() {
         var modal;
         if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
           console.log('File upload not supported.');
@@ -147,6 +138,7 @@
         });
         modal.addImageSelector({
           name: "image-selector",
+          svg: true,
           rastersLoadedCallback: this.allRastersLoaded,
           extractor: (function(_this) {
             return function() {
@@ -157,7 +149,7 @@
         modal.show();
       };
 
-      Vectorizer.prototype.allRastersLoaded = function(rasters) {
+      Striper.prototype.allRastersLoaded = function(rasters) {
         var file, raster;
         if (((this.rasters == null) || this.rasters.length === 0) && (rasters == null)) {
           return;
@@ -170,15 +162,6 @@
           }
         }
         switch (this.data.effectType) {
-          case 'multipleStrokes':
-            this.drawSpiralMultipleStrokes();
-            break;
-          case 'color':
-            this.drawSpiralColor();
-            break;
-          case 'blackAndWhite':
-            this.drawSpiralColor(true);
-            break;
           case 'CMYKstripes':
             this.drawCMYKstripes();
             break;
@@ -187,106 +170,7 @@
         }
       };
 
-      Vectorizer.prototype.drawSpiralColor = function(blackAndWhite) {
-        var c, color, colors, count, l, len, len1, m, offset, offsets, path, position, raster, ref, rot, v, value, vector;
-        if (blackAndWhite == null) {
-          blackAndWhite = false;
-        }
-        raster = this.rasters[0];
-        raster.fitBounds(this.rectangle, true);
-        raster.visible = false;
-        colors = blackAndWhite ? ['black'] : ['red', 'green', 'blue'];
-        offsets = blackAndWhite ? {
-          'black': 0
-        } : {
-          'red': -3.7 / 1.5,
-          'green': 0,
-          'blue': 3.7 / 1.5
-        };
-        this.paths = {};
-        for (l = 0, len = colors.length; l < len; l++) {
-          color = colors[l];
-          path = this.addPath(new P.Path());
-          path.fillColor = color;
-          path.strokeColor = null;
-          path.strokeWidth = 0;
-          path.closed = true;
-          this.paths[color] = path;
-        }
-        position = this.rectangle.center;
-        count = 0;
-        while (this.rectangle.center.subtract(position).length < this.rectangle.width / 2) {
-          vector = new P.Point({
-            angle: count * 5,
-            length: count / 100
-          });
-          rot = vector.rotate(90);
-          offset = rot.clone();
-          offset.length = 1;
-          color = raster.getAverageColor(position.add(vector.divide(2)));
-          for (m = 0, len1 = colors.length; m < len1; m++) {
-            c = colors[m];
-            v = blackAndWhite ? color.gray : color[c];
-            value = color ? (1 - v) * this.data.spiralWidth / 2.5 : 0;
-            rot.length = Math.max(value, 0.1);
-            this.paths[c].add(position.add(vector).add(offset.multiply(offsets[c])).subtract(rot));
-            this.paths[c].insert(0, position.add(vector).add(offset.multiply(offsets[c])).add(rot));
-          }
-          position = position.add(vector);
-          count++;
-        }
-        ref = this.paths;
-        for (color in ref) {
-          path = ref[color];
-          path.smooth();
-        }
-      };
-
-      Vectorizer.prototype.drawSpiralMultipleStrokes = function() {
-        var color, count, i, l, len, len1, m, n, offset, path, position, raster, ref, ref1, ref2, rot, step, value, vector;
-        raster = this.rasters[0];
-        raster.fitBounds(this.rectangle, true);
-        raster.visible = false;
-        this.paths = [];
-        for (i = l = 1, ref = this.data.nStrokes; 1 <= ref ? l <= ref : l >= ref; i = 1 <= ref ? ++l : --l) {
-          path = this.addPath(new P.Path());
-          path.strokeColor = this.data.strokeColor;
-          path.strokeWidth = this.data.strokeWidth;
-          path.closed = false;
-          this.paths.push(path);
-        }
-        position = this.rectangle.center;
-        count = 0;
-        while (this.rectangle.center.subtract(position).length < this.rectangle.width / 2) {
-          vector = new P.Point({
-            angle: count * 5,
-            length: count / 100
-          });
-          rot = vector.rotate(90);
-          offset = rot.clone();
-          offset.length = 1;
-          color = raster.getAverageColor(position.add(vector.divide(2)));
-          value = color ? (1 - color.gray) * this.data.spiralWidth / 2.5 : 0;
-          rot.length = Math.max(value, 0.1);
-          offset = -1;
-          step = 2 / this.paths.length;
-          ref1 = this.paths;
-          for (m = 0, len = ref1.length; m < len; m++) {
-            path = ref1[m];
-            path.add(position.add(vector).add(rot.multiply(offset)));
-            offset += step;
-          }
-          position = position.add(vector);
-          count++;
-        }
-        ref2 = this.paths;
-        for (n = 0, len1 = ref2.length; n < len1; n++) {
-          path = ref2[n];
-          path.smooth();
-        }
-      };
-
-      Vectorizer.prototype.colorToCMYK = function(color) {
+      Striper.prototype.colorToCMYK = function(color) {
         var b, g, k, r, result;
         r = color.red;
         g = color.green;
@@ -301,7 +185,7 @@
         return result;
       };
 
-      Vectorizer.prototype.drawCMYKdots = function() {
+      Striper.prototype.drawCMYKdots = function() {
         var angle, c, center, color, colors, colorsToAngles, colorsToNames, colorsToThreshold, cymk, deltaX, deltaY, dot, i, j, l, len, m, maxSize, n, nSteps, path, pixel, position, previousColor, raster, ref, ref1, square, startPosition;
         raster = this.rasters[0];
         raster.fitBounds(this.rectangle, true);
@@ -362,11 +246,11 @@
         }
       };
 
-      Vectorizer.prototype.drawCMYKstripes = function() {
-        var angle, angles, c, center, color, colors, colorsToAngles, colorsToNames, colorsToThreshold, cymk, deltaX, deltaY, i, j, l, len, m, maxSize, n, nSteps, path, pixel, position, previousColor, previousPosition, raster, ref, ref1, square, startPosition, yStepSize;
-        raster = this.rasters[0];
-        raster.fitBounds(this.rectangle, true);
-        raster.visible = false;
+      Striper.prototype.drawCMYKstripes = function() {
+        var angles, center, colors, colorsToAngles, colorsToNames, colorsToThreshold, i, l, len, len1, line, m, maxSize, n, nSteps, p, path, pathWithoutContour, pixel, position, raster, ref, ref1, ref2, segment, square, stripe, stripes, yStepSize;
+        raster = this.rasters[0].children[1].clone();
+        raster.position = this.rectangle.center;
+        raster.fitBounds(this.rectangle, false);
         maxSize = Math.max(this.rectangle.width, this.rectangle.height);
         square = new P.Rectangle(maxSize, maxSize);
         pixel = new P.Rectangle(-this.data.pixelSize / 2, -this.data.pixelSize / 2, this.data.pixelSize, this.data.pixelSize);
@@ -392,57 +276,56 @@
         };
         colors = ['k', 'm', 'c', 'y'];
         angles = [15, 75, 0, 45];
-        for (l = 0, len = colors.length; l < len; l++) {
-          c = colors[l];
-          angle = colorsToAngles[c];
-          center = this.rectangle.center;
-          position = center.subtract(maxSize / 2);
-          center = this.rectangle.center;
-          position = position.rotate(angle, center);
-          deltaX = new P.Point(1, 0).rotate(angle).multiply(this.data.pixelSize);
-          deltaY = new P.Point(0, 1).rotate(angle).multiply(yStepSize);
-          previousColor = null;
-          path = null;
-          for (i = m = 0, ref = this.data.nStripes; 0 <= ref ? m <= ref : m >= ref; i = 0 <= ref ? ++m : --m) {
-            startPosition = position.clone();
-            for (j = n = 0, ref1 = nSteps; 0 <= ref1 ? n <= ref1 : n >= ref1; j = 0 <= ref1 ? ++n : --n) {
-              if (position.x === 0) {
-                position.x = 0.001;
-              }
-              color = raster.getAverageColor(new P.Rectangle(position.subtract(this.data.pixelSize / 2), new P.Size(this.data.pixelSize, this.data.pixelSize)));
-              if (color != null) {
-                cymk = this.colorToCMYK(color);
-                if (cymk[c] > (colorsToThreshold[c] / 255)) {
-                  if (path == null) {
-                    path = this.addPath(new P.Path());
-                    path.strokeColor = colorsToNames[c];
-                    path.strokeWidth = this.data.spiralWidth;
-                    path.add(position);
-                  }
-                } else if (path != null) {
-                  path.add(previousPosition);
-                  path = null;
-                }
-              }
-              previousPosition = position.clone();
-              position = position.add(deltaX);
-            }
-            path = null;
-            previousPosition = position.clone();
-            position = startPosition.add(deltaY);
-          }
+        stripes = new P.CompoundPath();
+        stripes.strokeWidth = 1;
+        stripes.strokeColor = 'black';
+        center = this.rectangle.center;
+        position = center.subtract(maxSize / 2);
+        for (i = l = 0, ref = this.data.nStripes; 0 <= ref ? l <= ref : l >= ref; i = 0 <= ref ? ++l : --l) {
+          stripe = new P.Path.Rectangle(position, new P.Size(maxSize, yStepSize / 2));
+          stripe.fillColor = 'black';
+          stripes.addChild(stripe);
+          position = position.add(0, yStepSize);
         }
+        path = stripes.intersect(raster.clone());
+        if (this.data.removeContours) {
+          pathWithoutContour = new P.CompoundPath();
+          ref1 = path.children;
+          for (m = 0, len = ref1.length; m < len; m++) {
+            p = ref1[m];
+            ref2 = p.segments;
+            for (n = 0, len1 = ref2.length; n < len1; n++) {
+              segment = ref2[n];
+              if (Math.abs(segment.point.y - segment.next.point.y) < 1.5) {
+                line = new P.Path();
+                line.add(segment.point);
+                line.add(segment.next.point);
+                pathWithoutContour.addChild(line);
+              }
+            }
+          }
+          path.remove();
+          path = pathWithoutContour;
+        }
+        path.strokeWidth = 1;
+        path.strokeColor = 'black';
+        this.drawing.addChild(path);
+        this.drawing.addChild(raster);
+        raster.fillColor = null;
+        raster.strokeColor = 'black';
+        raster.strokeWidth = 1;
+        stripes.remove();
       };
 
-      Vectorizer.prototype.createShape = function() {
-        Vectorizer.__super__.createShape.call(this);
+      Striper.prototype.createShape = function() {
+        Striper.__super__.createShape.call(this);
         this.allRastersLoaded();
       };
 
-      return Vectorizer;
+      return Striper;
 
     })(Shape);
-    return Vectorizer;
+    return Striper;
   });
 
 }).call(this);

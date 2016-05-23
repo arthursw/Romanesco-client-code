@@ -212,7 +212,14 @@ define [ 'Utils/Utils' ], () ->
 							span.innerHTML = [ '<img class="thumb" src="' + event.target.result + '" title="' + escape(file.name) + '"/>' ].join('')
 							divJ.find('[data-name="'+name+'-gallery"]').append(span)
 
-							imageSelector.rasters[file] = new P.Raster(event.target.result)
+							if not args.svg
+								imageSelector.rasters[file] = new P.Raster(event.target.result)
+							else
+								span.innerHTML = event.target.result
+								svg = span.querySelector('svg')
+								SVGLayer = new P.Layer()
+								imageSelector.rasters[file] = P.project.importSVG(svg)
+								SVGLayer.remove()
 
 							imageSelector.nRasterLoaded++
 							if imageSelector.nRasterLoaded == imageSelector.nRasterToLoad
@@ -220,7 +227,10 @@ define [ 'Utils/Utils' ], () ->
 							return
 					)(f, @data)
 					# Read in the image file as a data URL.
-					reader.readAsDataURL f
+					if not args.svg
+						reader.readAsDataURL f
+					else
+						reader.readAsText f
 					i++
 				return
 

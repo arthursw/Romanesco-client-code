@@ -29,6 +29,7 @@ define ['UI/Button', 'UI/Code'], (Button) ->
         { name: 'Space colony', description: "Space colony algorithm.", iconURL: undefined, file: "Items/Paths/Shapes/SpaceColony", category: 'Spacebrew' }
         { name: 'Square fractal', description: "Square fractal.", iconURL: undefined, file: "Items/Paths/Shapes/SquareFractal", category: undefined }
         { name: 'Vectorizer', description: "Creates a vectorized version of an image.", iconURL: undefined, file: "Items/Paths/Shapes/Vectorizer", category: undefined }
+        { name: 'Striper', description: "Creates stripes from SVG", iconURL: undefined, file: "Items/Paths/Shapes/Striper", category: undefined }
     ]
 
     ModuleLoader.initialize = ()->

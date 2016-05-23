@@ -644,5 +644,23 @@ define [ 'Items/Item', 'Items/Content', 'Tools/PathTool' ], (Item, Content, Path
 			spacebrew.send("commands", "string", json)
 			return
 
+		exportToSVG: ()->
+			# export to svg
+			drawing = @drawing.clone()
+			drawing.position = new P.Point(drawing.bounds.size.multiply(0.5))
+			svg = drawing.exportSVG( asString: true )
+			indexOfG = svg.indexOf("<g ")
+			lastIndexOfG = svg.lastIndexOf("/></g>")
+			svg = "<svg " + svg.substring(indexOfG+3, lastIndexOfG) + "/></svg>"
+			# url = "data:image/svg+xml;utf8," + encodeURIComponent(svg)
+			blob = new Blob([svg], {type: 'image/svg+xml'})
+			url = URL.createObjectURL(blob)
+			link = document.createElement("a")
+			link.href = url
+			link.download = "image.svg"
+			link.click()
+
+			return
+
 	Item.Path = Path
 	return Path

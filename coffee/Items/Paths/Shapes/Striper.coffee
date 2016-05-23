@@ -1,9 +1,9 @@
 define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 
-	class Vectorizer extends Shape
+	class Striper extends Shape
 		@Shape = P.Path.Rectangle
-		@label = 'Vectorizer'
-		@description = "Creates a vectorized version of an image."
+		@label = 'Striper'
+		@description = "Creates a striped version of an SVG."
 		@squareByDefault = true
 
 		@initializeParameters: ()->
@@ -15,21 +15,9 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 
 			parameters['Parameters'] ?= {}
 			parameters['Parameters'].effectType =
-				default: 'multipleStrokes'
-				values: ['multipleStrokes', 'color', 'blackAndWhite', 'CMYKstripes', 'CMYKdots']
+				default: 'CMYKstripes'
+				values: ['CMYKstripes', 'CMYKdots']
 				label: 'Effect type'
-			parameters['Parameters'].nStrokes =
-				type: 'slider'
-				label: 'StrokeNumber'
-				min: 2
-				max: 16
-				default: 4
-			parameters['Parameters'].spiralWidth =
-				type: 'slider'
-				label: 'Spiral width'
-				min: 1
-				max: 16
-				default: 7
 			parameters['Parameters'].pixelSize =
 				type: 'slider'
 				label: 'pixelSize'
@@ -96,6 +84,10 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 				min: 0.1
 				max: 10
 				default: 2
+			parameters['Parameters'].removeContours =
+				type: 'checkbox'
+				label: 'remove contours'
+				default: true
 			return parameters
 
 		@parameters = @initializeParameters()
@@ -110,7 +102,7 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 				return
 
 			modal = Modal.createModal( title: 'Select an image', submit: ()->return )
-			modal.addImageSelector( { name: "image-selector", rastersLoadedCallback: @allRastersLoaded, extractor: ()=> return @rasters.length>0 } )
+			modal.addImageSelector( { name: "image-selector", svg: true, rastersLoadedCallback: @allRastersLoaded, extractor: ()=> return @rasters.length>0 } )
 			modal.show()
 
 			return
@@ -124,92 +116,10 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 					@rasters.push(raster)
 
 			switch @data.effectType
-				when 'multipleStrokes'
-					@drawSpiralMultipleStrokes()
-				when 'color'
-					@drawSpiralColor()
-				when 'blackAndWhite'
-					@drawSpiralColor(true)
 				when 'CMYKstripes'
 					@drawCMYKstripes()
 				when 'CMYKdots'
 					@drawCMYKdots()
-			return
-
-		drawSpiralColor: (blackAndWhite=false)->
-
-			raster = @rasters[0]
-			raster.fitBounds(@rectangle, true)
-			raster.visible = false
-
-			colors = if blackAndWhite then ['black'] else ['red', 'green', 'blue']
-			offsets = if blackAndWhite then {'black':0} else {'red': -3.7/1.5, 'green': 0, 'blue': 3.7/1.5}
-			@paths = {}
-			for color in colors
-				path = @addPath(new P.Path())
-				path.fillColor = color
-				path.strokeColor = null
-				path.strokeWidth = 0
-				path.closed = true
-				@paths[color] = path
-
-			position = @rectangle.center
-			count = 0
-			while @rectangle.center.subtract(position).length < @rectangle.width/2
-				vector = new P.Point( angle: count * 5, length: count/100 )
-				rot = vector.rotate(90)
-				offset = rot.clone()
-				offset.length = 1
-				color = raster.getAverageColor(position.add(vector.divide(2)))
-				for c in colors
-					v = if blackAndWhite then color.gray else color[c]
-					value = if color then (1 - v) * @data.spiralWidth / 2.5 else 0
-					rot.length = Math.max(value, 0.1)
-					@paths[c].add(position.add(vector).add(offset.multiply(offsets[c])).subtract(rot))
-					@paths[c].insert(0, position.add(vector).add(offset.multiply(offsets[c])).add(rot))
-				position = position.add(vector)
-				count++
-
-			for color, path of @paths
-				path.smooth()
-
-			return
-
-		drawSpiralMultipleStrokes: ()->
-
-			raster = @rasters[0]
-			raster.fitBounds(@rectangle, true)
-			raster.visible = false
-
-			@paths = []
-			for i in [1 .. @data.nStrokes]
-				path = @addPath(new P.Path())
-				path.strokeColor = @data.strokeColor
-				path.strokeWidth = @data.strokeWidth
-				path.closed = false
-				@paths.push(path)
-
-			position = @rectangle.center
-			count = 0
-			while @rectangle.center.subtract(position).length < @rectangle.width/2
-				vector = new P.Point( angle: count * 5, length: count/100 )
-				rot = vector.rotate(90)
-				offset = rot.clone()
-				offset.length = 1
-				color = raster.getAverageColor(position.add(vector.divide(2)))
-				value = if color then (1 - color.gray) * @data.spiralWidth / 2.5 else 0
-				rot.length = Math.max(value, 0.1)
-				offset = -1
-				step = 2/@paths.length
-				for path in @paths
-					path.add(position.add(vector).add(rot.multiply(offset)))
-					offset += step
-				position = position.add(vector)
-				count++
-
-			for path in @paths
-				path.smooth()
-
 			return
 
 		colorToCMYK: (color)->
@@ -274,9 +184,9 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 
 		drawCMYKstripes: ()->
 
-			raster = @rasters[0]
-			raster.fitBounds(@rectangle, true)
-			raster.visible = false
+			raster = @rasters[0].children[1].clone()
+			raster.position = @rectangle.center
+			raster.fitBounds(@rectangle, false)
 
 			maxSize = Math.max(@rectangle.width, @rectangle.height)
 			square = new P.Rectangle(maxSize, maxSize)
@@ -291,43 +201,45 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 			colorsToThreshold = { c: @data.cyanThreshold, m: @data.magentaThreshold, y: @data.yellowThreshold, k: @data.blackThreshold }
 			colors = ['k', 'm', 'c', 'y']
 			angles = [15, 75, 0, 45]
-			# stripeGroups = new P.Group()
-			for c in colors
-				# stripeGroup = new P.Group()
-				angle = colorsToAngles[c]
-				center = @rectangle.center
-				position = center.subtract(maxSize/2)
-				center = @rectangle.center
-				position = position.rotate(angle, center)
-				deltaX = new P.Point(1, 0).rotate(angle).multiply(@data.pixelSize)
-				deltaY = new P.Point(0, 1).rotate(angle).multiply(yStepSize)
-				previousColor = null
-				path = null
-				for i in [0 .. @data.nStripes ] # @data.nStripes]
-					startPosition = position.clone()
-					# console.log(startPosition)
-					for j in [0 .. nSteps]
-						# fix paper.js bug (position.x must not be 0):
-						if position.x == 0 then position.x = 0.001
-						color = raster.getAverageColor(new P.Rectangle(position.subtract(@data.pixelSize/2), new P.Size(@data.pixelSize, @data.pixelSize)))
-						if color?
-							cymk = @colorToCMYK(color)
-							if cymk[c] > ( colorsToThreshold[c] / 255 )
-								if not path?
-									path = @addPath(new P.Path())
-									path.strokeColor = colorsToNames[c]
-									path.strokeWidth = @data.spiralWidth
-									# stripeGroup.addChild(path)
-									path.add(position)
-							else if path?
-								path.add(previousPosition)
-								path = null
-						previousPosition = position.clone()
-						position = position.add(deltaX)
-					path = null
-					previousPosition = position.clone()
-					position = startPosition.add(deltaY)
-				# stripeGroups.addChild(stripeGroup)
+
+			stripes = new P.CompoundPath()
+			stripes.strokeWidth = 1
+			stripes.strokeColor = 'black'
+
+			center = @rectangle.center
+			position = center.subtract(maxSize/2)
+
+			for i in [0 .. @data.nStripes]
+				# console.log(position)
+				stripe = new P.Path.Rectangle(position, new P.Size(maxSize, yStepSize/2))
+				stripe.fillColor = 'black'
+				stripes.addChild(stripe)
+				position = position.add(0, yStepSize)
+
+			# angle = 45
+			# rotatedStripes = stripes.clone().rotate(angle)
+			path = stripes.intersect(raster.clone())
+			if @data.removeContours
+				pathWithoutContour = new P.CompoundPath()
+				for p in  path.children
+					for segment in p.segments
+						if Math.abs(segment.point.y - segment.next.point.y) < 1.5
+							line = new P.Path()
+							line.add(segment.point)
+							line.add(segment.next.point)
+							pathWithoutContour.addChild(line)
+				path.remove()
+				path = pathWithoutContour
+			path.strokeWidth = 1
+			path.strokeColor = 'black'
+			@drawing.addChild(path)
+			@drawing.addChild(raster)
+			raster.fillColor = null
+			raster.strokeColor = 'black'
+			raster.strokeWidth = 1
+
+			stripes.remove()
+
 			return
 
 		createShape: ()->
@@ -335,4 +247,4 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 			@allRastersLoaded()
 			return
 
-	return Vectorizer
+	return Striper

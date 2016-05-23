@@ -98,6 +98,22 @@
           },
           onChange: function() {}
         };
+        R.parameters['General'].exportToSVG = {
+          type: 'button',
+          label: 'Export to SVG',
+          permanent: true,
+          "default": function() {
+            var item, k, len, ref;
+            ref = R.selectedItems;
+            for (k = 0, len = ref.length; k < len; k++) {
+              item = ref[k];
+              if (typeof item.exportToSVG === "function") {
+                item.exportToSVG();
+              }
+            }
+          },
+          onChange: function() {}
+        };
         R.parameters["default"] = {};
         R.parameters.strokeWidth = {
           type: 'slider',

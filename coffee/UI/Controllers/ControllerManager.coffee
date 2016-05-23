@@ -83,6 +83,12 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 				permanent: true
 				default: ()-> item.requireAndSendToSpacebrew?() for item in R.selectedItems; return
 				onChange: ()-> return
+			R.parameters['General'].exportToSVG =
+				type: 'button'
+				label: 'Export to SVG'
+				permanent: true
+				default: ()-> item.exportToSVG?() for item in R.selectedItems; return
+				onChange: ()-> return
 
 			# R.parameters.fastMode =
 			# 	type: 'checkbox'

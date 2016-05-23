@@ -140,6 +140,12 @@
         iconURL: void 0,
         file: "Items/Paths/Shapes/Vectorizer",
         category: void 0
+      }, {
+        name: 'Striper',
+        description: "Creates stripes from SVG",
+        iconURL: void 0,
+        file: "Items/Paths/Shapes/Striper",
+        category: void 0
       }
     ];
     ModuleLoader.initialize = function() {
