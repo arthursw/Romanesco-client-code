@@ -656,9 +656,11 @@ define [ 'Items/Item', 'Items/Content', 'Tools/PathTool' ], (Item, Content, Path
 			blob = new Blob([svg], {type: 'image/svg+xml'})
 			url = URL.createObjectURL(blob)
 			link = document.createElement("a")
+			document.body.appendChild(link)
 			link.href = url
 			link.download = "image.svg"
 			link.click()
+			document.body.removeChild(link)
 
 			return
 

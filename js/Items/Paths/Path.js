@@ -612,9 +612,11 @@
         });
         url = URL.createObjectURL(blob);
         link = document.createElement("a");
+        document.body.appendChild(link);
         link.href = url;
         link.download = "image.svg";
         link.click();
+        document.body.removeChild(link);
       };
 
       return Path;
