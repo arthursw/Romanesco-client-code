@@ -273,7 +273,7 @@
           }
         } else if (item != null) {
           console.log(item.className);
-          compoundPath.addChild(item);
+          compoundPath.addChild(item.clone());
         }
       };
 
@@ -283,6 +283,10 @@
         originalRaster.fitBounds(this.rectangle, false);
         raster = new P.CompoundPath();
         this.convertGroupsToCompoundPath(originalRaster, raster);
+        console.log("originalRaster");
+        this.logItem(originalRaster);
+        console.log("raster");
+        this.logItem(raster);
         raster.position = this.rectangle.center;
         raster.fitBounds(this.rectangle, false);
         maxSize = Math.max(this.rectangle.width, this.rectangle.height);

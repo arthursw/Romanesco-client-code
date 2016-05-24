@@ -196,7 +196,7 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 					@convertGroupsToCompoundPath(child, compoundPath)
 			else if item?
 				console.log(item.className)
-				compoundPath.addChild(item)
+				compoundPath.addChild(item.clone())
 			return
 
 		drawCMYKstripes: ()->
@@ -204,6 +204,11 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 			originalRaster.fitBounds(@rectangle, false)
 			raster = new P.CompoundPath()
 			@convertGroupsToCompoundPath(originalRaster, raster)
+
+			console.log("originalRaster")
+			@logItem(originalRaster)
+			console.log("raster")
+			@logItem(raster)
 
 			raster.position = @rectangle.center
 			raster.fitBounds(@rectangle, false)
