@@ -435,7 +435,7 @@
       };
 
       Vectorizer.prototype.createShape = function() {
-        Vectorizer.__super__.createShape.call(this);
+        this.shape = new P.Group();
         this.allRastersLoaded();
       };
 

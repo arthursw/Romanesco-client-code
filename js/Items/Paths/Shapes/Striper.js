@@ -246,9 +246,43 @@
         }
       };
 
+      Striper.prototype.logItem = function(item, prefix) {
+        var child, l, len, ref;
+        if (prefix == null) {
+          prefix = "";
+        }
+        console.log(prefix + item.className);
+        prefix += " -";
+        if (item.children == null) {
+          return;
+        }
+        ref = item.children;
+        for (l = 0, len = ref.length; l < len; l++) {
+          child = ref[l];
+          this.logItem(child, prefix);
+        }
+      };
+
+      Striper.prototype.convertGroupsToCompoundPath = function(item, compoundPath) {
+        var child, l, len, ref;
+        if ((item instanceof P.Group || item instanceof P.CompoundPath) && (item.children != null)) {
+          ref = item.children;
+          for (l = 0, len = ref.length; l < len; l++) {
+            child = ref[l];
+            this.convertGroupsToCompoundPath(child, compoundPath);
+          }
+        } else if (item != null) {
+          console.log(item.className);
+          compoundPath.addChild(item);
+        }
+      };
+
       Striper.prototype.drawCMYKstripes = function() {
-        var angles, center, colors, colorsToAngles, colorsToNames, colorsToThreshold, i, l, len, len1, line, m, maxSize, n, nSteps, p, path, pathWithoutContour, pixel, position, raster, ref, ref1, ref2, segment, square, stripe, stripes, yStepSize;
-        raster = this.rasters[0].children[1].clone();
+        var angles, center, colors, colorsToAngles, colorsToNames, colorsToThreshold, i, l, len, len1, line, m, maxSize, n, nSteps, originalRaster, p, path, pathWithoutContour, pixel, position, raster, ref, ref1, ref2, segment, square, stripe, stripes, yStepSize;
+        originalRaster = this.rasters[0].clone();
+        originalRaster.fitBounds(this.rectangle, false);
+        raster = new P.CompoundPath();
+        this.convertGroupsToCompoundPath(originalRaster, raster);
         raster.position = this.rectangle.center;
         raster.fitBounds(this.rectangle, false);
         maxSize = Math.max(this.rectangle.width, this.rectangle.height);
@@ -296,7 +330,7 @@
             ref2 = p.segments;
             for (n = 0, len1 = ref2.length; n < len1; n++) {
               segment = ref2[n];
-              if (Math.abs(segment.point.y - segment.next.point.y) < 1.5) {
+              if ((segment.next != null) && Math.abs(segment.point.y - segment.next.point.y) < 1.5) {
                 line = new P.Path();
                 line.add(segment.point);
                 line.add(segment.next.point);
@@ -318,7 +352,7 @@
       };
 
       Striper.prototype.createShape = function() {
-        Striper.__super__.createShape.call(this);
+        this.shape = new P.Group();
         this.allRastersLoaded();
       };
 

@@ -331,7 +331,8 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 			return
 
 		createShape: ()->
-			super()
+			# super()
+			@shape = new P.Group()
 			@allRastersLoaded()
 			return
 

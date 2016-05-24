@@ -182,9 +182,29 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 				# stripeGroups.addChild(stripeGroup)
 			return
 
-		drawCMYKstripes: ()->
+		logItem: (item, prefix="")->
+			console.log(prefix + item.className)
+			prefix += " -"
+			if not item.children? then return
+			for child in item.children
+				@logItem(child, prefix)
+			return
 
-			raster = @rasters[0].children[1].clone()
+		convertGroupsToCompoundPath: (item, compoundPath)->
+			if (item instanceof P.Group or item instanceof P.CompoundPath) and item.children?
+				for child in item.children
+					@convertGroupsToCompoundPath(child, compoundPath)
+			else if item?
+				console.log(item.className)
+				compoundPath.addChild(item)
+			return
+
+		drawCMYKstripes: ()->
+			originalRaster = @rasters[0].clone()
+			originalRaster.fitBounds(@rectangle, false)
+			raster = new P.CompoundPath()
+			@convertGroupsToCompoundPath(originalRaster, raster)
+
 			raster.position = @rectangle.center
 			raster.fitBounds(@rectangle, false)
 
@@ -223,7 +243,7 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 				pathWithoutContour = new P.CompoundPath()
 				for p in  path.children
 					for segment in p.segments
-						if Math.abs(segment.point.y - segment.next.point.y) < 1.5
+						if segment.next? && Math.abs(segment.point.y - segment.next.point.y) < 1.5
 							line = new P.Path()
 							line.add(segment.point)
 							line.add(segment.next.point)
@@ -243,7 +263,8 @@ define [ 'Items/Paths/Shapes/Shape', 'UI/Modal'], (Shape, Modal) ->
 			return
 
 		createShape: ()->
-			super()
+			# super()
+			@shape = new P.Group()
 			@allRastersLoaded()
 			return
 
