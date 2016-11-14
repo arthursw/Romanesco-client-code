@@ -15,6 +15,7 @@ define ['Utils/Utils', 'UI/Modal'], (Utils, Modal) ->
 			@citiesListBtnJ.click @citiesModal
 
 #			Dajaxice.draw.loadCities(@addCities)
+			if R.offline then return
 			$.ajax( method: "POST", url: "ajaxCall/", data: data: JSON.stringify { function: 'loadCities', args: {} } ).done(@addCities)
 			return
 

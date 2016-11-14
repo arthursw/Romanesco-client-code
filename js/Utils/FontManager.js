@@ -12,6 +12,9 @@
         this.availableFonts = [];
         this.usedFonts = [];
         jQuery.support.cors = true;
+        if (R.offline) {
+          return;
+        }
         jqxhr = $.getJSON("https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyBVfBj_ugQO_w0AK1x9F6yiXByhcNgjQZU", this.initTextOptions);
         jqxhr.done((function(_this) {
           return function(json) {
@@ -81,6 +84,9 @@
                 newFont += effect + '|';
               }
               newFont = newFont.slice(0, -1);
+            }
+            if (R.offline) {
+              continue;
             }
             fontLink = $('<link class="fonts" data-font-family="' + font.family + '" rel="stylesheet" type="text/css">');
             fontLink.attr('href', "http://fonts.googleapis.com/css?family=" + newFont);

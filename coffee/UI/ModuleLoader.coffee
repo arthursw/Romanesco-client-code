@@ -30,6 +30,9 @@ define ['UI/Button', 'UI/Code'], (Button) ->
         { name: 'Square fractal', description: "Square fractal.", iconURL: undefined, file: "Items/Paths/Shapes/SquareFractal", category: undefined }
         { name: 'Vectorizer', description: "Creates a vectorized version of an image.", iconURL: undefined, file: "Items/Paths/Shapes/Vectorizer", category: undefined }
         { name: 'Striper', description: "Creates stripes from SVG", iconURL: undefined, file: "Items/Paths/Shapes/Striper", category: undefined }
+        { name: 'Vector field', description: "Creates a vector field", iconURL: undefined, file: "Items/Paths/Shapes/VectorField", category: undefined }
+        { name: 'Vector field GL', description: "Creates a vector field with three.js", iconURL: undefined, file: "Scripts/VectorFieldGL", category: undefined }
+        { name: 'Totem', description: "Blabl", iconURL: undefined, file: "Items/Paths/Shapes/TotemShape", category: 'Shape/Animated/Spiral'  }
     ]
 
     ModuleLoader.initialize = ()->

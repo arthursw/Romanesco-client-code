@@ -16,7 +16,11 @@
         minHue = Utils.random(0, 360 - hueRange);
         step = hueRange / 10;
         for (i = j = 0; j <= 10; i = ++j) {
-          R.defaultColors.push(P.Color.HSL(minHue + i * step, Utils.random(0.3, 0.9), Utils.random(0.5, 0.7)).toCSS());
+          R.defaultColors.push(new P.Color({
+            hue: minHue + i * step,
+            saturation: Utils.random(0.3, 0.9),
+            lightness: Utils.random(0.5, 0.7)
+          }).toCSS());
         }
         R.parameters = {};
         R.parameters['General'] = {};

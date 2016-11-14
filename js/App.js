@@ -2,6 +2,8 @@
 (function() {
   var Utils, baseUrl, libs, parameters, prefix;
 
+  R.offline = false;
+
   Utils = {};
 
   Utils.URL = {};
@@ -71,6 +73,7 @@
       'tinycolor': [libs + 'tinycolor.min'],
       'bootstrap': [libs + 'bootstrap.min'],
       'paper': [libs + 'paper-full'],
+      'three': [libs + 'three'],
       'gui': [libs + 'dat.gui.min'],
       'typeahead': [libs + 'typeahead.bundle.min'],
       'pinit': [libs + 'pinit'],
@@ -88,7 +91,10 @@
       'jqtree': libs + 'jqtree/tree.jquery',
       'js-cookie': libs + 'js.cookie',
       'octokat': libs + 'octokat',
-      'spacebrew': libs + 'sb-1.4.1.min'
+      'spacebrew': libs + 'sb-1.4.1.min',
+      'jszip': libs + 'jszip/jszip',
+      'fileSaver': libs + 'FileSaver.min',
+      'color-classifier': libs + 'color-classifier'
     },
     shim: {
       'oembed': ['jquery'],

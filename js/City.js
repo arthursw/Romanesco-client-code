@@ -24,6 +24,9 @@
         this.citiesListBtnJ = this.cityPanelJ.find('.load-city');
         this.createCityBtnJ.click(this.createCityModal);
         this.citiesListBtnJ.click(this.citiesModal);
+        if (R.offline) {
+          return;
+        }
         $.ajax({
           method: "POST",
           url: "ajaxCall/",

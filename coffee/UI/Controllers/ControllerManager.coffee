@@ -21,7 +21,7 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 			step = hueRange/10
 
 			for i in [0 .. 10]
-				R.defaultColors.push(P.Color.HSL( minHue + i * step, Utils.random(0.3, 0.9), Utils.random(0.5, 0.7) ).toCSS())
+				R.defaultColors.push(new P.Color( hue: minHue + i * step, saturation: Utils.random(0.3, 0.9), lightness: Utils.random(0.5, 0.7) ).toCSS())
 				# R.defaultColors.push(Color.random().toCSS())
 
 			R.parameters = {}

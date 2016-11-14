@@ -88,14 +88,16 @@
         this.fileBrowserJ = this.codeJ.find('.files');
         this.files = [];
         this.nDirsToLoad = 1;
-        if (((ref = R.repository) != null ? ref.owner : void 0) != null) {
-          this.loadFork({
-            owner: R.repository.owner
-          });
-        } else {
-          this.loadMainRepository();
+        if (!R.offline) {
+          if (((ref = R.repository) != null ? ref.owner : void 0) != null) {
+            this.loadFork({
+              owner: R.repository.owner
+            });
+          } else {
+            this.loadMainRepository();
+          }
+          this.checkHasFork();
         }
-        this.checkHasFork();
         return;
       }
 

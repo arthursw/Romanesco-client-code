@@ -31,6 +31,12 @@
         this.chatMessagesJ = this.chatMainJ.find("#chatMessages");
         this.chatMessageJ = this.chatMainJ.find("#chatSendMessageInput");
         this.chatMessageJ.blur();
+        if (R.offline) {
+          this.socket = {
+            emit: function() {}
+          };
+          return;
+        }
         this.socket = io.connect("/chat");
         this.socket.on("connect", this.updateRoom);
         this.socket.on("announcement", this.addMessage);

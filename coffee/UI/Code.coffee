@@ -50,12 +50,13 @@ define [ 'UI/Modal', 'coffee', 'spin', 'jqtree', 'typeahead' ], (Modal, CoffeeSc
 			@files = []
 			@nDirsToLoad = 1
 
-			if R.repository?.owner?
-				@loadFork(owner: R.repository.owner)
-			else
-				@loadMainRepository()
+			if not R.offline
+				if R.repository?.owner?
+					@loadFork(owner: R.repository.owner)
+				else
+					@loadMainRepository()
 
-			@checkHasFork()
+				@checkHasFork()
 
 			# $.get('https://api.github.com/repos/arthursw/romanesco-client-code/contents/', @loadFiles)
 			# @state = '' + Math.random()

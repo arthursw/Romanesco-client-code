@@ -146,6 +146,24 @@
         iconURL: void 0,
         file: "Items/Paths/Shapes/Striper",
         category: void 0
+      }, {
+        name: 'Vector field',
+        description: "Creates a vector field",
+        iconURL: void 0,
+        file: "Items/Paths/Shapes/VectorField",
+        category: void 0
+      }, {
+        name: 'Vector field GL',
+        description: "Creates a vector field with three.js",
+        iconURL: void 0,
+        file: "Scripts/VectorFieldGL",
+        category: void 0
+      }, {
+        name: 'Totem',
+        description: "Blabl",
+        iconURL: void 0,
+        file: "Items/Paths/Shapes/TotemShape",
+        category: 'Shape/Animated/Spiral'
       }
     ];
     ModuleLoader.initialize = function() {

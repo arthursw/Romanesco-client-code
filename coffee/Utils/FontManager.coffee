@@ -9,6 +9,8 @@ define [ ], () ->
 			jQuery.support.cors = true
 
 			# $.getJSON("https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyD2ZjTQxVfi34-TMKjB5WYK3U8K6y-IQH0", initTextOptions)
+
+			if R.offline then return
 			jqxhr = $.getJSON("https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyBVfBj_ugQO_w0AK1x9F6yiXByhcNgjQZU", @initTextOptions)
 			jqxhr.done (json)=>
 				console.log 'done'
@@ -84,6 +86,8 @@ define [ ], () ->
 						for effect, i in font.effects
 							newFont += effect + '|'
 						newFont = newFont.slice(0,-1)
+
+					if R.offline then continue
 
 					fontLink = $('<link class="fonts" data-font-family="' + font.family + '" rel="stylesheet" type="text/css">')
 					fontLink.attr('href', "http://fonts.googleapis.com/css?family=" + newFont)

@@ -36,6 +36,10 @@ define [ 'socketio' ], (ioo) ->
 			# 				  if *from* is set to another user, *from* is append before the message,
 			# 				  if *from* is not set, nothing is append before the message
 
+			if R.offline
+				@socket =
+					emit: ()-> return
+				return
 
 			@socket = io.connect("/chat")
 

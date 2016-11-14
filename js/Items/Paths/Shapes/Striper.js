@@ -4,7 +4,7 @@
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  define(['Items/Paths/Shapes/Shape', 'UI/Modal'], function(Shape, Modal) {
+  define(['Items/Paths/Shapes/Shape', 'UI/Modal', 'jszip', 'fileSaver', 'color-classifier'], function(Shape, Modal, JSZip, FileSaver, ColorClassifierFile) {
     var Striper;
     Striper = (function(superClass) {
       extend(Striper, superClass);
@@ -33,8 +33,20 @@
         }
         parameters['Parameters'].effectType = {
           "default": 'CMYKstripes',
-          values: ['CMYKstripes', 'CMYKdots'],
+          values: ['CMYKstripes'],
           label: 'Effect type'
+        };
+        parameters['Parameters'].keepLines = {
+          type: 'checkbox',
+          label: 'keepLines',
+          "default": false
+        };
+        parameters['Parameters'].circleSize = {
+          type: 'slider',
+          label: 'circleSize',
+          min: 1,
+          max: 1000,
+          "default": 70
         };
         parameters['Parameters'].pixelSize = {
           type: 'slider',
@@ -48,7 +60,7 @@
           label: 'nStripes',
           min: 10,
           max: 160,
-          "default": 15
+          "default": 85
         };
         parameters['Parameters'].blackThreshold = {
           type: 'slider',
@@ -118,6 +130,11 @@
           label: 'remove contours',
           "default": true
         };
+        parameters['Parameters'].fitToRectangle = {
+          type: 'checkbox',
+          label: 'fitToRectangle',
+          "default": false
+        };
         return parameters;
       };
 
@@ -147,6 +164,12 @@
           })(this)
         });
         modal.show();
+        this.classifier = new ColorClassifier();
+        get_dataset('static/libs/color-dataset.js', (function(_this) {
+          return function(data) {
+            _this.classifier.learn(data);
+          };
+        })(this));
       };
 
       Striper.prototype.allRastersLoaded = function(rasters) {
@@ -164,90 +187,11 @@
         switch (this.data.effectType) {
           case 'CMYKstripes':
             this.drawCMYKstripes();
-            break;
-          case 'CMYKdots':
-            this.drawCMYKdots();
-        }
-      };
-
-      Striper.prototype.colorToCMYK = function(color) {
-        var b, g, k, r, result;
-        r = color.red;
-        g = color.green;
-        b = color.blue;
-        k = Math.min(1 - r, 1 - g, 1 - b);
-        result = {
-          c: (1 - r - k) / (1 - k) || 0,
-          m: (1 - g - k) / (1 - k) || 0,
-          y: (1 - b - k) / (1 - k) || 0,
-          k: k
-        };
-        return result;
-      };
-
-      Striper.prototype.drawCMYKdots = function() {
-        var angle, c, center, color, colors, colorsToAngles, colorsToNames, colorsToThreshold, cymk, deltaX, deltaY, dot, i, j, l, len, m, maxSize, n, nSteps, path, pixel, position, previousColor, raster, ref, ref1, square, startPosition;
-        raster = this.rasters[0];
-        raster.fitBounds(this.rectangle, true);
-        raster.visible = false;
-        maxSize = Math.max(this.rectangle.width, this.rectangle.height);
-        square = new P.Rectangle(maxSize, maxSize);
-        pixel = new P.Rectangle(-this.data.pixelSize / 2, -this.data.pixelSize / 2, this.data.pixelSize, this.data.pixelSize);
-        nSteps = maxSize / this.data.pixelSize;
-        colorsToNames = {
-          c: 'cyan',
-          m: 'magenta',
-          y: 'yellow',
-          k: 'black'
-        };
-        colorsToAngles = {
-          c: this.data.cyanAngle,
-          m: this.data.magentaAngle,
-          y: this.data.yellowAngle,
-          k: this.data.blackAngle
-        };
-        colorsToThreshold = {
-          c: this.data.cyanThreshold,
-          m: this.data.magentaThreshold,
-          y: this.data.yellowThreshold,
-          k: this.data.blackThreshold
-        };
-        colors = ['k', 'm', 'c', 'y'];
-        for (l = 0, len = colors.length; l < len; l++) {
-          c = colors[l];
-          angle = colorsToAngles[c];
-          center = this.rectangle.center;
-          position = center.subtract(maxSize / 2);
-          position = position.rotate(angle, center);
-          deltaX = new P.Point(1, 0).rotate(angle).multiply(this.data.pixelSize);
-          deltaY = new P.Point(0, 1).rotate(angle).multiply(this.data.pixelSize);
-          previousColor = null;
-          path = null;
-          for (i = m = 0, ref = nSteps; 0 <= ref ? m <= ref : m >= ref; i = 0 <= ref ? ++m : --m) {
-            startPosition = position.clone();
-            if (i % 2 === 0) {
-              position = position.add(deltaX.divide(2));
-            }
-            for (j = n = 0, ref1 = nSteps; 0 <= ref1 ? n <= ref1 : n >= ref1; j = 0 <= ref1 ? ++n : --n) {
-              if (position.x === 0) {
-                position.x = 0.001;
-              }
-              color = raster.getAverageColor(position);
-              if (color != null) {
-                cymk = this.colorToCMYK(color);
-                dot = this.addPath(new P.Path.Circle(position, cymk[c] * this.data.pixelSize * this.data.dotSize));
-                dot.fillColor = colorsToNames[c];
-                dot.strokeWidth = 0;
-              }
-              position = position.add(deltaX);
-            }
-            position = startPosition.add(deltaY);
-          }
         }
       };
 
       Striper.prototype.logItem = function(item, prefix) {
-        var child, l, len, ref;
+        var child, k, len, ref;
         if (prefix == null) {
           prefix = "";
         }
@@ -257,102 +201,565 @@
           return;
         }
         ref = item.children;
-        for (l = 0, len = ref.length; l < len; l++) {
-          child = ref[l];
+        for (k = 0, len = ref.length; k < len; k++) {
+          child = ref[k];
           this.logItem(child, prefix);
         }
       };
 
-      Striper.prototype.convertGroupsToCompoundPath = function(item, compoundPath) {
-        var child, l, len, ref;
+      Striper.prototype.convertGroupsToCompoundPath = function(item, fills, contous) {
+        var child, k, len, ref;
         if ((item instanceof P.Group || item instanceof P.CompoundPath) && (item.children != null)) {
           ref = item.children;
-          for (l = 0, len = ref.length; l < len; l++) {
-            child = ref[l];
-            this.convertGroupsToCompoundPath(child, compoundPath);
+          for (k = 0, len = ref.length; k < len; k++) {
+            child = ref[k];
+            this.convertGroupsToCompoundPath(child, fills, contous);
           }
         } else if (item != null) {
-          console.log(item.className);
-          compoundPath.addChild(item.clone());
+          if (item.fillColor != null) {
+            fills.addChild(item.clone());
+          } else {
+            contous.addChild(item.clone());
+          }
         }
       };
 
-      Striper.prototype.drawCMYKstripes = function() {
-        var angles, center, colors, colorsToAngles, colorsToNames, colorsToThreshold, i, l, len, len1, line, m, maxSize, n, nSteps, originalRaster, p, path, pathWithoutContour, pixel, position, raster, ref, ref1, ref2, segment, square, stripe, stripes, yStepSize;
+      Striper.prototype.setItemColor = function(item, color) {
+        var child, k, len, ref;
+        if (item.strokeColor != null) {
+          item.strokeColor = color;
+        }
+        if (item.fillColor != null) {
+          item.fillColor = color;
+        }
+        if (item.children == null) {
+          return;
+        }
+        ref = item.children;
+        for (k = 0, len = ref.length; k < len; k++) {
+          child = ref[k];
+          this.setItemColor(child, color);
+        }
+      };
+
+      Striper.prototype.reduceColors = function() {
+        var blob, childIndex, color, filename, index, k, l, layer, len, len1, link, originalRaster, ref, ref1, result, subLayer, svg, url;
         originalRaster = this.rasters[0].clone();
-        originalRaster.fitBounds(this.rectangle, false);
-        raster = new P.CompoundPath();
-        this.convertGroupsToCompoundPath(originalRaster, raster);
-        console.log("originalRaster");
-        this.logItem(originalRaster);
-        console.log("raster");
-        this.logItem(raster);
-        raster.position = this.rectangle.center;
-        raster.fitBounds(this.rectangle, false);
-        maxSize = Math.max(this.rectangle.width, this.rectangle.height);
-        square = new P.Rectangle(maxSize, maxSize);
-        pixel = new P.Rectangle(-this.data.pixelSize / 2, -this.data.pixelSize / 2, this.data.pixelSize, this.data.pixelSize);
-        nSteps = maxSize / this.data.pixelSize;
-        yStepSize = maxSize / this.data.nStripes;
-        colorsToNames = {
-          c: 'cyan',
-          m: 'magenta',
-          y: 'yellow',
-          k: 'black'
-        };
-        colorsToAngles = {
-          c: this.data.cyanAngle,
-          m: this.data.magentaAngle,
-          y: this.data.yellowAngle,
-          k: this.data.blackAngle
-        };
-        colorsToThreshold = {
-          c: this.data.cyanThreshold,
-          m: this.data.magentaThreshold,
-          y: this.data.yellowThreshold,
-          k: this.data.blackThreshold
-        };
-        colors = ['k', 'm', 'c', 'y'];
-        angles = [15, 75, 0, 45];
+        if (this.data.fitToRectangle) {
+          originalRaster.fitBounds(this.rectangle, false);
+        } else {
+          originalRaster.position = this.rectangle.center;
+          this.rectangle.width = originalRaster.bounds.width;
+          this.rectangle.height = originalRaster.bounds.height;
+          this.rectangle.center = originalRaster.position;
+        }
+        color = 'white';
+        index = 0;
+        ref = originalRaster.children;
+        for (k = 0, len = ref.length; k < len; k++) {
+          layer = ref[k];
+          childIndex = 0;
+          ref1 = layer.children;
+          for (l = 0, len1 = ref1.length; l < len1; l++) {
+            subLayer = ref1[l];
+            if (subLayer.name.indexOf("ROSE") !== -1) {
+              subLayer.name = "ROSE";
+              color = "#ECO38A";
+            } else if (subLayer.name.indexOf("VERT_CLAIR") !== -1) {
+              subLayer.name = "VERT_CLAIR";
+              color = "#8AC443";
+            } else if (subLayer.name.indexOf("VERT_MENTHE") !== -1) {
+              subLayer.name = "VERT_MENTHE";
+              color = "#22B374";
+            } else if (subLayer.name.indexOf("VERT_MOYEN") !== -1) {
+              subLayer.name = "VERT_MOYEN";
+              color = "#009F4C";
+            } else if (subLayer.name.indexOf("ROUGE") !== -1) {
+              subLayer.name = "ROUGE";
+              color = "#EC1D24";
+            } else if (subLayer.name.indexOf("ORANGE") !== -1) {
+              subLayer.name = "ORANGE";
+              color = "#F06423";
+            } else if (subLayer.name.indexOf("MARRON_CLAIR") !== -1) {
+              subLayer.name = "MARRON_CLAIR";
+              color = "#895D3B";
+            } else if (subLayer.name.indexOf("MARRON_FONCE") !== -1) {
+              subLayer.name = "MARRON_FONCE";
+              color = "#5F3713";
+            } else if (subLayer.name.indexOf("MARRON") !== -1) {
+              subLayer.name = "MARRON_FONCE";
+              color = "#5F3713";
+            } else if (subLayer.name.indexOf("JAUNE") !== -1) {
+              subLayer.name = "JAUNE";
+              color = "#FFDC23";
+            } else if (subLayer.name.indexOf("BLEU_FONCE") !== -1) {
+              subLayer.name = "BLEU_FONCE";
+              color = "#2C388D";
+            } else if (subLayer.name.indexOf("BLEU_CLAIR") !== -1) {
+              subLayer.name = "BLEU_CLAIR";
+              color = "#1E75B9";
+            } else if (subLayer.name.indexOf("VIOLET") !== -1) {
+              subLayer.name = "VIOLET";
+              color = "#7F3F95";
+            } else if (subLayer.name.indexOf("NOIR") !== -1) {
+              subLayer.name = "NOIR";
+              color = "#000000";
+            } else {
+              console.log("Unknown color: " + subLayer.name);
+            }
+            this.setItemColor(subLayer, color);
+            childIndex++;
+          }
+          index++;
+        }
+        result = originalRaster;
+        result.position = new P.Point(result.bounds.size.multiply(0.5));
+        svg = result.exportSVG({
+          asString: true
+        });
+        svg = svg.replace(new RegExp('<g', 'g'), '<svg');
+        svg = svg.replace(new RegExp('</g', 'g'), '</svg');
+        blob = new Blob([svg], {
+          type: 'image/svg+xml'
+        });
+        url = URL.createObjectURL(blob);
+        filename = "plantsCleanedReduced.svg";
+        link = document.createElement("a");
+        document.body.appendChild(link);
+        link.href = url;
+        link.download = filename;
+        link.text = filename;
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      Striper.prototype.drawCMYKstripesOld = function() {
+        var blob, border, center, color, compoundLayer, contours, curveLocation, filename, found, group, i, img, index, interesctionPoint, interesctionPoints, intersection, intersections, j, k, l, layer, len, len1, len2, len3, len4, len5, line, lines, link, m, margin, n, o, originalRaster, p, pathWithoutContour, position, q, r, ref, ref1, ref2, ref3, ref4, result, saveZip, segment, stripe, stripes, subLayer, svg, url, y, yStepSize, yToKeep, zip;
+        originalRaster = this.rasters[0].clone();
+        if (this.data.fitToRectangle) {
+          originalRaster.fitBounds(this.rectangle, false);
+        } else {
+          originalRaster.scale(1.36);
+          originalRaster.position = new P.Point(0, originalRaster.bounds.height / 2);
+          this.rectangle.width = originalRaster.bounds.width;
+          this.rectangle.height = originalRaster.bounds.height;
+          this.rectangle.center = originalRaster.position;
+        }
+        margin = 50;
+        yStepSize = (this.rectangle.height + margin) / this.data.nStripes;
         stripes = new P.CompoundPath();
         stripes.strokeWidth = 1;
         stripes.strokeColor = 'black';
+        lines = new P.CompoundPath();
+        lines.strokeWidth = 1;
+        lines.strokeColor = 'black';
         center = this.rectangle.center;
-        position = center.subtract(maxSize / 2);
-        for (i = l = 0, ref = this.data.nStripes; 0 <= ref ? l <= ref : l >= ref; i = 0 <= ref ? ++l : --l) {
-          stripe = new P.Path.Rectangle(position, new P.Size(maxSize, yStepSize / 2));
+        position = this.rectangle.topLeft.subtract(margin / 2);
+        yToKeep = [];
+        for (i = k = 0, ref = this.data.nStripes; 0 <= ref ? k <= ref : k >= ref; i = 0 <= ref ? ++k : --k) {
+          stripe = new P.Path.Rectangle(position, new P.Size(this.rectangle.width + margin, yStepSize / 2));
           stripe.fillColor = 'black';
           stripes.addChild(stripe);
+          line = new P.Path();
+          line.add(stripe.bounds.topLeft);
+          line.add(stripe.bounds.topRight);
+          lines.addChild(line);
           position = position.add(0, yStepSize);
+          yToKeep.push(stripe.bounds.top);
         }
-        path = stripes.intersect(raster.clone());
-        if (this.data.removeContours) {
-          pathWithoutContour = new P.CompoundPath();
-          ref1 = path.children;
-          for (m = 0, len = ref1.length; m < len; m++) {
-            p = ref1[m];
-            ref2 = p.segments;
-            for (n = 0, len1 = ref2.length; n < len1; n++) {
-              segment = ref2[n];
-              if ((segment.next != null) && Math.abs(segment.point.y - segment.next.point.y) < 1.5) {
-                line = new P.Path();
-                line.add(segment.point);
-                line.add(segment.next.point);
-                pathWithoutContour.addChild(line);
+        zip = new JSZip();
+        img = zip.folder("Layers");
+        group = new P.Group();
+        color = 'white';
+        index = 0;
+        ref1 = originalRaster.children;
+        for (l = 0, len = ref1.length; l < len; l++) {
+          layer = ref1[l];
+          if (layer.children == null) {
+            continue;
+          }
+          ref2 = layer.children;
+          for (j = m = 0, len1 = ref2.length; m < len1; j = ++m) {
+            subLayer = ref2[j];
+            if (subLayer.name.indexOf("ROSE") !== -1) {
+              subLayer.name = "ROSE";
+              color = "#ECO38A";
+            } else if (subLayer.name.indexOf("VERT_CLAIR") !== -1) {
+              subLayer.name = "VERT_CLAIR";
+              color = "#8AC443";
+            } else if (subLayer.name.indexOf("VERT_MENTHE") !== -1) {
+              subLayer.name = "VERT_MENTHE";
+              color = "#22B374";
+            } else if (subLayer.name.indexOf("VERT_MOYEN") !== -1) {
+              subLayer.name = "VERT_MOYEN";
+              color = "#009F4C";
+            } else if (subLayer.name.indexOf("ROUGE") !== -1) {
+              subLayer.name = "ROUGE";
+              color = "#EC1D24";
+            } else if (subLayer.name.indexOf("ORANGE") !== -1) {
+              subLayer.name = "ORANGE";
+              color = "#F06423";
+            } else if (subLayer.name.indexOf("MARRON_CLAIR") !== -1) {
+              subLayer.name = "MARRON_CLAIR";
+              color = "#895D3B";
+            } else if (subLayer.name.indexOf("MARRON_FONCE") !== -1) {
+              subLayer.name = "MARRON_FONCE";
+              color = "#5F3713";
+            } else if (subLayer.name.indexOf("MARRON") !== -1) {
+              subLayer.name = "MARRON";
+              color = "#895D3B";
+            } else if (subLayer.name.indexOf("JAUNE") !== -1) {
+              subLayer.name = "JAUNE";
+              color = "#FFDC23";
+            } else if (subLayer.name.indexOf("BLEU_FONCE") !== -1) {
+              subLayer.name = "BLEU_FONCE";
+              color = "#2C388D";
+            } else if (subLayer.name.indexOf("BLEU_CLAIR") !== -1) {
+              subLayer.name = "BLEU_CLAIR";
+              color = "#1E75B9";
+            } else if (subLayer.name.indexOf("VIOLET") !== -1) {
+              subLayer.name = "VIOLET";
+              color = "#7F3F95";
+            } else if (subLayer.name.indexOf("NOIR") !== -1) {
+              subLayer.name = "NOIR";
+              color = "#000000";
+            } else {
+              console.log("UNKNOW COLOR");
+              color = "#2C388D";
+            }
+            this.setItemColor(subLayer, color);
+            compoundLayer = new P.CompoundPath();
+            contours = new P.CompoundPath();
+            this.convertGroupsToCompoundPath(subLayer, compoundLayer, contours);
+            contours.simplify();
+            intersection = compoundLayer.clone().intersect(stripes.clone());
+            intersections = contours.getIntersections(lines);
+            interesctionPoints = new P.CompoundPath();
+            for (n = 0, len2 = intersections.length; n < len2; n++) {
+              curveLocation = intersections[n];
+              interesctionPoint = new P.Path();
+              interesctionPoint.add(curveLocation.point);
+              interesctionPoint.add(curveLocation.point.add(50, 0));
+              interesctionPoints.addChild(interesctionPoint);
+            }
+            result = new P.Group();
+            result.addChild(interesctionPoints);
+            if (intersection.children) {
+              pathWithoutContour = new P.CompoundPath();
+              ref3 = intersection.children;
+              for (o = 0, len3 = ref3.length; o < len3; o++) {
+                p = ref3[o];
+                ref4 = p.segments;
+                for (q = 0, len4 = ref4.length; q < len4; q++) {
+                  segment = ref4[q];
+                  if ((segment.next != null) && Math.abs(segment.point.y - segment.next.point.y) < 0.5) {
+                    found = false;
+                    for (r = 0, len5 = yToKeep.length; r < len5; r++) {
+                      y = yToKeep[r];
+                      if (Math.abs(y - segment.point.y) < 0.5) {
+                        found = true;
+                        break;
+                      }
+                    }
+                    if (found) {
+                      line = new P.Path();
+                      line.add(segment.point);
+                      line.add(segment.next.point);
+                      pathWithoutContour.addChild(line);
+                    }
+                  }
+                }
               }
+              result.addChild(pathWithoutContour);
+            }
+            result.fillColor = null;
+            result.strokeColor = color;
+            result.strokeWidth = 27;
+            result.name = subLayer.name;
+            group.addChild(result);
+            svg = result.exportSVG({
+              asString: true
+            });
+            svg = svg.replace(new RegExp('<g', 'g'), '<svg');
+            svg = svg.replace(new RegExp('</g', 'g'), '</svg');
+            blob = new Blob([svg], {
+              type: 'image/svg+xml'
+            });
+            filename = "Layer" + index + "." + j + "-" + subLayer.name + ".svg";
+            img.file(filename, blob, {
+              base64: true
+            });
+          }
+          index++;
+        }
+        border = new P.Path.Rectangle(this.rectangle);
+        border.strokeWidth = 1;
+        border.strokeColor = "black";
+        group.addChild(border);
+        result = group;
+        svg = result.exportSVG({
+          asString: true
+        });
+        svg = svg.replace(new RegExp('<g', 'g'), '<svg');
+        svg = svg.replace(new RegExp('</g', 'g'), '</svg');
+        blob = new Blob([svg], {
+          type: 'image/svg+xml'
+        });
+        url = URL.createObjectURL(blob);
+        filename = "plantsCleanedReduced.svg";
+        link = document.createElement("a");
+        document.body.appendChild(link);
+        link.href = url;
+        link.download = filename;
+        link.text = filename;
+        link.click();
+        document.body.removeChild(link);
+        saveZip = function() {
+          zip.generateAsync({
+            type: "blob"
+          }).then(function(content) {
+            return saveAs(content, "Layers.zip");
+          });
+        };
+        setTimeout(saveZip, 5000);
+        return;
+      };
+
+      Striper.prototype.convertPathsToDots = function(item, group, colorsToCompoundPath, saveLayer, img, index, color) {
+        var blob, child, childToRemove, colorHexString, colorName, filename, i, k, l, len, length, p, path, position, ref, svg;
+        if (saveLayer === 1) {
+          color = "rien";
+        }
+        if (item.strokeColor != null) {
+          color = item.strokeColor;
+        }
+        if (item.children != null) {
+          length = item.children.length;
+          childToRemove = [];
+          for (i = k = 0, ref = length - 1; 0 <= ref ? k <= ref : k >= ref; i = 0 <= ref ? ++k : --k) {
+            child = item.children[i];
+            if (this.convertPathsToDots(child, group, colorsToCompoundPath, saveLayer + 1, img, i, color)) {
+              childToRemove.push(child);
             }
           }
-          path.remove();
-          path = pathWithoutContour;
+          for (l = 0, len = childToRemove.length; l < len; l++) {
+            child = childToRemove[l];
+            child.remove();
+          }
         }
-        path.strokeWidth = 1;
-        path.strokeColor = 'black';
-        this.drawing.addChild(path);
-        this.drawing.addChild(raster);
-        raster.fillColor = null;
-        raster.strokeColor = 'black';
-        raster.strokeWidth = 1;
-        stripes.remove();
+        if (saveLayer === 1) {
+          svg = item.exportSVG({
+            asString: true
+          });
+          svg = svg.replace(new RegExp('<g', 'g'), '<svg');
+          svg = svg.replace(new RegExp('</g', 'g'), '</svg');
+          blob = new Blob([svg], {
+            type: 'image/svg+xml'
+          });
+          colorHexString = tinycolor(color.toCSS()).toHexString();
+          colorName = this.classifier.classify(colorHexString);
+          console.log(colorName);
+          filename = "Layer" + index + "-" + colorName + ".svg";
+          img.file(filename, blob, {
+            base64: true
+          });
+        }
+        if (item instanceof P.Path) {
+          if (this.data.keepLines) {
+            if (item.segments.length === 2 && item.firstSegment.point.y === item.lastSegment.point.y) {
+              return false;
+            }
+          }
+          position = 0;
+          length = item.length;
+          while (position < length) {
+            p = item.getPointAt(position);
+            path = new P.Path();
+            path.add(p);
+            path.add(p.add(1, 0));
+            item.parent.addChild(path);
+            position += this.data.circleSize;
+          }
+          return true;
+        }
+        return false;
+      };
+
+      Striper.prototype.convertLinesToDots = function() {
+        var blob, colorsToCompoundPath, filename, group, img, link, originalRaster, result, saveZip, svg, url, zip;
+        originalRaster = this.rasters[0].clone();
+        originalRaster.position = new P.Point(0, originalRaster.bounds.height / 2);
+        this.rectangle.width = originalRaster.bounds.width;
+        this.rectangle.height = originalRaster.bounds.height;
+        this.rectangle.center = originalRaster.position;
+        group = new P.Group();
+        colorsToCompoundPath = {};
+        zip = new JSZip();
+        img = zip.folder("Layers");
+        this.convertPathsToDots(originalRaster, group, colorsToCompoundPath, 0, img);
+        result = originalRaster;
+        svg = result.exportSVG({
+          asString: true
+        });
+        svg = svg.replace(new RegExp('<g', 'g'), '<svg');
+        svg = svg.replace(new RegExp('</g', 'g'), '</svg');
+        blob = new Blob([svg], {
+          type: 'image/svg+xml'
+        });
+        filename = "dots.svg";
+        url = URL.createObjectURL(blob);
+        link = document.createElement("a");
+        document.body.appendChild(link);
+        link.href = url;
+        link.download = filename;
+        link.text = filename;
+        link.click();
+        document.body.removeChild(link);
+        saveZip = function() {
+          zip.generateAsync({
+            type: "blob"
+          }).then(function(content) {
+            return saveAs(content, "Layers.zip");
+          });
+        };
+        setTimeout(saveZip, 5000);
+      };
+
+      Striper.prototype.drawCMYKstripes = function() {
+        var blob, border, center, color, colorHexString, colorName, colors, filename, fillColor, found, group, i, img, index, intersection, item, k, l, len, len1, len2, len3, line, lines, link, m, margin, n, o, originalRaster, p, pathWithoutContour, position, ref, ref1, ref2, ref3, result, saveZip, segment, stripe, stripes, svg, url, y, yStepSize, yToKeep, zip;
+        originalRaster = this.rasters[0].clone();
+        if (this.data.fitToRectangle) {
+          originalRaster.fitBounds(this.rectangle, false);
+        } else {
+          originalRaster.scale(1.36);
+          originalRaster.position = new P.Point(0, originalRaster.bounds.height / 2);
+          this.rectangle.width = originalRaster.bounds.width;
+          this.rectangle.height = originalRaster.bounds.height;
+          this.rectangle.center = originalRaster.position;
+        }
+        margin = 50;
+        yStepSize = (this.rectangle.height + margin) / this.data.nStripes;
+        stripes = new P.CompoundPath();
+        stripes.strokeWidth = 1;
+        stripes.strokeColor = 'black';
+        lines = new P.CompoundPath();
+        lines.strokeWidth = 1;
+        lines.strokeColor = 'black';
+        center = this.rectangle.center;
+        position = this.rectangle.topLeft.subtract(margin / 2);
+        yToKeep = [];
+        for (i = k = 0, ref = this.data.nStripes; 0 <= ref ? k <= ref : k >= ref; i = 0 <= ref ? ++k : --k) {
+          stripe = new P.Path.Rectangle(position, new P.Size(this.rectangle.width + margin, yStepSize / 2));
+          stripe.fillColor = 'black';
+          stripes.addChild(stripe);
+          line = new P.Path();
+          line.add(stripe.bounds.topLeft);
+          line.add(stripe.bounds.topRight);
+          lines.addChild(line);
+          position = position.add(0, yStepSize);
+          yToKeep.push(stripe.bounds.top);
+        }
+        zip = new JSZip();
+        img = zip.folder("simpleStriped");
+        group = new P.Group();
+        colors = {};
+        ref1 = originalRaster.children;
+        for (l = 0, len = ref1.length; l < len; l++) {
+          item = ref1[l];
+          if (item.fillColor == null) {
+            console.log('no fill color');
+            continue;
+          }
+          if (colors[item.fillColor] == null) {
+            colors[item.fillColor] = new P.CompoundPath();
+            colors[item.fillColor].fillColor = item.fillColor;
+          }
+          colors[item.fillColor].addChild(item.clone());
+        }
+        index = 0;
+        for (color in colors) {
+          item = colors[color];
+          fillColor = item.fillColor;
+          intersection = item.intersect(stripes.clone());
+          result = new P.Group();
+          if (intersection.children) {
+            pathWithoutContour = new P.CompoundPath();
+            ref2 = intersection.children;
+            for (m = 0, len1 = ref2.length; m < len1; m++) {
+              p = ref2[m];
+              ref3 = p.segments;
+              for (n = 0, len2 = ref3.length; n < len2; n++) {
+                segment = ref3[n];
+                if ((segment.next != null) && Math.abs(segment.point.y - segment.next.point.y) < 0.5) {
+                  found = false;
+                  for (o = 0, len3 = yToKeep.length; o < len3; o++) {
+                    y = yToKeep[o];
+                    if (Math.abs(y - segment.point.y) < 0.5) {
+                      found = true;
+                      break;
+                    }
+                  }
+                  if (found) {
+                    line = new P.Path();
+                    line.add(segment.point);
+                    line.add(segment.next.point);
+                    pathWithoutContour.addChild(line);
+                  }
+                }
+              }
+            }
+            result.addChild(pathWithoutContour);
+          }
+          result.fillColor = null;
+          result.strokeColor = fillColor;
+          result.strokeWidth = 6;
+          group.addChild(result);
+          svg = result.exportSVG({
+            asString: true
+          });
+          svg = svg.replace(new RegExp('<g', 'g'), '<svg');
+          svg = svg.replace(new RegExp('</g', 'g'), '</svg');
+          blob = new Blob([svg], {
+            type: 'image/svg+xml'
+          });
+          colorHexString = tinycolor(fillColor.toCSS()).toHexString();
+          colorName = this.classifier.classify(colorHexString);
+          filename = "Layer-" + index + "-" + colorName + ".svg";
+          img.file(filename, blob, {
+            base64: true
+          });
+          index++;
+        }
+        border = new P.Path.Rectangle(this.rectangle);
+        border.strokeWidth = 1;
+        border.strokeColor = "black";
+        group.addChild(border);
+        result = group;
+        svg = result.exportSVG({
+          asString: true
+        });
+        svg = svg.replace(new RegExp('<g', 'g'), '<svg');
+        svg = svg.replace(new RegExp('</g', 'g'), '</svg');
+        blob = new Blob([svg], {
+          type: 'image/svg+xml'
+        });
+        url = URL.createObjectURL(blob);
+        filename = "simpleStriped.svg";
+        link = document.createElement("a");
+        document.body.appendChild(link);
+        link.href = url;
+        link.download = filename;
+        link.text = filename;
+        link.click();
+        document.body.removeChild(link);
+        saveZip = function() {
+          zip.generateAsync({
+            type: "blob"
+          }).then(function(content) {
+            return saveAs(content, "simpleStriped.zip");
+          });
+        };
+        setTimeout(saveZip, 5000);
       };
 
       Striper.prototype.createShape = function() {

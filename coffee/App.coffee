@@ -1,3 +1,5 @@
+R.offline = false
+
 Utils = {}
 Utils.URL = {}
 
@@ -89,6 +91,7 @@ requirejs.config
 		# 'modalManager': ['//cdnjs.cloudflare.com/ajax/libs/bootstrap-modal/2.2.5/js/bootstrap-modalmanager.min', libs + 'bootstrap-modalmanager.min']
 		# 'paper': ['//cdnjs.cloudflare.com/ajax/libs/paper.js/0.9.22/paper-full.min', libs + 'paper-full.min']
 		'paper': [libs + 'paper-full']
+		'three': [libs + 'three']
 		'gui': [libs + 'dat.gui.min']
 		'typeahead': [libs + 'typeahead.bundle.min']
 		'pinit': [libs + 'pinit']
@@ -109,6 +112,9 @@ requirejs.config
 		'js-cookie': libs + 'js.cookie'
 		'octokat': libs + 'octokat'
 		'spacebrew': libs + 'sb-1.4.1.min'
+		'jszip': libs + 'jszip/jszip'
+		'fileSaver': libs + 'FileSaver.min'
+		'color-classifier': libs + 'color-classifier'
 
 	shim:
 		'oembed': ['jquery']
