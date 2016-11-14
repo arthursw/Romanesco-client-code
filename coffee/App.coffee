@@ -48,7 +48,7 @@ requirejs.config
 	# enforceDefine: true 	# to make fallback work?? but throws Uncaught Error: No define call for app
 	paths:
 		# 'domReady': ['//cdnjs.cloudflare.com/ajax/libs/require-domReady/2.0.1/domReady.min', libs + 'domReady']
-		# 'ace': ['//cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/', libs + 'ace/src-min-noconflict/']
+		'ace': ['//cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/', libs + 'ace/src-min-noconflict/']
 		# # 'ace': [libs + 'ace/src-min-noconflict/']
 		# 'underscore': ['//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min', libs + 'underscore-min']
 		# 'jquery': ['//code.jquery.com/jquery-2.1.3.min', 'libs/jquery-2.1.3.min']
@@ -75,7 +75,7 @@ requirejs.config
 
 
 		'domReady': [libs + 'domReady']
-		'ace': [libs + 'ace']
+		# 'ace': [libs + 'ace']
 		'aceTools': [libs + 'ace/ext-language_tools']
 		'underscore': [libs + 'underscore-min']
 		'jquery': [libs + 'jquery-2.1.3.min']
