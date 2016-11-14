@@ -18,8 +18,8 @@ define [
 	'RasterizerBot'
 ], (Utils, Global, FontManager, Loader, Socket, CityManager, RasterizerManager, Sidebar, FileManager, CodeEditor, Modal, AlertManager, ControllerManager, CommandManager, View, ToolManager, RasterizerBot) ->
 
-	console.log 'FORK from arthur-test-account :-)'
-	
+	console.log 'Main Romanesco Repository'
+
 	# R.rasterizerMode = window.rasterizerMode
 
 
