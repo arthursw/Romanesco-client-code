@@ -635,6 +635,8 @@
           }
           tools[item.constructor.name].items.push(item);
         }
+        console.log("updateControllers: ", R.selectedItems, tools);
+        this.updateControllers(tools, false);
       };
 
       ControllerManager.prototype.setSelectedTool = function(tool) {
