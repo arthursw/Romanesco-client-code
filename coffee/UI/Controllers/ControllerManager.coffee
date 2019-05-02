@@ -465,7 +465,7 @@ define [ 'UI/Controllers/Controller', 'UI/Controllers/ColorController', 'UI/Cont
 				tools[item.constructor.name] ?= parameters: item.constructor.parameters, items: []
 				tools[item.constructor.name].items.push(item)
 
-			@updateControllers(tools, true)
+			# @updateControllers(tools, true)
 			return
 
 		setSelectedTool: (tool)->

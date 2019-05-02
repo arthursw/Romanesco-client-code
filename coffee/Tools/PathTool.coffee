@@ -93,6 +93,8 @@ define [ 'Tools/Tool', 'UI/Button' ], (Tool, Button) ->
 			# deselect all and create new P.Path in all case except in polygonMode
 			if not (R.currentPaths[from]? and R.currentPaths[from].data?.polygonMode) 	# if not in polygon mode
 				R.tools.select.deselectAll()
+				console.log("PathRool data:")
+				console.log(data)
 				R.currentPaths[from] = new @Path(Date.now(), data)
 				# R.currentPaths[from].select(false, false)
 

@@ -157,7 +157,7 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 			return
 
 		@initializeParameters: ()->
-			console.log 'Item.initializeParameters'
+			# console.log 'Item.initializeParameters'
 			parameters =
 				'Items':
 					align: R.parameters.align
@@ -222,6 +222,7 @@ define [ 'Commands/Command', 'Tools/ItemTool' ], (Command, ItemTool) ->
 				R.items[@id] = @
 
 			# creation of a new object by the user: set @data to R.gui values
+
 			if @data?
 				@secureData()
 			else
